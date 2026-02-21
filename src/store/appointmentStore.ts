@@ -172,6 +172,13 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         rating: ratingEntry?.rating ?? undefined,
         reviewComment: ratingEntry?.comment ?? undefined,
       } as Appointment});
+
+      appointments.sort((a, b) => {
+        const aTime = new Date(a.slotStartIso).getTime();
+        const bTime = new Date(b.slotStartIso).getTime();
+        return bTime - aTime;
+      });
+
       set({ appointments });
     } catch (error: any) {
       set({ error: error.message });
