@@ -16,7 +16,7 @@ const ensurePaystackScript = (): Promise<void> => {
   if (typeof window === "undefined") return Promise.resolve();
   if (window.PaystackPop) return Promise.resolve();
   const existing = document.querySelector<HTMLScriptElement>(
-    'script[src="https://js.paystack.co/v1/inline.js"]'
+    'script[src="https://js.paystack.co/v2/inline.js"]'
   );
   if (existing) {
     return new Promise<void>((resolve, reject) => {
@@ -34,7 +34,7 @@ const ensurePaystackScript = (): Promise<void> => {
   }
   return new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "https://js.paystack.co/v1/inline.js";
+    script.src = "https://js.paystack.co/v2/inline.js";
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Paystack failed to load"));
@@ -119,59 +119,62 @@ const PayementStep = ({
         paystackLoadPromiseRef.current = ensurePaystackScript();
       }
       await paystackLoadPromiseRef.current;
-      if (!window.PaystackPop?.setup) {
+      if (!window.PaystackPop) {
         throw new Error("Paystack is not available");
       }
 
       const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
       if (!publicKey) throw new Error('Missing Paystack public key');
 
-      const handler = window.PaystackPop.setup({
+      const email = user?.email;
+      if (!email) throw new Error('Missing user email for payment');
+
+      const paystack = new window.PaystackPop();
+      paystack.newTransaction({
         key: publicKey,
-        email: user?.email,
+        email,
         amount: (totalAmount || 0) * 100,
         currency: 'NGN',
-        ref: `${appointmentId}-${Date.now()}`,
+        reference: `${appointmentId}-${Date.now()}`,
         metadata: {
           appointmentId,
           doctorName,
           patientName,
         },
-        callback: async (response: any) => {
+        onSuccess: async (transaction: any) => {
           try {
             const res = await fetch('/api/paystack/verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reference: response.reference, appointmentId }),
-            })
-            const data = await res.json()
+              body: JSON.stringify({ reference: transaction.reference, appointmentId }),
+            });
+            const data = await res.json();
             if (res.ok && data?.success) {
-              setPaymentStatus('success')
+              setPaymentStatus('success');
               if (onPaymentSuccess) {
-                onPaymentSuccess(data?.data)
+                onPaymentSuccess(data?.data);
               } else {
-                onConfirm()
+                onConfirm();
               }
             } else {
-              throw new Error(data?.error || 'Payment verification failed')
+              throw new Error(data?.error || 'Payment verification failed');
             }
           } catch (err: any) {
-            setError(err?.message || 'Payment failed')
-            setPaymentStatus('failed')
+            setError(err?.message || 'Payment failed');
+            setPaymentStatus('failed');
           }
         },
-        onClose: () => {
-          setPaymentStatus('idle')
-          setError('')
-          modelCloseCountRef.current += 1
+        onCancel: () => {
+          setPaymentStatus('idle');
+          setError('');
+          modelCloseCountRef.current += 1;
           if (modelCloseCountRef.current === 1) {
-            setTimeout(() => handlePayment(), 1000)
+            setTimeout(() => handlePayment(), 1000);
           } else {
-            setShouldAutoOpen(false)
+            setShouldAutoOpen(false);
           }
         },
-      })
-      handler?.open?.()
+      });
     } catch (error: any) {
       console.error("payment error", error);
       setError(error.message || "paymnet failed");
