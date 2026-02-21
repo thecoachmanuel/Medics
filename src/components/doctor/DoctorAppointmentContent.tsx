@@ -16,7 +16,7 @@ import PrescriptionViewModal from "./PrescriptionViewModal";
 const DoctorAppointmentContent = () => {
   const { user } = userAuthStore();
   const { appointments, fetchAppointments, loading ,updateAppointmentStatus} = useAppointmentStore();
-n  const [activeTab, setActiveTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState("upcoming");
 
   useEffect(() => {
     if (user?.type === "doctor") {

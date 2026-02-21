@@ -42,7 +42,7 @@ const LandingHero = () => {
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center mb-12'>
                      <Button onClick={handleBookConsultation} size='lg' className='bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-full px-8 py-3 text-lg'> 
-                        Book a Doctor
+                        Find Doctors
                      </Button>
                      <Link href='/login/doctor'>
                         <Button size='lg' variant='outline' className='w-full border-blue-600 text-blue-600   hover:bg-blue-50 rounded-full px-8 py-3 text-lg'> 

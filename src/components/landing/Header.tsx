@@ -126,7 +126,23 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false }) => {
       <div className="container mx-auto px-4 h-16 flex items-center  justify-between">
         {/* Left side -> logo  + navigation */}
         <div className="flex items-center space-x-8">
-          <Link href="/" className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (isAuthenticated && user) {
+                if (user.type === "patient" && pathname?.startsWith("/patient")) {
+                  router.push("/patient/dashboard");
+                  return;
+                }
+                if (user.type === "doctor" && pathname?.startsWith("/doctor")) {
+                  router.push("/doctor/dashboard");
+                  return;
+                }
+              }
+              router.push("/");
+            }}
+            className="flex items-center space-x-2 focus:outline-none"
+          >
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
               <Stethoscope className="w-5 h-5 text-white" />
             </div>
@@ -134,7 +150,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false }) => {
             <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800  bg-clip-text text-transparent">
               MedicsOnline
             </div>
-          </Link>
+          </button>
 
           {/* Dashboard navigation */}
           {isAuthenticated && showDashboardNav && (
@@ -159,7 +175,17 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false }) => {
 
         {isAuthenticated && showDashboardNav ? (
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" className="relative">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="relative"
+              onClick={() => {
+                if (!user) return;
+                const base = `/${user.type}`;
+                router.push(`${base}/notifications`);
+              }}
+            >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 w-5 h-5 text-xs bg-red-500 hover:bg-red-600">
