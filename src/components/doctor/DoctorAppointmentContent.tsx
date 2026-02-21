@@ -83,7 +83,8 @@ const DoctorAppointmentContent = () => {
       diffMintues <= 15 && //not earliar than 15 min before start
       diffMintues >= -120 && //not later than 2 hours after start
       (appointment.status === "Scheduled" ||
-        appointment.status === "In Progress")
+        appointment.status === "In Progress") &&
+      appointment.paymentStatus === "success"
     );
   };
 

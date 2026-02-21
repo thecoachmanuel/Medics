@@ -130,7 +130,12 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
       } : undefined;
       const docMap = new Map((docs || []).map((d: any) => [d.id, toPerson(d)]));
       const patMap = new Map((pats || []).map((p: any) => [p.id, toPerson(p)]));
-      const appointments = rows.map((r: any) => {
+      const paidRows = rows.filter((r: any) => {
+        const p = payMap.get(r.id);
+        return p && p.status === 'success';
+      });
+
+      const appointments = paidRows.map((r: any) => {
         const p = payMap.get(r.id);
         return {
         _id: r.id,

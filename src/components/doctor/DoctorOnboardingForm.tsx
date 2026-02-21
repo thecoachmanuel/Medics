@@ -291,7 +291,7 @@ const DoctorOnboardingForm = () => {
                     id="city"
                     type="text"
                     value={formData.hospitalInfo.city}
-                    placeholder="e.g., Mumbai"
+                    placeholder="e.g., Abuja"
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
                       handleHospitalInfoChnage("city", e.target.value)
                     }

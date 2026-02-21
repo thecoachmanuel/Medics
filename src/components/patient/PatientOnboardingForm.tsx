@@ -191,7 +191,7 @@ const PatientOnboardingForm = () => {
                     name="phone"
                     type="tel"
                     value={formData.phone}
-                    placeholder="+91 985467238"
+                    placeholder="+234 801 234 5678"
                     onChange={handleInputChnage}
                     required
                   />
@@ -290,7 +290,7 @@ const PatientOnboardingForm = () => {
                     onChange={(e: ChangeEvent<HTMLInputElement>) => 
                         handleEmergencyContactChnage('phone',e.target.value)
                     }
-                    placeholder="+91 9919326233"
+                    placeholder="+234 809 123 4567"
                     required
                    />
                 </div>

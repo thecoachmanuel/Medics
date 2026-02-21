@@ -7,7 +7,7 @@ import { Appointment, useAppointmentStore } from "@/store/appointmentStore";
 import { Card, CardContent } from "../ui/card";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Calendar, Clock, FileText, MapPin, Phone, Star, Video } from "lucide-react";
+import { Calendar, Clock, CreditCard, FileText, MapPin, Phone, Star, Video } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
@@ -103,7 +103,8 @@ const PatientDashboardContent = () => {
       diffMintues <= 15 && //not earliar than 15 min before start
       diffMintues >= -120 && //not later than 2 hours after start
       (appointment.status === "Scheduled" ||
-        appointment.status === "In Progress")
+        appointment.status === "In Progress") &&
+      appointment.paymentStatus === "success"
     );
   };
 
@@ -300,14 +301,20 @@ const PatientDashboardContent = () => {
               </p>
             </div>
 
-            <div className="flex items-center space-x-4 ">
-              <Link href="/doctor-list">
-                <Button>
-                  <Calendar className="w-4 h-4 mr-2 " />
-                  Book <span className="hidden md:block">New Appointment</span>
-                </Button>
-              </Link>
-            </div>
+          <div className="flex items-center space-x-4 ">
+            <Link href="/doctor-list">
+              <Button>
+                <Calendar className="w-4 h-4 mr-2 " />
+                Book <span className="hidden md:block">New Appointment</span>
+              </Button>
+            </Link>
+            <Link href="/patient/payments" className="md:hidden">
+              <Button variant="outline">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Payments
+              </Button>
+            </Link>
+          </div>
           </div>
 
           <Tabs

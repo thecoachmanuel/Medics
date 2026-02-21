@@ -86,36 +86,40 @@ export const specializations = [
 
 
 
-   export const testimonials = [
-    {
-      rating: 5,
-      text: "Doctor was available right away, listened to my symptoms and prescribed the right medication. He made sure to explain the medicines and that was it. Very fast and easy.",
-      author: "Pat J.",
-      location: "From Texas",
-      bgColor: "bg-chart-1/10"
-    },
-    {
-      rating: 5,
-      text: "The doctor made me feel comfortable right away, very easy to ask about concerns I might have had and great feedback from my doctors.",
-      author: "Patrice P.",
-      location: "From New York",
-      bgColor: "bg-chart-2/10"
-    },
-    {
-      rating: 5,
-      text: "My doctor was very professional, thorough, and careful to ask me numerous relevant questions. She answered my questions not only in a detailed manner, but also in a way I could understand.",
-      author: "Betty M.",
-      location: "From Tennessee",
-      bgColor: "bg-chart-4/10"
-    },
-    {
-      rating: 5,
-      text: "It was quick & easy to book the appointment. I was able to get a PC appointment the next morning... within 12 hours! I connected and got my ongoing meds refilled. It was so nice for me living in a rural community.",
-      author: "Katherine M.",
-      location: "From California",
-      bgColor: "bg-chart-5/10"
-    }
-  ];
+export const testimonials = [
+  {
+    rating: 5,
+    text:
+      "I spoke to a doctor from my home in Lagos and got prescriptions the same day. No traffic, no long queues, just quality care on my phone.",
+    author: "Chioma A.",
+    location: "Lagos, Nigeria",
+    bgColor: "bg-chart-1/10",
+  },
+  {
+    rating: 5,
+    text:
+      "As a busy banker in Abuja, MedicsOnline helped me speak with a doctor during my break. The consultation was clear, professional and very reassuring.",
+    author: "Tunde O.",
+    location: "Abuja, Nigeria",
+    bgColor: "bg-chart-2/10",
+  },
+  {
+    rating: 5,
+    text:
+      "My mum in Port Harcourt was able to talk to a specialist without travelling to another state. The doctor listened patiently and explained every step.",
+    author: "Ngozi K.",
+    location: "Port Harcourt, Nigeria",
+    bgColor: "bg-chart-4/10",
+  },
+  {
+    rating: 5,
+    text:
+      "I booked a video consultation for my son late at night. Within minutes a doctor joined, reviewed his symptoms and advised us on what to do next.",
+    author: "Ahmed S.",
+    location: "Ibadan, Nigeria",
+    bgColor: "bg-chart-5/10",
+  },
+];
 
 
     export const faqs = [
@@ -178,7 +182,7 @@ export const specializations = [
     {
       title: "For Patients",
       links: [
-        { text: "Find Doctors", href: "/doctors" },
+        { text: "Find Doctors", href: "/signup/patient" },
         { text: "Book Appointment", href: "/signup/patient" },
       ]
     },

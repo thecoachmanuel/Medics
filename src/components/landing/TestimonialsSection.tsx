@@ -9,11 +9,11 @@ const TestimonialsSection = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-primary mb-4">
-            Our patient love us
+            Nigerians trust MedicsOnline
           </h2>
 
           <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="text-2xl font-bold text-foreground">4.8</span>
+            <span className="text-2xl font-bold text-foreground">4.9</span>
             <div className="flex text-yellow-400">
               {[...Array(5)].map((_, i) => (
                 <svg
@@ -25,7 +25,7 @@ const TestimonialsSection = () => {
                 </svg>
               ))}
             </div>
-            <span className="text-muted-foreground">72K+ reviews</span>
+            <span className="text-muted-foreground">248 verified patient reviews</span>
           </div>
         </div>
 

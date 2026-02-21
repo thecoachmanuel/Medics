@@ -256,7 +256,7 @@ const PayementStep = ({
                 Processing Payment...
               </h4>
               <p className="text-gray-600 mb-4">
-                Please complete the paymnet in the Razorpay window
+                Please complete the payment in the Paystack window
               </p>
               <Progress value={50} className="w-full" />
             </motion.div>
