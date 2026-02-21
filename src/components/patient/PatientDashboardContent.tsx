@@ -200,7 +200,10 @@ const PatientDashboardContent = () => {
               <div className="text-center md:text-left">
                 <div className="flex justify-center gap-2 text-sm text-gray-600">
                   <span className="font-semibold">Fee:</span>
-                  <p>₦{appointment.doctorId?.fees}</p>
+                  <p>
+                    ₦
+                    {appointment.paidAmount ?? appointment.fees ?? ""}
+                  </p>
                 </div>
                 {appointment.paymentStatus === 'success' && (
                   <div className="mt-1">
