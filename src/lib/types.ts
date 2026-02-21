@@ -137,6 +137,14 @@ export interface Doctor {
   isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
+  averageRating?: number;
+  totalReviews?: number;
+  reviews?: {
+    rating: number;
+    comment?: string | null;
+    createdAt: string;
+    patientName?: string;
+  }[];
 }
 
 

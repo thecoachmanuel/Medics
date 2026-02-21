@@ -13,16 +13,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { getStatusColor } from "@/lib/constant";
 import PrescriptionViewModal from "../doctor/PrescriptionViewModal";
+import { Textarea } from "../ui/textarea";
 
 const PatientDashboardContent = () => {
   const { user, isAuthenticated } = userAuthStore();
   const router = useRouter();
-  const { appointments, fetchAppointments, loading } = useAppointmentStore();
+  const { appointments, fetchAppointments, loading, rateDoctor } = useAppointmentStore();
   const [activeTab, setActiveTab] = useState("upcoming");
-  const [tabCounts, setTabCounts] = useState({
-    upcoming: 0,
-    past: 0,
-  });
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -44,37 +41,9 @@ const PatientDashboardContent = () => {
 
   useEffect(() => {
     if (user?.type === "patient") {
-      fetchAppointments("patient", activeTab);
+      fetchAppointments("patient");
     }
-  }, [user, activeTab, fetchAppointments]);
-
-  //update tab counts whever appointmnet chnage
-  useEffect(() => {
-    const now = new Date();
-    //filter the upcoming appointmnet
-    const upcomingAppointments = appointments.filter((apt) => {
-      const aptDate = new Date(apt.slotStartIso);
-      return (
-        (aptDate >= now || apt.status === "In Progress") &&
-        (apt.status === "Scheduled" || apt.status === "In Progress")
-      );
-    });
-
-    //filter the past appointmnet
-    const pastAppointments = appointments.filter((apt) => {
-      const aptDate = new Date(apt.slotStartIso);
-      return (
-        aptDate < now ||
-        apt.status === "Completed" ||
-        apt.status === "Cancelled"
-      );
-    });
-
-    setTabCounts({
-      upcoming: upcomingAppointments.length,
-      past: pastAppointments.length,
-    });
-  }, [appointments]);
+  }, [user, fetchAppointments]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -112,7 +81,63 @@ const PatientDashboardContent = () => {
     return null;
   }
 
-  const AppointmentCard = ({ appointment }: { appointment: Appointment }) => (
+  const now = new Date();
+  const upcomingAppointments = appointments.filter((apt) => {
+    const aptDate = new Date(apt.slotStartIso);
+    return (
+      (aptDate >= now || apt.status === "In Progress") &&
+      (apt.status === "Scheduled" || apt.status === "In Progress")
+    );
+  });
+
+  const pastAppointments = appointments.filter((apt) => {
+    const aptDate = new Date(apt.slotStartIso);
+    return (
+      aptDate < now ||
+      apt.status === "Completed" ||
+      apt.status === "Cancelled"
+    );
+  });
+
+  const AppointmentCard = ({ appointment }: { appointment: Appointment }) => {
+    const [savingRating, setSavingRating] = useState(false);
+    const [comment, setComment] = useState(appointment.reviewComment ?? "");
+
+    useEffect(() => {
+      setComment(appointment.reviewComment ?? "");
+    }, [appointment.reviewComment]);
+
+    const handleRate = async (value: number) => {
+      if (savingRating) return;
+      if (appointment.rating === value) return;
+      setSavingRating(true);
+      try {
+        const trimmed = comment.trim();
+        await rateDoctor(
+          appointment._id,
+          value,
+          trimmed.length ? trimmed : undefined
+        );
+      } finally {
+        setSavingRating(false);
+      }
+    };
+
+    const handleSaveReview = async () => {
+      if (savingRating) return;
+      const trimmed = comment.trim();
+      if (!trimmed && typeof appointment.rating !== "number") return;
+      setSavingRating(true);
+      try {
+        const ratingValue =
+          typeof appointment.rating === "number" ? appointment.rating : 5;
+        await rateDoctor(appointment._id, ratingValue, trimmed || undefined);
+      } finally {
+        setSavingRating(false);
+      }
+    };
+
+    return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardContent className="p-6">
         <div className="flex flex-col items-center md:flex-row md:items-start md:space-x-6">
@@ -229,21 +254,64 @@ const PatientDashboardContent = () => {
 
             </div>
 
-            {appointment.status === 'Completed' && (
-              <div className="flex items-center space-x-1">
-                {[...Array(5)].map((_,i) => (
-                  <Star
-                   className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
+            {appointment.status === 'Completed' && appointment.paymentStatus === 'success' && (
+              <div className="mt-3 w-full">
+                <div className="flex items-center space-x-1">
+                  {[...Array(5)].map((_, i) => {
+                    const value = i + 1;
+                    const filled =
+                      typeof appointment.rating === 'number'
+                        ? value <= appointment.rating
+                        : false;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        disabled={savingRating}
+                        onClick={() => handleRate(value)}
+                        className="focus:outline-none"
+                      >
+                        <Star
+                          className={
+                            filled
+                              ? 'w-4 h-4 fill-yellow-400 text-yellow-400'
+                              : 'w-4 h-4 text-gray-300'
+                          }
+                        />
+                      </button>
+                    );
+                  })}
+                  <span className="ml-2 text-xs text-gray-500">
+                    {typeof appointment.rating === 'number'
+                      ? `${appointment.rating.toFixed(1)} / 5`
+                      : 'Tap to rate your doctor'}
+                  </span>
                 </div>
+                <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0 w-full">
+                  <Textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Share your experience with this doctor (optional)"
+                    className="text-sm"
+                    rows={2}
+                    disabled={savingRating}
+                  />
+                  <Button
+                    size="sm"
+                    disabled={savingRating || (!comment.trim() && typeof appointment.rating !== 'number')}
+                    onClick={handleSaveReview}
+                  >
+                    {savingRating ? 'Saving...' : 'Save Review'}
+                  </Button>
+                </div>
+              </div>
             )}
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
-  );
+  )};
 
   const EmptyState = ({ tab }: { tab: string }) => {
     const emptyStates = {
@@ -328,11 +396,11 @@ const PatientDashboardContent = () => {
                 className="flex items-center space-x-2"
               >
                 <Clock className="w-4 h-4" />
-                <span>Upcoming ({tabCounts.upcoming})</span>
+                <span>Upcoming ({upcomingAppointments.length})</span>
               </TabsTrigger>
               <TabsTrigger value="past" className="flex items-center space-x-2">
                 <Calendar className="w-4 h-4" />
-                <span>Past ({tabCounts.past})</span>
+                <span>Past ({pastAppointments.length})</span>
               </TabsTrigger>
             </TabsList>
 
@@ -354,9 +422,9 @@ const PatientDashboardContent = () => {
                     </Card>
                   ))}
                 </div>
-              ) : appointments.length > 0 ? (
+              ) : upcomingAppointments.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {appointments.map((appointment) => (
+                  {upcomingAppointments.map((appointment) => (
                     <AppointmentCard
                       key={appointment._id}
                       appointment={appointment}
@@ -385,9 +453,9 @@ const PatientDashboardContent = () => {
                     </Card>
                   ))}
                 </div>
-              ) : appointments.length > 0 ? (
+              ) : pastAppointments.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {appointments.map((appointment) => (
+                  {pastAppointments.map((appointment) => (
                     <AppointmentCard
                       key={appointment?._id}
                       appointment={appointment}

@@ -19,6 +19,8 @@ export interface Appointment {
   updatedAt: string;
   paymentStatus?: 'success' | 'pending' | 'failed' | 'refunded' | 'initiated';
   paidAmount?: number;
+  rating?: number;
+  reviewComment?: string;
 }
 
 interface AppointmentFilters {
@@ -72,6 +74,7 @@ interface AppointmentState {
     appointmentId: string,
     status: string
   ) => Promise<void>;
+  rateDoctor: (appointmentId: string, rating: number, comment?: string) => Promise<void>;
 }
 
 export const useAppointmentStore = create<AppointmentState>((set, get) => ({
@@ -116,6 +119,20 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         ? await supabase.from('payments').select('appointment_id,status,amount').in('appointment_id', aptIds)
         : { data: [], error: null } as any;
       const payMap: Map<string, PayRow> = new Map((pays as PayRow[] || []).map((p) => [p.appointment_id, p]));
+
+      const { data: ratings } = aptIds.length
+        ? await supabase
+            .from('doctor_ratings')
+            .select('appointment_id,rating,comment')
+            .in('appointment_id', aptIds)
+        : { data: [], error: null } as any;
+
+      const ratingMap: Map<string, { rating: number | null; comment: string | null }> = new Map(
+        ((ratings as { appointment_id: string; rating: number | null; comment: string | null }[] | null) || []).map((r) => [
+          r.appointment_id,
+          { rating: r.rating, comment: r.comment },
+        ])
+      );
       const docIds = Array.from(new Set(rows.map((r: any) => r.doctor_id)));
       const patIds = Array.from(new Set(rows.map((r: any) => r.patient_id)));
       const { data: docs } = await supabase.from('profiles').select('*').in('id', docIds);
@@ -127,16 +144,13 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         profileImage: p.profile_image,
         hospitalInfo: p.hospital_info,
         specialization: p.specialization,
+        age: p.age,
       } : undefined;
       const docMap = new Map((docs || []).map((d: any) => [d.id, toPerson(d)]));
       const patMap = new Map((pats || []).map((p: any) => [p.id, toPerson(p)]));
-      const paidRows = rows.filter((r: any) => {
+      const appointments = rows.map((r: any) => {
         const p = payMap.get(r.id);
-        return p && p.status === 'success';
-      });
-
-      const appointments = paidRows.map((r: any) => {
-        const p = payMap.get(r.id);
+        const ratingEntry = ratingMap.get(r.id);
         return {
         _id: r.id,
         doctorId: docMap.get(r.doctor_id) || { _id: r.doctor_id },
@@ -155,6 +169,8 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         updatedAt: r.updated_at,
         paymentStatus: p ? p.status : undefined,
         paidAmount: p ? p.amount : undefined,
+        rating: ratingEntry?.rating ?? undefined,
+        reviewComment: ratingEntry?.comment ?? undefined,
       } as Appointment});
       set({ appointments });
     } catch (error: any) {
@@ -179,8 +195,15 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         profileImage: p.profile_image,
         hospitalInfo: p.hospital_info,
         specialization: p.specialization,
+        age: p.age,
       } : undefined;
       const { data: pay } = await supabase.from('payments').select('status,amount').eq('appointment_id', r.id).maybeSingle();
+
+      const { data: ratingRow } = await supabase
+        .from('doctor_ratings')
+        .select('rating,comment')
+        .eq('appointment_id', r.id)
+        .maybeSingle();
       const apt = {
         _id: r.id,
         doctorId: toPerson(doc) || { _id: r.doctor_id },
@@ -199,6 +222,8 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         updatedAt: r.updated_at,
         paymentStatus: (pay?.status as Appointment['paymentStatus']) || undefined,
         paidAmount: (pay?.amount as number | undefined),
+        rating: (ratingRow?.rating as number | undefined),
+        reviewComment: (ratingRow?.comment as string | undefined),
       } as any;
       set({ currentAppointment: apt });
       return apt;
@@ -365,6 +390,70 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
             : state.currentAppointment,
       }));
       return data;
+    } catch (error: any) {
+      set({ error: error.message });
+    } finally {
+      set({ loading: false });
+    }
+  },
+  rateDoctor: async (appointmentId, rating, comment) => {
+    set({ loading: true, error: null });
+    try {
+      const { data: session } = await supabase.auth.getUser();
+      const uid = session.user?.id;
+      if (!uid) throw new Error('Not authenticated');
+
+      const { data: aptRow, error: aptErr } = await supabase
+        .from('appointments')
+        .select('doctor_id,patient_id')
+        .eq('id', appointmentId)
+        .maybeSingle();
+      if (aptErr) throw aptErr;
+      if (!aptRow) throw new Error('Appointment not found');
+      if (aptRow.patient_id !== uid) throw new Error('Only the patient can rate this appointment');
+
+      const payload: {
+        doctor_id: string;
+        patient_id: string;
+        appointment_id: string;
+        rating: number;
+        comment?: string | null;
+      } = {
+        doctor_id: aptRow.doctor_id as string,
+        patient_id: uid,
+        appointment_id: appointmentId,
+        rating,
+      };
+      if (typeof comment === 'string') {
+        payload.comment = comment;
+      }
+
+      const { data: upserted, error } = await supabase
+        .from('doctor_ratings')
+        .upsert(payload, { onConflict: 'appointment_id' })
+        .select('appointment_id,rating,comment')
+        .single();
+      if (error) throw error;
+
+      set((state) => ({
+        appointments: state.appointments.map((apt) =>
+          apt._id === appointmentId
+            ? {
+                ...apt,
+                rating: upserted.rating as number,
+                reviewComment: upserted.comment as string | undefined,
+              }
+            : apt
+        ),
+        currentAppointment:
+          state.currentAppointment?._id === appointmentId
+            ? {
+                ...state.currentAppointment,
+                rating: upserted.rating as number,
+                reviewComment: upserted.comment as string | undefined,
+              }
+            : state.currentAppointment,
+      }));
     } catch (error: any) {
       set({ error: error.message });
     } finally {

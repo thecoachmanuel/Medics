@@ -83,6 +83,7 @@ const PayementStep = ({
   const [shouldAutoOpen,setShouldAutoOpen] = useState(true)
   const modelCloseCountRef = useRef<number>(0)
   const paystackLoadPromiseRef = useRef<Promise<void> | null>(null)
+  const [paymentDetails, setPaymentDetails] = useState<{ amount: number; currency: string } | null>(null);
 
   //Load Paystack inline script and auto-trigger payment
   useEffect(() => {
@@ -151,6 +152,12 @@ const PayementStep = ({
             const data = await res.json();
             if (res.ok && data?.success) {
               setPaymentStatus('success');
+              if (data?.data && typeof data.data.amount === 'number') {
+                setPaymentDetails({
+                  amount: data.data.amount,
+                  currency: data.data.currency || 'NGN',
+                });
+              }
               if (onPaymentSuccess) {
                 onPaymentSuccess(data?.data);
               } else {
@@ -162,6 +169,7 @@ const PayementStep = ({
           } catch (err: any) {
             setError(err?.message || 'Payment failed');
             setPaymentStatus('failed');
+            setPaymentDetails(null);
           }
         },
         onCancel: () => {
@@ -280,6 +288,17 @@ const PayementStep = ({
               <p className="text-gray-600 mb-4">
                 Your appointment has been confirmed
               </p>
+              <div className="mt-4 space-y-1 text-sm text-gray-700">
+                <p>
+                  Patient: <span className="font-medium">{patientName}</span>
+                </p>
+                <p>
+                  Age: <span className="font-medium">{user?.age ?? 'N/A'}</span>
+                </p>
+                <p>
+                  Amount Paid: <span className="font-semibold text-green-700">₦{paymentDetails?.amount ?? totalAmount}</span>
+                </p>
+              </div>
             </motion.div>
           )}
 

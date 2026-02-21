@@ -31,11 +31,7 @@ const DoctorDashboardContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isAuthenticated } = userAuthStore();
-  const {
-    dashboard: dashboardData,
-    fetchDashboard,
-    loading,
-  } = useDoctorStore();
+  const { dashboard: dashboardData, fetchDashboard, loading } = useDoctorStore();
 
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [completingAppointmentId, setCompletingAppointmentId] = useState<
@@ -65,7 +61,7 @@ const DoctorDashboardContent = () => {
 
   useEffect(() => {
     if (user?.type === "doctor") {
-      fetchDashboard(user?.type);
+      fetchDashboard();
     }
   }, [user, fetchDashboard]);
 
@@ -90,7 +86,7 @@ const DoctorDashboardContent = () => {
       setCompletingAppointmentId(null);
 
       if (user?.type) {
-        fetchDashboard(user.type);
+        fetchDashboard();
       }
 
       const url = new URL(window.location.href);
@@ -168,8 +164,8 @@ const DoctorDashboardContent = () => {
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
-      change: "+12%",
-      changeColor: "text-green-600",
+      change: dashboardData?.statsChange?.totalPatients?.value || "0%",
+      positive: dashboardData?.statsChange?.totalPatients?.positive || false,
     },
     {
       title: "Today's Appointments",
@@ -177,17 +173,21 @@ const DoctorDashboardContent = () => {
       icon: Calendar,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      change: "+8%",
-      changeColor: "text-green-600",
+      change:
+        dashboardData?.statsChange?.todayAppointments?.value || "0%",
+      positive:
+        dashboardData?.statsChange?.todayAppointments?.positive || false,
     },
     {
       title: "Total Revenue",
-      value: `₦${dashboardData?.stats?.totalRevenue?.toLocaleString() || "0"}`,
+      value: `₦${
+        dashboardData?.stats?.totalRevenue?.toLocaleString() || "0"
+      }`,
       icon: DollarSign,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
-      change: "+25%",
-      changeColor: "text-green-600",
+      change: dashboardData?.statsChange?.totalRevenue?.value || "0%",
+      positive: dashboardData?.statsChange?.totalRevenue?.positive || false,
     },
     {
       title: "Completed",
@@ -195,8 +195,10 @@ const DoctorDashboardContent = () => {
       icon: Activity,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
-      change: "+18%",
-      changeColor: "text-green-600",
+      change:
+        dashboardData?.statsChange?.completedAppointments?.value || "0%",
+      positive:
+        dashboardData?.statsChange?.completedAppointments?.positive || false,
     },
   ];
 
@@ -256,7 +258,7 @@ const DoctorDashboardContent = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  gap-6 mb-2">
             {statsCards.map((stat, index) => (
               <Card key={index} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
@@ -270,9 +272,15 @@ const DoctorDashboardContent = () => {
                         {stat.value}
                       </p>
                       <div className="flex items-center mt-2">
-                        <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
+                        <TrendingUp
+                          className={`w-3 h-3 mr-1 ${
+                            stat.positive ? "text-green-600" : "text-red-600"
+                          }`}
+                        />
                         <span
-                          className={`text-sm font-medium ${stat.changeColor}`}
+                          className={`text-sm font-medium ${
+                            stat.positive ? "text-green-600" : "text-red-600"
+                          }`}
                         >
                           {stat.change} from last year
                         </span>
@@ -288,6 +296,13 @@ const DoctorDashboardContent = () => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          <div className="flex items-center text-xs text-gray-500 mb-8">
+            <TrendingUp className="w-3 h-3 mr-1 text-green-600" />
+            <span>
+              Percentage change compares this year&apos;s values to the same period last year.
+            </span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -329,7 +344,7 @@ const DoctorDashboardContent = () => {
                           </div>
 
                           <p className="text-sm text-gray-600 line-clamp-1">
-                            Age: {appointment?.patientId?.age}
+                            Age: {appointment?.patientId?.age ?? "N/A"}
                           </p>
 
                           <p className="text-sm text-gray-600 line-clamp-1">
@@ -349,7 +364,7 @@ const DoctorDashboardContent = () => {
                                 <Phone className="w-4 h-4 text-green-600" />
                               )}
                               <span className="text-sm text-gray-500">
-                                ₦{appointment.doctorId?.fees}
+                                ₦{appointment.paidAmount ?? appointment.fees}
                               </span>
                             </div>
                           </div>
@@ -416,6 +431,9 @@ const DoctorDashboardContent = () => {
                             <h4 className="font-semibold text-gray-900 text-sm truncate">
                               {appointment?.patientId?.name}
                             </h4>
+                            <div className="text-xs text-gray-600">
+                              Age: {appointment?.patientId?.age ?? "N/A"}
+                            </div>
                             <div className="text-sm font-medium text-blue-600 ">
                               {formateDate(appointment.slotStartIso)}
                             </div>
@@ -427,7 +445,7 @@ const DoctorDashboardContent = () => {
                                 <Phone className="w-4 h-4 text-green-600" />
                               )}
                               <span className="text-sm text-gray-500">
-                                ₦{appointment.doctorId?.fees}
+                                ₦{appointment.paidAmount ?? appointment.fees}
                               </span>
                             </div>
                           </div>
@@ -460,7 +478,7 @@ const DoctorDashboardContent = () => {
                     <div className="flex items-center space-x-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                       <span className="font-semibold">
-                        {dashboardData?.performance?.pateintSatisfaction} / 5
+                        {dashboardData?.performance?.patientSatisfaction} / 5
                       </span>
                     </div>
                   </div>

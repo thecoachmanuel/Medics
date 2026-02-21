@@ -16,45 +16,13 @@ import PrescriptionViewModal from "./PrescriptionViewModal";
 const DoctorAppointmentContent = () => {
   const { user } = userAuthStore();
   const { appointments, fetchAppointments, loading ,updateAppointmentStatus} = useAppointmentStore();
-  const [activeTab, setActiveTab] = useState("upcoming");
-  const [tabCounts, setTabCounts] = useState({
-    upcoming: 0,
-    past: 0,
-  });
+n  const [activeTab, setActiveTab] = useState("upcoming");
 
   useEffect(() => {
     if (user?.type === "doctor") {
-      fetchAppointments("doctor", activeTab);
+      fetchAppointments("doctor");
     }
-  }, [user, activeTab, fetchAppointments]);
-
-  //update tab counts whever appointmnet chnage
-  useEffect(() => {
-    const now = new Date();
-    //filter the upcoming appointmnet
-    const upcomingAppointments = appointments.filter((apt) => {
-      const aptDate = new Date(apt.slotStartIso);
-      return (
-        (aptDate >= now || apt.status === "In Progress") &&
-        (apt.status === "Scheduled" || apt.status === "In Progress")
-      );
-    });
-
-    //filter the past appointmnet
-    const pastAppointments = appointments.filter((apt) => {
-      const aptDate = new Date(apt.slotStartIso);
-      return (
-        aptDate < now ||
-        apt.status === "Completed" ||
-        apt.status === "Cancelled"
-      );
-    });
-
-    setTabCounts({
-      upcoming: upcomingAppointments.length,
-      past: pastAppointments.length,
-    });
-  }, [appointments]);
+  }, [user, fetchAppointments]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -115,6 +83,24 @@ const DoctorAppointmentContent = () => {
     return null;
   }
 
+  const now = new Date();
+  const upcomingAppointments = appointments.filter((apt) => {
+    const aptDate = new Date(apt.slotStartIso);
+    return (
+      (aptDate >= now || apt.status === "In Progress") &&
+      (apt.status === "Scheduled" || apt.status === "In Progress")
+    );
+  });
+
+  const pastAppointments = appointments.filter((apt) => {
+    const aptDate = new Date(apt.slotStartIso);
+    return (
+      aptDate < now ||
+      apt.status === "Completed" ||
+      apt.status === "Cancelled"
+    );
+  });
+
   const AppointmentCard = ({ appointment }: { appointment: Appointment }) => (
     <Card className="hover:shadow-lg transition-shadow">
       <CardContent className="p-6">
@@ -138,9 +124,9 @@ const DoctorAppointmentContent = () => {
                   {appointment.patientId?.name}
                 </h3>
                 <p className="text-gray-600">
-                 Age : {appointment.patientId?.age}
+                 Age : {appointment.patientId?.age ?? "N/A"}
                 </p>
-                       <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600">
                  {appointment.patientId?.email}
                 </p>
               </div>
@@ -176,8 +162,8 @@ const DoctorAppointmentContent = () => {
 
               <div className="text-center md:text-left">
                 <div className="flex justify-center gap-2 text-sm text-gray-600">
-                  <span className="font-semibold">Fee:</span>
-                  <p>₦{appointment.doctorId?.fees}</p>
+                  <span className="font-semibold">Amount Paid:</span>
+                  <p>₦{appointment.paidAmount ?? appointment.fees}</p>
                 </div>
                 {appointment.paymentStatus === 'success' && (
                   <div className="mt-1">
@@ -246,12 +232,29 @@ const DoctorAppointmentContent = () => {
 
             {appointment.status === 'Completed' && (
               <div className="flex items-center space-x-1">
-                {[...Array(5)].map((_,i) => (
-                  <Star
-                   className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-                </div>
+                {[...Array(5)].map((_, i) => {
+                  const value = i + 1;
+                  const filled =
+                    typeof appointment.rating === 'number'
+                      ? value <= appointment.rating
+                      : false;
+                  return (
+                    <Star
+                      key={value}
+                      className={
+                        filled
+                          ? 'w-4 h-4 fill-yellow-400 text-yellow-400'
+                          : 'w-4 h-4 text-gray-300'
+                      }
+                    />
+                  );
+                })}
+                <span className="ml-2 text-xs text-gray-500">
+                  {typeof appointment.rating === 'number'
+                    ? `${appointment.rating.toFixed(1)} / 5`
+                    : 'Not rated yet'}
+                </span>
+              </div>
             )}
             </div>
           </div>
@@ -315,11 +318,11 @@ const DoctorAppointmentContent = () => {
                 className="flex items-center space-x-2"
               >
                 <Clock className="w-4 h-4" />
-                <span>Upcoming ({tabCounts.upcoming})</span>
+                <span>Upcoming ({upcomingAppointments.length})</span>
               </TabsTrigger>
               <TabsTrigger value="past" className="flex items-center space-x-2">
                 <Calendar className="w-4 h-4" />
-                <span>Past ({tabCounts.past})</span>
+                <span>Past ({pastAppointments.length})</span>
               </TabsTrigger>
             </TabsList>
 
@@ -341,9 +344,9 @@ const DoctorAppointmentContent = () => {
                     </Card>
                   ))}
                 </div>
-              ) : appointments.length > 0 ? (
+              ) : upcomingAppointments.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {appointments.map((appointment) => (
+                  {upcomingAppointments.map((appointment) => (
                     <AppointmentCard
                       key={appointment._id}
                       appointment={appointment}
@@ -372,9 +375,9 @@ const DoctorAppointmentContent = () => {
                     </Card>
                   ))}
                 </div>
-              ) : appointments.length > 0 ? (
+              ) : pastAppointments.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {appointments.map((appointment) => (
+                  {pastAppointments.map((appointment) => (
                     <AppointmentCard
                       key={appointment?._id}
                       appointment={appointment}

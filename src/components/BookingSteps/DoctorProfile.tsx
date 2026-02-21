@@ -9,6 +9,12 @@ interface DoctorPrfileInterface {
   doctor: Doctor;
 }
 const DoctorProfile = ({ doctor }: DoctorPrfileInterface) => {
+  const averageRating = typeof doctor.averageRating === "number" ? doctor.averageRating : undefined;
+  const totalReviews = typeof doctor.totalReviews === "number" ? doctor.totalReviews : 0;
+  const displayRating = averageRating ?? 0;
+  const roundedRating = Math.round(displayRating);
+  const hasReviews = totalReviews > 0;
+
   return (
     <Card className="sticky top-8 shadow-lg border-0">
       <CardContent className="p-8">
@@ -35,16 +41,27 @@ const DoctorProfile = ({ doctor }: DoctorPrfileInterface) => {
           <div className="flex items-center justify-center space-x-4 mb-6">
             <div className="flex items-center space-x-1">
               <div className="flex">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className="w-4 h-4 fill-orange-400 text-orange-400"
-                  />
-                ))}
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const filled = star <= roundedRating;
+                  return (
+                    <Star
+                      key={star}
+                      className={
+                        filled
+                          ? "w-4 h-4 fill-orange-400 text-orange-400"
+                          : "w-4 h-4 text-gray-300"
+                      }
+                    />
+                  );
+                })}
               </div>
-              <span className="text-sm font-semibold text-gray-700">5.0</span>
+              <span className="text-sm font-semibold text-gray-700">
+                {hasReviews ? displayRating.toFixed(1) : "New"}
+              </span>
             </div>
-            <div className="text-sm text-gray-500">New Doctor</div>
+            <div className="text-sm text-gray-500">
+              {hasReviews ? `${totalReviews} review${totalReviews === 1 ? "" : "s"}` : "No reviews yet"}
+            </div>
           </div>
 
           <div className="flex justify-center flex-wrap gap-2 mb-6">
@@ -70,7 +87,7 @@ const DoctorProfile = ({ doctor }: DoctorPrfileInterface) => {
           </div>
         </div>
 
-        <div className="space-x-4">
+        <div className="space-y-4">
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-semibold text-gray-900 mb-2">About</h3>
             <p className="text-sm text-gray-600">{doctor.about}</p>
@@ -108,6 +125,43 @@ const DoctorProfile = ({ doctor }: DoctorPrfileInterface) => {
                 <Heart className="w-8 h-8"/>
             </div>
           </div>
+
+          {doctor.reviews && doctor.reviews.length > 0 && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-gray-900 mb-3">Reviews</h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {doctor.reviews.slice(0, 3).map((review, index) => (
+                  <div key={index} className="border border-gray-100 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-900">
+                        {review.patientName || "Patient"}
+                      </span>
+                      <div className="flex items-center space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const filled = star <= Math.round(review.rating);
+                          return (
+                            <Star
+                              key={star}
+                              className={
+                                filled
+                                  ? "w-3 h-3 fill-yellow-400 text-yellow-400"
+                                  : "w-3 h-3 text-gray-300"
+                              }
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        {review.comment}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -117,12 +117,6 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false }) => {
           href: "/doctor/appointments",
           active: pathname?.includes("/doctor/appointments") || false,
         },
-        {
-          lable: "Payments",
-          icon: Calendar,
-          href: "/doctor/payments",
-          active: pathname?.includes("/doctor/payments") || false,
-        },
       ];
     }
     return [];
