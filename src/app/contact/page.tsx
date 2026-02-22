@@ -15,6 +15,7 @@ const ContactPage = () => {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
@@ -22,13 +23,24 @@ const ContactPage = () => {
       return;
     }
     setIsSubmitting(true);
+    setError(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, email, subject, message }),
+      });
+      if (!response.ok) {
+        setError("Unable to send message. Please try again.");
+        return;
+      }
       setSubmitted(true);
       setFullName("");
       setEmail("");
       setSubject("");
       setMessage("");
+    } catch {
+      setError("Unable to send message. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -114,6 +126,9 @@ const ContactPage = () => {
                   >
                     {isSubmitting ? "Sending message..." : "Send message"}
                   </Button>
+                  {error && !isSubmitting && (
+                    <p className="text-sm md:text-base text-red-600">{error}</p>
+                  )}
                   {submitted && !isSubmitting && (
                     <p className="text-sm md:text-base text-green-600">
                       Message sent. Our team will reach out to you shortly.

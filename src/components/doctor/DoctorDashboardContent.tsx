@@ -248,7 +248,7 @@ const DoctorDashboardContent = () => {
               </div>
 
               <div className="hidden md:flex items-center space-x-3">
-                <Link href="/doctor/profile">
+                <Link href="/doctor/profile?section=availability">
                   <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
                     <Plus className="w-4 h-4 mr-2" />
                     Update Availability

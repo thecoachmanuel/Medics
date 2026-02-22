@@ -1,0 +1,175 @@
+import { getServiceSupabase } from "@/lib/supabase/service";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { updatePayoutStatus } from "@/actions/admin-actions";
+
+interface PayoutRow {
+  id: string;
+  doctor_id: string;
+  amount: number;
+  status: string;
+  note: string | null;
+  created_at: string;
+}
+
+interface DoctorInfo {
+  id: string;
+  name: string | null;
+  email: string | null;
+}
+
+const statusClass = (status: string): string => {
+  const value = status.toLowerCase();
+  if (value === "approved" || value === "paid") return "bg-green-100 text-green-800";
+  if (value === "rejected") return "bg-red-100 text-red-800";
+  return "bg-yellow-100 text-yellow-800";
+};
+
+export default async function AdminPaymentsPage() {
+  const supabase = getServiceSupabase();
+
+  const { data: payoutRows } = await supabase
+    .from("doctor_payout_requests")
+    .select("id,doctor_id,amount,status,note,created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  const payouts = (payoutRows || []) as PayoutRow[];
+  const doctorIds = Array.from(new Set(payouts.map((p) => p.doctor_id)));
+
+  let doctors: DoctorInfo[] = [];
+  if (doctorIds.length) {
+    const { data: doctorProfiles } = await supabase
+      .from("profiles")
+      .select("id,name,email")
+      .in("id", doctorIds);
+    doctors = (doctorProfiles || []) as DoctorInfo[];
+  }
+
+  const doctorMap = new Map<string, DoctorInfo>();
+  doctors.forEach((d) => doctorMap.set(d.id, d));
+
+  async function handleStatus(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "");
+    const status = String(formData.get("status") || "pending") as
+      | "pending"
+      | "approved"
+      | "rejected"
+      | "paid";
+    if (!id) return;
+    await updatePayoutStatus(id, status);
+  }
+
+  const totalPending = payouts
+    .filter((p) => p.status === "pending")
+    .reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalApproved = payouts
+    .filter((p) => p.status === "approved")
+    .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900">Payments & Payouts</h2>
+        <p className="text-sm text-gray-600">
+          Review doctor payout requests and track outgoing payments.
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="flex gap-6 text-sm text-gray-700">
+          <div>
+            <span className="font-semibold mr-1">Total requests:</span>
+            {payouts.length}
+          </div>
+          <div>
+            <span className="font-semibold mr-1">Pending amount (NGN):</span>
+            {totalPending.toLocaleString()}
+          </div>
+          <div>
+            <span className="font-semibold mr-1">Approved amount (NGN):</span>
+            {totalApproved.toLocaleString()}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">Doctor payout requests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {payouts.length === 0 ? (
+            <p className="text-sm text-gray-500">No payout requests submitted yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Doctor</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Amount (NGN)</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Status</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Requested</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Note</th>
+                    <th className="px-3 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {payouts.map((p) => {
+                    const doc = doctorMap.get(p.doctor_id);
+                    return (
+                      <tr key={p.id} className="border-b last:border-0">
+                        <td className="px-3 py-2">
+                          <div className="font-medium text-gray-900">{doc?.name || "Doctor"}</div>
+                          <div className="text-xs text-gray-500">{doc?.email}</div>
+                        </td>
+                        <td className="px-3 py-2 text-gray-900">{(p.amount || 0).toLocaleString()}</td>
+                        <td className="px-3 py-2">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(
+                              p.status,
+                            )}`}
+                          >
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-500">
+                          {new Date(p.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 max-w-xs truncate">
+                          {p.note || "-"}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <div className="flex gap-2 justify-end">
+                            <form action={handleStatus}>
+                              <input type="hidden" name="id" value={p.id} />
+                              <input type="hidden" name="status" value="approved" />
+                              <Button type="submit" size="sm" variant="outline">
+                                Approve
+                              </Button>
+                            </form>
+                            <form action={handleStatus}>
+                              <input type="hidden" name="id" value={p.id} />
+                              <input type="hidden" name="status" value="rejected" />
+                              <Button type="submit" size="sm" variant="outline">
+                                Reject
+                              </Button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+

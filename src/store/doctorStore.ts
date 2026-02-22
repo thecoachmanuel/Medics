@@ -42,7 +42,10 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
   fetchDoctors: async (filters = {}) => {
     set({ loading: true, error: null });
     try {
-      let query = supabase.from('profiles').select('*', { count: 'exact' }).eq('type','doctor');
+      let query = supabase.from('profiles').select('*', { count: 'exact' }).eq('type', 'doctor');
+      if (!filters.includeUnverified) {
+        query = query.eq('is_verified', true);
+      }
       if (filters.search) {
         query = query.ilike('name', `%${filters.search}%`);
       }

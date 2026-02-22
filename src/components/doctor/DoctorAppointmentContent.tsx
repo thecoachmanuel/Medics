@@ -124,7 +124,9 @@ const DoctorAppointmentContent = () => {
                   {appointment.patientId?.name}
                 </h3>
                 <p className="text-gray-600">
-                 Age : {appointment.patientId?.age ?? "N/A"}
+                 Age : {typeof appointment.patientId?.age === "number" && appointment.patientId.age > 0
+                   ? appointment.patientId.age
+                   : "N/A"}
                 </p>
                 <p className="text-sm text-gray-600">
                  {appointment.patientId?.email}
@@ -297,14 +299,14 @@ const DoctorAppointmentContent = () => {
               </p>
             </div>
 
-            <div className="flex items-center space-x-4 ">
-              <Link href="/dcotor/profile">
-                <Button>
-                  <Calendar className="w-4 h-4 mr-2 " />
-                   Update Availability
-                </Button>
-              </Link>
-            </div>
+          <div className="flex items-center space-x-4 ">
+            <Link href="/doctor/profile?section=availability">
+              <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
+                <Calendar className="w-4 h-4 mr-2 " />
+                 Update Availability
+              </Button>
+            </Link>
+          </div>
           </div>
 
           <Tabs

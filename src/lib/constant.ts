@@ -122,24 +122,68 @@ export const testimonials = [
 ];
 
 
-    export const faqs = [
-    {
-      question: "How much does a doctor visit with MedicsOnline cost?",
-      answer: "With insurance, you pay your copay based on your plan. We accept most plans, including Medicare. Without insurance, online doctor visits are $129. You can become a MedicsOnline member and pay $44/visit. Membership is $55 for three months and $180 for a yearly membership."
-    },
-    {
-      question: "Do you accept health insurance?",
-      answer: "Yes, we accept most major health insurance plans including Medicare, BlueCross BlueShield, Aetna, United Healthcare, Cigna, Humana, and many others. We also accept FSA and HSA payments."
-    },
-    {
-      question: "What conditions can MedicsOnline doctors treat?",
-      answer: "Our doctors can treat a wide range of conditions including cold and flu symptoms, allergies, skin conditions, mental health concerns, chronic condition management, and much more through virtual consultations."
-    },
-    {
-      question: "How quickly can I see a doctor?",
-      answer: "Many of our doctors are available for same-day appointments, and some offer immediate consultations. You can book appointments that fit your schedule, often within hours of your request."
-    }
-  ];
+export const faqs = [
+  {
+    question: "What is MedicsOnline and how does it work?",
+    answer:
+      "MedicsOnline is a digital clinic that connects you with licensed Nigerian doctors for secure video or voice consultations. You create an account, choose a doctor and time that works for you, pay securely, and join your appointment from your phone or laptop. After the consultation, you can receive prescriptions, notes, and follow-up advice in the app.",
+  },
+  {
+    question: "Where is MedicsOnline available?",
+    answer:
+      "MedicsOnline is designed for people living in Nigeria. You can book from anywhere in the country as long as you have a stable internet connection and a smartphone or computer. Some services, like prescriptions or lab referrals, may depend on the pharmacies and labs available in your city.",
+  },
+  {
+    question: "How do I book an appointment?",
+    answer:
+      "Sign up or log in, browse the list of doctors, select your preferred specialist, pick an available date and time, and confirm by making payment. We will send you reminders before your consultation starts, and you can join directly from your dashboard at the scheduled time.",
+  },
+  {
+    question: "What types of consultations can I have?",
+    answer:
+      "You can speak with doctors via HD video or clear voice calls on MedicsOnline. Video is recommended when the doctor needs to visually assess symptoms, while voice calls are suitable for follow-ups or simple questions. The available options for each appointment are shown during booking.",
+  },
+  {
+    question: "What conditions can MedicsOnline doctors treat?",
+    answer:
+      "Our doctors handle many everyday and chronic health issues such as fever, malaria, respiratory infections, skin problems, allergies, women’s and men’s health concerns, children’s health issues, mental health check-ins, and long-term condition reviews. If your case requires in-person care or emergency attention, the doctor will guide you on the next steps.",
+  },
+  {
+    question: "Can I use MedicsOnline in an emergency?",
+    answer:
+      "No. MedicsOnline is not an emergency service. If you or someone around you has chest pain, difficulty breathing, severe bleeding, sudden weakness, loss of consciousness, or any life-threatening symptoms, please go to the nearest emergency room or call your local emergency number immediately before using the app.",
+  },
+  {
+    question: "Are MedicsOnline doctors licensed and verified?",
+    answer:
+      "Yes. Every doctor on MedicsOnline is a licensed medical professional registered in Nigeria. We verify their credentials, experience, and, where applicable, specialist training before they can consult with patients on the platform.",
+  },
+  {
+    question: "How much do consultations cost and how do I pay?",
+    answer:
+      "Consultation fees depend on the doctor’s specialty and experience. You will see the exact amount before you confirm your booking. Payments are processed securely online through our local payment partners, so you can pay with Nigerian cards and supported bank channels.",
+  },
+  {
+    question: "Do you work with HMOs or health insurance?",
+    answer:
+      "Right now, MedicsOnline focuses on direct, out-of-pocket payments so that anyone can quickly access care. We are actively working on partnerships with HMOs and insurers, and when they become available, we will clearly show supported plans during booking.",
+  },
+  {
+    question: "Can MedicsOnline doctors prescribe medicines and lab tests?",
+    answer:
+      "Yes, when it is medically appropriate, doctors can issue prescriptions and recommend lab tests after your consultation. You can take the prescription or lab request to a trusted pharmacy or diagnostic center near you. Controlled drugs and some medications may not be prescribed through telemedicine and will require in-person evaluation.",
+  },
+  {
+    question: "How is my medical information stored and protected?",
+    answer:
+      "We take privacy and security seriously. Your health records and consultation notes are stored in secure cloud infrastructure, and access is restricted to you and the clinicians involved in your care. We do not share your personal medical details with third parties without your consent, except when required by law.",
+  },
+  {
+    question: "Can I reschedule or cancel my appointment?",
+    answer:
+      "Yes, you can manage your bookings from your MedicsOnline dashboard. Each doctor sets their own policies for how close to the appointment time you can reschedule or cancel, and whether any fees apply. These details are shown before you confirm your booking.",
+  },
+];
 
   export const trustLogos = [
     "Business Insider", "CBS News", "CNBC", "Forbes", "Fortune", "Fox Business",

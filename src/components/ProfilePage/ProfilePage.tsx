@@ -100,6 +100,17 @@ const ProfilePage = ({ userType }: ProfileProps) => {
   }, [fetchProfile]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const section = params.get("section");
+    if (!section) return;
+    const validIds = new Set(sidebarItems.map((item) => item.id));
+    if (validIds.has(section)) {
+      setActiveSection(section);
+    }
+  }, []);
+
+  useEffect(() => {
     if (user) {
       setFormData({
         name: user.name || "",

@@ -1,6 +1,19 @@
 import { supabase } from "@/lib/supabase/client";
 import { create } from "zustand";
 
+const calculateAge = (dob: string | null): number | undefined => {
+  if (!dob) return undefined;
+  const birth = new Date(dob);
+  if (Number.isNaN(birth.getTime())) return undefined;
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDiff = now.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age >= 0 ? age : undefined;
+};
+
 export interface Appointment {
   _id: string;
   doctorId: any;
@@ -144,7 +157,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         profileImage: p.profile_image,
         hospitalInfo: p.hospital_info,
         specialization: p.specialization,
-        age: p.age,
+        age: typeof p.age === 'number' && p.age > 0 ? p.age : calculateAge(p.dob ?? null),
       } : undefined;
       const docMap = new Map((docs || []).map((d: any) => [d.id, toPerson(d)]));
       const patMap = new Map((pats || []).map((p: any) => [p.id, toPerson(p)]));
@@ -202,7 +215,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         profileImage: p.profile_image,
         hospitalInfo: p.hospital_info,
         specialization: p.specialization,
-        age: p.age,
+        age: typeof p.age === 'number' && p.age > 0 ? p.age : calculateAge(p.dob ?? null),
       } : undefined;
       const { data: pay } = await supabase.from('payments').select('status,amount').eq('appointment_id', r.id).maybeSingle();
 

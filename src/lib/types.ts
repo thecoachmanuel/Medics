@@ -159,6 +159,7 @@ export interface DoctorFilters {
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+  includeUnverified?: boolean;
 }
 
 export type PaymentStatus = 'success' | 'pending' | 'failed' | 'refunded' | 'initiated';

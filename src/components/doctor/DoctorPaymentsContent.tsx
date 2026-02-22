@@ -6,7 +6,8 @@ import { PaymentFilters, PaymentStatus } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Calendar, Download, Search, SlidersHorizontal, Users } from "lucide-react";
+import { Calendar, Download, Search, SlidersHorizontal } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 const statusColor = (s: PaymentStatus) =>
   s === "success"
@@ -23,6 +24,10 @@ const currency = (n: number, cur: string) =>
 export default function DoctorPaymentsContent() {
   const { payments, fetchPayments, loading } = usePaymentStore();
   const [filters, setFilters] = useState<PaymentFilters>({ sortBy: "created_at", sortOrder: "desc" });
+  const [payoutAmount, setPayoutAmount] = useState("");
+  const [payoutNote, setPayoutNote] = useState("");
+  const [payoutSubmitting, setPayoutSubmitting] = useState(false);
+  const [payoutMessage, setPayoutMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPayments("doctor", filters);
@@ -47,6 +52,35 @@ export default function DoctorPaymentsContent() {
     a.download = `doctor_payments_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const submitPayoutRequest = async () => {
+    setPayoutMessage(null);
+    const amountValue = parseInt(payoutAmount, 10);
+    if (Number.isNaN(amountValue) || amountValue <= 0) {
+      setPayoutMessage("Enter a valid payout amount.");
+      return;
+    }
+    setPayoutSubmitting(true);
+    try {
+      const { data: session } = await supabase.auth.getUser();
+      const uid = session.user?.id;
+      if (!uid) throw new Error("Not authenticated");
+      const { error } = await supabase.from("doctor_payout_requests").insert({
+        doctor_id: uid,
+        amount: amountValue,
+        note: payoutNote || null,
+        status: "pending",
+      });
+      if (error) throw error;
+      setPayoutMessage("Payout request submitted to admin.");
+      setPayoutAmount("");
+      setPayoutNote("");
+    } catch (error: any) {
+      setPayoutMessage(error.message || "Unable to submit payout request.");
+    } finally {
+      setPayoutSubmitting(false);
+    }
   };
 
   return (
@@ -146,29 +180,66 @@ export default function DoctorPaymentsContent() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Total records</span>
-                  <span className="font-semibold">{payments.length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Paid total</span>
-                  <span className="font-semibold">{currency(totals.paid, "NGN")}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Pending total</span>
-                  <span className="font-semibold">{currency(totals.pending, "NGN")}</span>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Total records</span>
+                    <span className="font-semibold">{payments.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Paid total</span>
+                    <span className="font-semibold">{currency(totals.paid, "NGN")}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Pending total</span>
+                    <span className="font-semibold">{currency(totals.pending, "NGN")}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Request Payout</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-sm text-gray-600">Amount (NGN)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      className="w-full border rounded px-3 py-2"
+                      value={payoutAmount}
+                      onChange={(e) => setPayoutAmount(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-gray-600">Notes for admin</label>
+                    <textarea
+                      className="w-full border rounded px-3 py-2 min-h-[72px]"
+                      value={payoutNote}
+                      onChange={(e) => setPayoutNote(e.target.value)}
+                      placeholder="Include account or payout details if needed."
+                    />
+                  </div>
+                  {payoutMessage && <p className="text-xs text-gray-600">{payoutMessage}</p>}
+                  <Button
+                    type="button"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                    onClick={submitPayoutRequest}
+                    disabled={payoutSubmitting}
+                  >
+                    {payoutSubmitting ? "Submitting request..." : "Submit payout request"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
     </>
   );
 }
-
