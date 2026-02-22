@@ -1,5 +1,6 @@
 import AdminDashboardContent from "@/components/admin/AdminDashboardContent";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
+import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { getServiceSupabase } from "@/lib/supabase/service";
 
 const formatMonth = (date: Date): string => {
@@ -87,7 +88,10 @@ export default async function AdminDashboardPage() {
 
   return (
     <>
-      <AdminAutoRefresh intervalMs={300} />
+      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin" defaultEnabled={true} />
+      <div className="flex justify-end px-4 sm:px-6 pb-2">
+        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin" />
+      </div>
       <AdminDashboardContent
         stats={{ totalPatients, totalDoctors, totalAppointments, totalRevenue }}
         monthlyRevenue={monthlyRevenue}

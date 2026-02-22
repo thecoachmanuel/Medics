@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
+import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { updateDoctorAdminStatus, DoctorAdminAction } from "@/actions/admin-actions";
 import Link from "next/link";
 
@@ -74,12 +75,13 @@ export default async function AdminDoctorsPage(props: {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} />
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-900">Doctors</h2>
-        <p className="text-sm text-gray-600">
-          Approve new doctors and review their status on MedicsOnline.
-        </p>
+      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin/doctors" defaultEnabled={true} />
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900">Doctors</h2>
+          <p className="text-sm text-gray-600">Approve new doctors and review their status on MedicsOnline.</p>
+        </div>
+        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/doctors" />
       </div>
 
       <Card>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
+import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -238,20 +239,18 @@ export default async function AdminDoctorDetailPage(props: {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} />
+      <AdminAutoRefresh intervalMs={300} storageKey={`admin_auto_refresh:/admin/doctors/${profile.id}`} defaultEnabled={true} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Doctor details</h2>
-          <p className="text-sm text-gray-600">
-            Review performance, revenue, and status history for this doctor.
-          </p>
+          <p className="text-sm text-gray-600">Review performance, revenue, and status history for this doctor.</p>
         </div>
-        <Link
-          href="/admin/doctors"
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Back to doctors
-        </Link>
+        <div className="flex items-center gap-3">
+          <AdminRefreshToggle storageKey={`admin_auto_refresh:/admin/doctors/${profile.id}`} />
+          <Link href="/admin/doctors" className="text-sm text-blue-600 hover:underline">
+            Back to doctors
+          </Link>
+        </div>
       </div>
 
       <Card>

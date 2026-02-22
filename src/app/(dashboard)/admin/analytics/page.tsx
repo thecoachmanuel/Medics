@@ -1,6 +1,7 @@
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
+import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 
 interface RatingRow {
   doctor_id: string;
@@ -63,12 +64,13 @@ export default async function AdminAnalyticsPage() {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} />
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-900">Analytics & Reviews</h2>
-        <p className="text-sm text-gray-600">
-          Monitor doctor ratings and patient feedback across the MedicsOnline platform.
-        </p>
+      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin/analytics" defaultEnabled={true} />
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900">Analytics & Reviews</h2>
+          <p className="text-sm text-gray-600">Monitor doctor ratings and patient feedback across the MedicsOnline platform.</p>
+        </div>
+        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/analytics" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

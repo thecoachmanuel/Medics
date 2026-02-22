@@ -2,6 +2,7 @@ import { getServiceSupabase } from "@/lib/supabase/service";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
+import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { updatePayoutStatus } from "@/actions/admin-actions";
 import ToastNotice from "@/components/admin/ToastNotice";
 import { redirect } from "next/navigation";
@@ -97,13 +98,14 @@ export default async function AdminPaymentsPage(props: { searchParams?: Promise<
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} />
+      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin/payments" defaultEnabled={true} />
       {notice ? <ToastNotice message={notice} /> : null}
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-900">Payments & Payouts</h2>
-        <p className="text-sm text-gray-600">
-          Review doctor payout requests and track outgoing payments.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900">Payments & Payouts</h2>
+          <p className="text-sm text-gray-600">Review doctor payout requests and track outgoing payments.</p>
+        </div>
+        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/payments" />
       </div>
 
       <Card>
