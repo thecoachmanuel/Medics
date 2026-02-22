@@ -52,7 +52,7 @@ export default async function AdminUsersPage(props: {
   const supabase = getServiceSupabase();
   let query = supabase
     .from("profiles")
-    .select("id,name,email,phone,gender,age,dob,blood_group,type,is_blocked,created_at,profile_image")
+    .select("*")
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -82,7 +82,7 @@ export default async function AdminUsersPage(props: {
     return q;
   })();
 
-  const [{ data }, totalAllRes, totalDoctorsRes, totalPatientsRes, totalFilteredRes] = await Promise.all([
+  const [listRes, totalAllRes, totalDoctorsRes, totalPatientsRes, totalFilteredRes] = await Promise.all([
     query,
     baseCount,
     doctorCountQ,
@@ -90,7 +90,8 @@ export default async function AdminUsersPage(props: {
     filteredCountQ,
   ]);
 
-  const rows = (data || []) as UserRow[];
+  const rows = ((listRes as any)?.data || []) as UserRow[];
+  const loadError = (listRes as any)?.error as { message?: string } | null;
 
   const users = rows;
 
@@ -182,6 +183,9 @@ export default async function AdminUsersPage(props: {
           <CardTitle className="text-sm font-medium text-gray-700">User list</CardTitle>
         </CardHeader>
         <CardContent>
+          {loadError ? (
+            <p className="mb-3 text-sm text-red-600">Failed to load users from database.</p>
+          ) : null}
           <div className="mb-3 flex justify-end">
             <a
               className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
