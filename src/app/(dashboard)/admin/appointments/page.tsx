@@ -20,15 +20,16 @@ interface PersonRow {
 }
 
 type AdminAppointmentsPageProps = {
-  searchParams?: {
+  searchParams: Promise<{
     q?: string;
     status?: string;
-  };
+  }>;
 };
 
-export default async function AdminAppointmentsPage({
-  searchParams,
-}: AdminAppointmentsPageProps) {
+export default async function AdminAppointmentsPage(
+  props: AdminAppointmentsPageProps,
+) {
+  const searchParams = (await props.searchParams) || {};
   const supabase = getServiceSupabase();
 
   const { data: appointmentsData } = await supabase
@@ -61,10 +62,9 @@ export default async function AdminAppointmentsPage({
     patientMap.set(p.id, p.name || "Patient");
   });
 
-  const query =
-    typeof searchParams?.q === "string" ? searchParams.q.trim().toLowerCase() : "";
+  const query = typeof searchParams.q === "string" ? searchParams.q.trim().toLowerCase() : "";
   const statusFilter =
-    typeof searchParams?.status === "string" && searchParams.status !== "all"
+    typeof searchParams.status === "string" && searchParams.status !== "all"
       ? searchParams.status
       : undefined;
 
@@ -143,13 +143,13 @@ export default async function AdminAppointmentsPage({
                   type="text"
                   name="q"
                   placeholder="Search by patient, doctor, or ID"
-                  defaultValue={typeof searchParams?.q === "string" ? searchParams.q : ""}
+                  defaultValue={typeof searchParams.q === "string" ? searchParams.q : ""}
                   className="w-full md:w-64 rounded-md border border-gray-300 px-2 py-1"
                 />
                 <select
                   name="status"
                   defaultValue={
-                    typeof searchParams?.status === "string"
+                    typeof searchParams.status === "string"
                       ? searchParams.status
                       : "all"
                   }
