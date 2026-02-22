@@ -18,6 +18,7 @@ interface AppointmentRow {
 interface PersonRow {
   id: string;
   name: string | null;
+  email?: string | null;
 }
 
 type AdminAppointmentsPageProps = {
@@ -46,21 +47,21 @@ export default async function AdminAppointmentsPage(
 
   const [doctorProfilesResult, patientProfilesResult] = await Promise.all([
     doctorIds.length
-      ? supabase.from("profiles").select("id,name").in("id", doctorIds)
+      ? supabase.from("profiles").select("id,name,email").in("id", doctorIds)
       : Promise.resolve({ data: [] as PersonRow[] } as any),
     patientIds.length
-      ? supabase.from("profiles").select("id,name").in("id", patientIds)
+      ? supabase.from("profiles").select("id,name,email").in("id", patientIds)
       : Promise.resolve({ data: [] as PersonRow[] } as any),
   ]);
 
-  const doctorMap = new Map<string, string>();
+  const doctorMap = new Map<string, { name: string; email: string }>();
   ((doctorProfilesResult.data || []) as PersonRow[]).forEach((d) => {
-    doctorMap.set(d.id, d.name || "Doctor");
+    doctorMap.set(d.id, { name: d.name || "Doctor", email: d.email || "" });
   });
 
-  const patientMap = new Map<string, string>();
+  const patientMap = new Map<string, { name: string; email: string }>();
   ((patientProfilesResult.data || []) as PersonRow[]).forEach((p) => {
-    patientMap.set(p.id, p.name || "Patient");
+    patientMap.set(p.id, { name: p.name || "Patient", email: p.email || "" });
   });
 
   const query = typeof searchParams.q === "string" ? searchParams.q.trim().toLowerCase() : "";
@@ -70,10 +71,19 @@ export default async function AdminAppointmentsPage(
       : undefined;
 
   const filteredRows = rows.filter((r) => {
-    const doctorName = (doctorMap.get(r.doctor_id) || "").toLowerCase();
-    const patientName = (patientMap.get(r.patient_id) || "").toLowerCase();
+    const d = doctorMap.get(r.doctor_id);
+    const p = patientMap.get(r.patient_id);
+    const doctorName = (d?.name || "").toLowerCase();
+    const doctorEmail = (d?.email || "").toLowerCase();
+    const patientName = (p?.name || "").toLowerCase();
+    const patientEmail = (p?.email || "").toLowerCase();
     const matchesQuery =
-      !query || doctorName.includes(query) || patientName.includes(query) || r.id.toLowerCase().includes(query);
+      !query ||
+      doctorName.includes(query) ||
+      doctorEmail.includes(query) ||
+      patientName.includes(query) ||
+      patientEmail.includes(query) ||
+      r.id.toLowerCase().includes(query);
     const matchesStatus = !statusFilter || r.status === statusFilter;
     return matchesQuery && matchesStatus;
   });
@@ -184,22 +194,22 @@ export default async function AdminAppointmentsPage(
           </div>
           <div className="mb-6">
             <form action={handleCreate} className="grid grid-cols-1 md:grid-cols-7 gap-2">
-              <select name="patientId" className="border rounded px-3 py-2 text-sm">
+              <select name="patientId" required className="border rounded px-3 py-2 text-sm">
                 <option value="">Select patient</option>
                 {(allPatients as PersonRow[] | null || []).map((p) => (
                   <option key={p.id} value={p.id}>{p.name || p.id}</option>
                 ))}
               </select>
-              <select name="doctorId" className="border rounded px-3 py-2 text-sm">
+              <select name="doctorId" required className="border rounded px-3 py-2 text-sm">
                 <option value="">Select doctor</option>
                 {(allDoctors as PersonRow[] | null || []).map((d) => (
                   <option key={d.id} value={d.id}>{d.name || d.id}</option>
                 ))}
               </select>
-              <input type="date" name="date" className="border rounded px-3 py-2 text-sm" />
-              <input type="datetime-local" name="startIso" className="border rounded px-3 py-2 text-sm" />
-              <input type="datetime-local" name="endIso" className="border rounded px-3 py-2 text-sm" />
-              <select name="type" className="border rounded px-3 py-2 text-sm">
+              <input type="date" name="date" required className="border rounded px-3 py-2 text-sm" />
+              <input type="datetime-local" name="startIso" required step={60} title="Choose start time" className="border rounded px-3 py-2 text-sm" />
+              <input type="datetime-local" name="endIso" required step={60} title="End must be after start" className="border rounded px-3 py-2 text-sm" />
+              <select name="type" required className="border rounded px-3 py-2 text-sm">
                 <option value="Video Consultation">Video Consultation</option>
                 <option value="Phone Consultation">Phone Consultation</option>
               </select>
@@ -286,10 +296,16 @@ export default async function AdminAppointmentsPage(
                     return (
                       <tr key={r.id} className="border-b last:border-0">
                         <td className="px-3 py-2 text-gray-900">
-                          {patientMap.get(r.patient_id) || "Patient"}
+                          <div>{patientMap.get(r.patient_id)?.name || "Patient"}</div>
+                          {patientMap.get(r.patient_id)?.email ? (
+                            <div className="text-xs text-gray-500">{patientMap.get(r.patient_id)?.email}</div>
+                          ) : null}
                         </td>
                         <td className="px-3 py-2 text-gray-900">
-                          {doctorMap.get(r.doctor_id) || "Doctor"}
+                          <div>{doctorMap.get(r.doctor_id)?.name || "Doctor"}</div>
+                          {doctorMap.get(r.doctor_id)?.email ? (
+                            <div className="text-xs text-gray-500">{doctorMap.get(r.doctor_id)?.email}</div>
+                          ) : null}
                         </td>
                         <td className="px-3 py-2 text-gray-700">{dateLabel}</td>
                         <td className="px-3 py-2 text-gray-700">{timeLabel}</td>
@@ -313,8 +329,8 @@ export default async function AdminAppointmentsPage(
                               <input type="hidden" name="id" value={r.id} />
                               <input type="hidden" name="doctorId" value={r.doctor_id} />
                               <input type="hidden" name="patientId" value={r.patient_id} />
-                              <input type="datetime-local" name="startIso" className="border rounded px-2 py-0.5 text-xs" />
-                              <input type="datetime-local" name="endIso" className="border rounded px-2 py-0.5 text-xs" />
+                              <input type="datetime-local" name="startIso" required step={60} title="New start time" className="border rounded px-2 py-0.5 text-xs" />
+                              <input type="datetime-local" name="endIso" required step={60} title="End must be after start" className="border rounded px-2 py-0.5 text-xs" />
                               <button className="rounded border px-2 py-0.5 text-xs">Reschedule</button>
                             </form>
                           </div>
