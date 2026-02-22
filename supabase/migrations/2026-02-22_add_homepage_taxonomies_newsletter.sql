@@ -70,11 +70,23 @@ alter table public.doctor_taxonomies enable row level security;
 alter table public.newsletter_subscribers enable row level security;
 
 -- Allow public read of homepage content (marketing site needs to fetch it)
-create policy if not exists "homepage_content_read_public"
-  on public.homepage_content
-  for select
-  to public
-  using (true);
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'homepage_content'
+      and policyname = 'homepage_content_read_public'
+  ) then
+    execute $$
+      create policy "homepage_content_read_public"
+      on public.homepage_content
+      for select
+      to public
+      using (true);
+    $$;
+  end if;
+end
+$$;
 
 -- No public policies for doctor_taxonomies and newsletter_subscribers; service role will access them.
-
