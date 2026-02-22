@@ -68,11 +68,6 @@ const DoctorDashboardContent = () => {
         user.category &&
         user.category.length > 0,
     );
-
-    if (!hasCompletedProfile) {
-      router.push("/onboarding/doctor");
-      return;
-    }
   }, [isAuthenticated, user, router]);
 
   useEffect(() => {
