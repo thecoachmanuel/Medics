@@ -1,6 +1,7 @@
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import { updateDoctorAdminStatus, DoctorAdminAction } from "@/actions/admin-actions";
 import Link from "next/link";
@@ -12,20 +13,56 @@ interface DoctorRow {
   specialization: string | null;
   is_verified: boolean | null;
   is_suspended: boolean | null;
+  is_declined: boolean | null;
   created_at: string;
 }
 
-export default async function AdminDoctorsPage() {
+export default async function AdminDoctorsPage(props: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
+  const searchParams = (await props.searchParams) || {};
+  const search = (searchParams.q || "").trim().toLowerCase();
+  const statusParam = (searchParams.status || "all").toLowerCase();
+  const statusFilter: "all" | "pending" | "approved" | "suspended" | "declined" =
+    statusParam === "pending" ||
+    statusParam === "approved" ||
+    statusParam === "suspended" ||
+    statusParam === "declined"
+      ? (statusParam as "pending" | "approved" | "suspended" | "declined")
+      : "all";
+
   const supabase = getServiceSupabase();
   const { data } = await supabase
     .from("profiles")
-    .select("id,name,email,specialization,is_verified,is_suspended,created_at")
+    .select("id,name,email,specialization,is_verified,is_suspended,is_declined,created_at")
     .eq("type", "doctor")
     .order("created_at", { ascending: false })
     .limit(200);
 
   const doctors = (data || []) as DoctorRow[];
-  const pendingCount = doctors.filter((d) => !d.is_verified).length;
+
+  const classified = doctors.map((d) => {
+    const isVerified = !!d.is_verified;
+    const isSuspended = !!d.is_suspended;
+    const isDeclined = !!d.is_declined;
+
+    let status: "pending" | "approved" | "suspended" | "declined" = "pending";
+    if (isDeclined) status = "declined";
+    else if (isSuspended) status = "suspended";
+    else if (isVerified) status = "approved";
+
+    return { ...d, isVerified, isSuspended, isDeclined, status };
+  });
+
+  const filteredDoctors = classified.filter((d) => {
+    if (statusFilter !== "all" && d.status !== statusFilter) return false;
+    if (!search) return true;
+    const name = (d.name || "").toLowerCase();
+    const email = (d.email || "").toLowerCase();
+    return name.includes(search) || email.includes(search);
+  });
+
+  const pendingCount = classified.filter((d) => d.status === "pending").length;
 
   async function handleStatus(formData: FormData) {
     "use server";
@@ -70,8 +107,46 @@ export default async function AdminDoctorsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {doctors.length === 0 ? (
-            <p className="text-sm text-gray-500">No doctors registered yet.</p>
+          <div className="mb-4 flex flex-col md:flex-row md:items-center gap-3">
+            <form
+              className="flex flex-1 flex-col md:flex-row gap-3"
+              action="/admin/doctors"
+              method="get"
+            >
+              <Input
+                name="q"
+                placeholder="Search by name or email"
+                defaultValue={searchParams.q || ""}
+                className="md:max-w-xs"
+              />
+              <select
+                name="status"
+                defaultValue={statusFilter}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="suspended">Suspended</option>
+                <option value="declined">Declined</option>
+              </select>
+              <div className="flex gap-2">
+                <Button type="submit" size="sm">
+                  Apply
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  asChild
+                >
+                  <a href="/admin/doctors">Reset</a>
+                </Button>
+              </div>
+            </form>
+          </div>
+          {filteredDoctors.length === 0 ? (
+            <p className="text-sm text-gray-500">No doctors found for this filter.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -86,16 +161,16 @@ export default async function AdminDoctorsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {doctors.map((d) => {
-                    const isVerified = !!d.is_verified;
-                    const isSuspended = !!d.is_suspended;
-
+                  {filteredDoctors.map((d) => {
                     let statusLabel = "Pending";
                     let statusClass = "bg-yellow-100 text-yellow-800";
-                    if (isSuspended) {
+                    if (d.status === "declined") {
+                      statusLabel = "Declined";
+                      statusClass = "bg-red-100 text-red-800";
+                    } else if (d.status === "suspended") {
                       statusLabel = "Suspended";
                       statusClass = "bg-red-100 text-red-800";
-                    } else if (isVerified) {
+                    } else if (d.status === "approved") {
                       statusLabel = "Approved";
                       statusClass = "bg-green-100 text-green-800";
                     }
@@ -104,11 +179,11 @@ export default async function AdminDoctorsPage() {
                     let actionLabel = "Approve";
                     let actionVariant: "default" | "outline" = "default";
 
-                    if (!isVerified) {
+                    if (d.status === "pending" || d.status === "declined") {
                       action = "approve";
                       actionLabel = "Approve";
                       actionVariant = "default";
-                    } else if (isSuspended) {
+                    } else if (d.status === "suspended") {
                       action = "unsuspend";
                       actionLabel = "Unsuspend";
                       actionVariant = "outline";

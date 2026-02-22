@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/service";
 
-const WINDOW_MINUTES = 30;
+type ReminderWindow = "24h" | "1h" | "15m";
+
+const windowConfigMap: Record<ReminderWindow, { windowMinutes: number; flagField: string }> = {
+  "24h": { windowMinutes: 24 * 60, flagField: "reminder_24h_sent" },
+  "1h": { windowMinutes: 60, flagField: "reminder_1h_sent" },
+  "15m": { windowMinutes: 15, flagField: "reminder_15m_sent" },
+};
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization") || "";
@@ -16,15 +22,21 @@ export async function GET(request: NextRequest) {
 
   const supabase = getServiceSupabase();
 
+  const url = new URL(request.url);
+  const windowParam = (url.searchParams.get("window") as ReminderWindow | null) || "15m";
+  const config = windowConfigMap[windowParam] ?? windowConfigMap["15m"];
+
   const now = new Date();
-  const upper = new Date(now.getTime() + WINDOW_MINUTES * 60 * 1000);
+  const upper = new Date(now.getTime() + config.windowMinutes * 60 * 1000);
 
   const { data: rows, error } = await supabase
     .from("appointments")
-    .select("id,doctor_id,patient_id,slot_start_iso,status,email_reminder_sent,sms_reminder_sent")
+    .select(
+      "id,doctor_id,patient_id,slot_start_iso,status,email_reminder_sent,sms_reminder_sent," +
+        config.flagField,
+    )
     .in("status", ["Scheduled", "In Progress"])
-    .eq("email_reminder_sent", false)
-    .or("sms_reminder_sent.eq.false")
+    .eq(config.flagField, false)
     .gte("slot_start_iso", now.toISOString())
     .lte("slot_start_iso", upper.toISOString());
 
@@ -32,7 +44,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to load appointments" }, { status: 500 });
   }
 
-  const appointments = rows || [];
+  const appointments = ((rows || []) as any[]);
   if (appointments.length === 0) {
     return NextResponse.json({ success: true, processed: 0 });
   }
@@ -58,7 +70,7 @@ export async function GET(request: NextRequest) {
   let emailSentCount = 0;
   let smsSentCount = 0;
 
-  for (const appt of appointments as any[]) {
+  for (const appt of appointments) {
     const doctorProfile = profileMap.get(appt.doctor_id as string);
     const patientProfile = profileMap.get(appt.patient_id as string);
 
@@ -163,6 +175,7 @@ export async function GET(request: NextRequest) {
     await supabase
       .from("appointments")
       .update({
+        [config.flagField]: true,
         email_reminder_sent: true,
         sms_reminder_sent: true,
       })
@@ -176,4 +189,3 @@ export async function GET(request: NextRequest) {
     smsSent: smsSentCount,
   });
 }
-

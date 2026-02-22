@@ -89,21 +89,28 @@ export async function createAnnouncement(input: CreateAnnouncementInput): Promis
   return { success: true };
 }
 
-export type DoctorAdminAction = "approve" | "suspend" | "unsuspend";
+export type DoctorAdminAction = "approve" | "suspend" | "unsuspend" | "decline";
 
 export async function updateDoctorAdminStatus(
   doctorId: string,
   action: DoctorAdminAction,
+  note?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = getServiceSupabase();
   let patch: Record<string, unknown> = {};
 
   if (action === "approve") {
-    patch = { is_verified: true, is_suspended: false };
+    patch = { is_verified: true, is_suspended: false, is_declined: false };
   } else if (action === "suspend") {
-    patch = { is_suspended: true };
+    patch = { is_suspended: true, is_declined: false };
   } else if (action === "unsuspend") {
     patch = { is_suspended: false };
+  } else if (action === "decline") {
+    patch = { is_verified: false, is_suspended: false, is_declined: true };
+  }
+
+  if (note !== undefined) {
+    patch.admin_review_note = note || null;
   }
 
   const { error } = await supabase.from("profiles").update(patch).eq("id", doctorId);
@@ -122,14 +129,20 @@ export async function updateDoctorAdminStatus(
   } else if (action === "unsuspend") {
     title = "Your account has been reactivated";
     message = "Your doctor account has been reactivated. You can now receive new bookings again.";
+  } else if (action === "decline") {
+    title = "Your profile has been declined";
+    message = "Your MedicsOnline doctor profile has been declined. Please review the admin note and update your details.";
   }
 
   if (title && message) {
+    const finalMessage = note
+      ? `${message} Admin note: ${note}`
+      : message;
     await supabase.from("notifications").insert({
       user_id: doctorId,
       role: "doctor",
       title,
-      message,
+      message: finalMessage,
     });
   }
 

@@ -39,7 +39,10 @@ export interface User {
   type: "doctor" | "patient";
   phone?: string;
   profileImage?: string;
-  isVerified:boolean
+  isVerified: boolean;
+  isSuspended?: boolean;
+  isDeclined?: boolean;
+  adminReviewNote?: string;
 
   // Patient fields
   dob?: string;
@@ -136,6 +139,8 @@ export interface Doctor {
   profileImage: string;
   isVerified: boolean;
   isSuspended?: boolean;
+  isDeclined?: boolean;
+  adminReviewNote?: string;
   createdAt: Date;
   updatedAt: Date;
   averageRating?: number;

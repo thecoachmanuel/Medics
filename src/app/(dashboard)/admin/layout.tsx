@@ -20,7 +20,7 @@ import {
 
 const items = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/admin/users", icon: Users2, label: "Patients" },
+  { href: "/admin/users", icon: Users2, label: "Users" },
   { href: "/admin/doctors", icon: Stethoscope, label: "Doctors" },
   { href: "/admin/appointments", icon: ClipboardList, label: "Appointments" },
   { href: "/admin/payments", icon: CreditCard, label: "Payments" },

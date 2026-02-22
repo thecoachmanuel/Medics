@@ -4,6 +4,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { updateDoctorAdminStatus, DoctorAdminAction } from "@/actions/admin-actions";
 
 interface DoctorProfileRow {
   id: string;
@@ -13,8 +16,12 @@ interface DoctorProfileRow {
   hospital_info: { name?: string | null; address?: string | null; city?: string | null } | null;
   is_verified: boolean | null;
   is_suspended: boolean | null;
+  is_declined: boolean | null;
   fees: number | null;
   experience: number | null;
+  category: string[] | null;
+  about: string | null;
+  admin_review_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -47,7 +54,7 @@ export default async function AdminDoctorDetailPage(props: {
   const { data: doctor } = await supabase
     .from("profiles")
     .select(
-      "id,name,email,specialization,hospital_info,is_verified,is_suspended,fees,experience,created_at,updated_at",
+      "id,name,email,specialization,hospital_info,is_verified,is_suspended,is_declined,fees,experience,category,about,admin_review_note,created_at,updated_at",
     )
     .eq("id", id)
     .eq("type", "doctor")
@@ -188,6 +195,7 @@ export default async function AdminDoctorDetailPage(props: {
       "Your profile has been approved",
       "Your account has been suspended",
       "Your account has been reactivated",
+      "Your profile has been declined",
     ])
     .order("created_at", { ascending: false })
     .limit(20);
@@ -196,15 +204,29 @@ export default async function AdminDoctorDetailPage(props: {
 
   const isVerified = !!profile.is_verified;
   const isSuspended = !!profile.is_suspended;
+   const isDeclined = !!profile.is_declined;
 
   let statusLabel = "Pending";
   let statusClass = "bg-yellow-100 text-yellow-800";
-  if (isSuspended) {
+  if (isDeclined) {
+    statusLabel = "Declined";
+    statusClass = "bg-red-100 text-red-800";
+  } else if (isSuspended) {
     statusLabel = "Suspended";
     statusClass = "bg-red-100 text-red-800";
   } else if (isVerified) {
     statusLabel = "Approved";
     statusClass = "bg-green-100 text-green-800";
+  }
+
+  async function handleModeration(formData: FormData) {
+    "use server";
+    const actionRaw = String(formData.get("action") || "");
+    const action = actionRaw as DoctorAdminAction;
+    const noteValue = formData.get("note");
+    const note = typeof noteValue === "string" ? noteValue.trim() : undefined;
+    if (!action) return;
+    await updateDoctorAdminStatus(profile.id, action, note);
   }
 
   return (
@@ -251,6 +273,12 @@ export default async function AdminDoctorDetailPage(props: {
               {profile.specialization || "-"}
             </div>
             <div>
+              <span className="font-semibold mr-1">Healthcare categories:</span>
+              {Array.isArray(profile.category) && profile.category.length > 0
+                ? profile.category.join(", ")
+                : "-"}
+            </div>
+            <div>
               <span className="font-semibold mr-1">Experience:</span>
               {typeof profile.experience === "number" ? `${profile.experience} yrs` : "-"}
             </div>
@@ -269,6 +297,10 @@ export default async function AdminDoctorDetailPage(props: {
               {profile.hospital_info?.city || "-"}
             </div>
           </div>
+          <div className="mt-2">
+            <span className="font-semibold mr-1">About:</span>
+            {profile.about || "-"}
+          </div>
           <div className="flex flex-wrap gap-4 text-xs text-gray-500">
             <div>
               <span className="font-semibold mr-1">Joined:</span>
@@ -279,6 +311,51 @@ export default async function AdminDoctorDetailPage(props: {
               {new Date(profile.updated_at).toLocaleString()}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">
+            Admin moderation
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form action={handleModeration} className="space-y-4 text-sm text-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Status action
+                </label>
+                <select
+                  name="action"
+                  defaultValue={isVerified ? (isSuspended ? "unsuspend" : "suspend") : isDeclined ? "approve" : "approve"}
+                  className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="approve">Approve</option>
+                  <option value="decline">Decline</option>
+                  <option value="suspend">Suspend</option>
+                  <option value="unsuspend">Unsuspend</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="note" className="block text-sm font-medium text-gray-700">
+                  Admin note (visible to doctor)
+                </label>
+                <Textarea
+                  id="note"
+                  name="note"
+                  defaultValue={profile.admin_review_note || ""}
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button type="submit" size="sm">
+                Save moderation
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
 

@@ -44,7 +44,7 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
     try {
       let query = supabase.from('profiles').select('*', { count: 'exact' }).eq('type', 'doctor');
       if (!filters.includeUnverified) {
-        query = query.eq('is_verified', true).eq('is_suspended', false);
+        query = query.eq('is_verified', true).eq('is_suspended', false).eq('is_declined', false);
       }
       if (filters.search) {
         query = query.ilike('name', `%${filters.search}%`);
@@ -419,6 +419,10 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
           profileImage: doc?.profile_image,
           specialization: doc?.specialization,
           hospitalInfo: doc?.hospital_info,
+          isVerified: !!doc?.is_verified,
+          isSuspended: !!doc?.is_suspended,
+          isDeclined: !!doc?.is_declined,
+          adminReviewNote: doc?.admin_review_note || undefined,
         },
         stats: {
           totalPatients,

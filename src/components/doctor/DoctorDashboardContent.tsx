@@ -54,8 +54,16 @@ const DoctorDashboardContent = () => {
       }
       return;
     }
-    if (!user.isVerified) {
-      router.push(`/onboarding/${user.type}`);
+    const hasCompletedProfile = Boolean(
+      user.specialization &&
+        user.hospitalInfo?.name &&
+        user.fees &&
+        user.category &&
+        user.category.length > 0,
+    );
+
+    if (!hasCompletedProfile) {
+      router.push("/onboarding/doctor");
     }
   }, [isAuthenticated, user, router]);
 
@@ -157,6 +165,21 @@ const DoctorDashboardContent = () => {
 
   const patientName = currentAppointment?.patientId?.name;
 
+  const doctorStatus = {
+    isVerified: dashboardData?.user?.isVerified ?? user?.isVerified ?? false,
+    isSuspended: dashboardData?.user?.isSuspended ?? false,
+    isDeclined: dashboardData?.user?.isDeclined ?? false,
+    adminReviewNote: dashboardData?.user?.adminReviewNote as string | undefined,
+  };
+
+  const isPendingApproval =
+    !doctorStatus.isVerified &&
+    !doctorStatus.isSuspended &&
+    !doctorStatus.isDeclined;
+
+  const isSuspended = doctorStatus.isSuspended;
+  const isDeclined = doctorStatus.isDeclined;
+
   const statsCards = [
     {
       title: "Total Patients",
@@ -257,6 +280,37 @@ const DoctorDashboardContent = () => {
               </div>
             </div>
           </div>
+
+          {(isPendingApproval || isSuspended || isDeclined) && (
+            <div className="mb-6">
+              <Card className="border border-amber-200 bg-amber-50/80">
+                <CardContent className="py-4 flex flex-col gap-2">
+                  {isPendingApproval && (
+                    <p className="text-sm font-medium text-amber-800">
+                      Your profile has been submitted and is awaiting admin approval.
+                      You will start receiving bookings once your account is approved.
+                    </p>
+                  )}
+                  {isSuspended && (
+                    <p className="text-sm font-medium text-red-800">
+                      Your account is currently suspended. You will not receive new bookings
+                      until an admin re-approves your profile.
+                    </p>
+                  )}
+                  {isDeclined && (
+                    <p className="text-sm font-medium text-red-800">
+                      Your profile has been declined by an admin.
+                    </p>
+                  )}
+                  {doctorStatus.adminReviewNote && (
+                    <p className="text-sm text-gray-800">
+                      Admin note: {doctorStatus.adminReviewNote}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  gap-6 mb-2">
             {statsCards.map((stat, index) => (

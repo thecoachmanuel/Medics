@@ -96,6 +96,9 @@ const DoctorOnboardingForm = () => {
 
   const handleSubmit = async (): Promise<void> => {
     try {
+      if (formData.categories.length === 0) {
+        return;
+      }
       await updateProfile({
         specialization: formData.specialization,
         category: formData.categories,
