@@ -182,6 +182,14 @@ export default async function AdminUsersPage(props: {
           <CardTitle className="text-sm font-medium text-gray-700">User list</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-3 flex justify-end">
+            <a
+              className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
+              href={`/api/admin/users/export?role=${roleFilter}&q=${encodeURIComponent(search)}`}
+            >
+              Export CSV
+            </a>
+          </div>
           <div className="mb-6">
             <form action={handleCreate} className="grid grid-cols-1 md:grid-cols-7 gap-2">
               <select name="new_role" className="border rounded px-3 py-2 text-sm">

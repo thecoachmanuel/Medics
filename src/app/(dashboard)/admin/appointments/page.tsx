@@ -1,7 +1,7 @@
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
-import { adminCreateAppointment, adminUpdateAppointmentStatus } from "@/actions/admin-actions";
+import { adminCreateAppointment, adminUpdateAppointmentStatus, adminRescheduleAppointment } from "@/actions/admin-actions";
 
 interface AppointmentRow {
   id: string;
@@ -116,6 +116,17 @@ export default async function AdminAppointmentsPage(
     await adminUpdateAppointmentStatus(id, status);
   }
 
+  async function handleReschedule(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "");
+    const doctorId = String(formData.get("doctorId") || "");
+    const patientId = String(formData.get("patientId") || "");
+    const startIso = String(formData.get("startIso") || "");
+    const endIso = String(formData.get("endIso") || "");
+    if (!id || !doctorId || !patientId || !startIso || !endIso) return;
+    await adminRescheduleAppointment(id, doctorId, patientId, startIso, endIso);
+  }
+
   return (
     <div className="space-y-4">
       <AdminAutoRefresh />
@@ -163,6 +174,14 @@ export default async function AdminAppointmentsPage(
           <CardTitle className="text-sm font-medium text-gray-700">Appointment list</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-3 flex justify-end">
+            <a
+              className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
+              href={`/api/admin/appointments/export?status=${encodeURIComponent(typeof searchParams.status === "string" ? searchParams.status : 'all')}&q=${encodeURIComponent(typeof searchParams.q === "string" ? searchParams.q : '')}`}
+            >
+              Export CSV
+            </a>
+          </div>
           <div className="mb-6">
             <form action={handleCreate} className="grid grid-cols-1 md:grid-cols-7 gap-2">
               <select name="patientId" className="border rounded px-3 py-2 text-sm">
@@ -289,6 +308,14 @@ export default async function AdminAppointmentsPage(
                               <input type="hidden" name="id" value={r.id} />
                               <input type="hidden" name="status" value="Cancelled" />
                               <button className="rounded border px-2 py-0.5 text-xs">Cancel</button>
+                            </form>
+                            <form action={handleReschedule} className="flex items-center gap-1">
+                              <input type="hidden" name="id" value={r.id} />
+                              <input type="hidden" name="doctorId" value={r.doctor_id} />
+                              <input type="hidden" name="patientId" value={r.patient_id} />
+                              <input type="datetime-local" name="startIso" className="border rounded px-2 py-0.5 text-xs" />
+                              <input type="datetime-local" name="endIso" className="border rounded px-2 py-0.5 text-xs" />
+                              <button className="rounded border px-2 py-0.5 text-xs">Reschedule</button>
                             </form>
                           </div>
                         </td>

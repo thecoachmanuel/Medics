@@ -469,3 +469,67 @@ export async function adminUpdateAppointmentStatus(id: string, status: string): 
   if (error) return { success: false, error: "Unable to update appointment." };
   return { success: true };
 }
+
+export async function adminRescheduleAppointment(
+  id: string,
+  doctorId: string,
+  patientId: string,
+  newStartIso: string,
+  newEndIso: string,
+): Promise<{ success: boolean; error?: string }>{
+  const supabase = getServiceSupabase();
+  if (!id || !doctorId || !patientId || !newStartIso || !newEndIso) return { success: false, error: "Missing fields" };
+
+  const start = new Date(newStartIso);
+  const end = new Date(newEndIso);
+  if (!(start instanceof Date) || Number.isNaN(start.getTime()) || !(end instanceof Date) || Number.isNaN(end.getTime()) || end <= start) {
+    return { success: false, error: "Invalid start/end time" };
+  }
+
+  const dayStart = new Date(start);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const { data: conflicts } = await supabase
+    .from("appointments")
+    .select("id,slot_start_iso,slot_end_iso,status")
+    .eq("doctor_id", doctorId)
+    .neq("id", id)
+    .in("status", ["Scheduled", "In Progress"] as any)
+    .gte("slot_start_iso", dayStart.toISOString())
+    .lt("slot_start_iso", dayEnd.toISOString());
+
+  const hasOverlap = ((conflicts as any[]) || []).some((r) => {
+    const s = new Date(r.slot_start_iso).getTime();
+    const e = new Date(r.slot_end_iso).getTime();
+    return Math.max(s, start.getTime()) < Math.min(e, end.getTime());
+  });
+  if (hasOverlap) {
+    return { success: false, error: "New time overlaps with another appointment for this doctor." };
+  }
+
+  const date = start.toISOString().slice(0, 10);
+  const { error } = await supabase
+    .from("appointments")
+    .update({ date, slot_start_iso: newStartIso, slot_end_iso: newEndIso, status: "Scheduled" })
+    .eq("id", id);
+  if (error) return { success: false, error: "Unable to reschedule appointment." };
+
+  await supabase.from("notifications").insert([
+    {
+      user_id: doctorId,
+      role: "doctor",
+      title: "Appointment rescheduled",
+      message: "An appointment was rescheduled by admin. Please check your schedule.",
+    },
+    {
+      user_id: patientId,
+      role: "patient",
+      title: "Appointment rescheduled",
+      message: "Your appointment time was updated by admin. Please check your schedule.",
+    },
+  ]);
+
+  return { success: true };
+}
