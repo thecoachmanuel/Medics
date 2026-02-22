@@ -35,7 +35,7 @@ const calculateAge = (dob: string | null): number | null => {
 };
 
 export default async function AdminUsersPage(props: {
-  searchParams: Promise<{ role?: string; q?: string }>;
+  searchParams: Promise<{ role?: string; q?: string; page?: string; perPage?: string }>;
 }) {
   const searchParams = (await props.searchParams) || {};
   const roleParam = (searchParams.role || "patient").toLowerCase();
@@ -44,42 +44,60 @@ export default async function AdminUsersPage(props: {
       ? (roleParam as "all" | "doctor" | "patient")
       : "patient";
   const search = (searchParams.q || "").trim().toLowerCase();
+  const page = Math.max(1, parseInt(String(searchParams.page || "1"), 10) || 1);
+  const perPageRaw = parseInt(String(searchParams.perPage || "20"), 10) || 20;
+  const perPage = Math.min(100, Math.max(5, perPageRaw));
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
   const supabase = getServiceSupabase();
   let query = supabase
     .from("profiles")
     .select("id,name,email,phone,gender,age,dob,blood_group,type,is_blocked,created_at,profile_image")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .range(from, to);
 
   if (roleFilter !== "all") {
     query = query.eq("type", roleFilter);
   }
+  if (search) {
+    // OR filter across name/email/phone with ilike
+    const like = `%${search}%`;
+    query = query.or(
+      `name.ilike.${like},email.ilike.${like},phone.ilike.${like}`,
+    );
+  }
 
-  const [{ data }, totalAllRes, totalDoctorsRes, totalPatientsRes] = await Promise.all([
+  // Count queries mirror filters for accurate totals
+  const baseCount = supabase.from("profiles").select("id", { count: "exact", head: true });
+  const doctorCountQ = supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "doctor");
+  const patientCountQ = supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "patient");
+
+  const filteredCountQ = (() => {
+    let q = supabase.from("profiles").select("id", { count: "exact", head: true });
+    if (roleFilter !== "all") q = q.eq("type", roleFilter);
+    if (search) {
+      const like = `%${search}%`;
+      q = q.or(`name.ilike.${like},email.ilike.${like},phone.ilike.${like}`);
+    }
+    return q;
+  })();
+
+  const [{ data }, totalAllRes, totalDoctorsRes, totalPatientsRes, totalFilteredRes] = await Promise.all([
     query,
-    supabase.from("profiles").select("id", { count: "exact", head: true }),
-    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "doctor"),
-    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "patient"),
+    baseCount,
+    doctorCountQ,
+    patientCountQ,
+    filteredCountQ,
   ]);
 
   const rows = (data || []) as UserRow[];
 
-  const users = rows.filter((u) => {
-    if (roleFilter !== "all" && u.type !== roleFilter) return false;
-    if (!search) return true;
-    const name = (u.name || "").toLowerCase();
-    const email = (u.email || "").toLowerCase();
-    const phone = (u.phone || "").toLowerCase();
-    return (
-      name.includes(search) ||
-      email.includes(search) ||
-      phone.includes(search)
-    );
-  });
+  const users = rows;
 
   const totalUsers = totalAllRes.count ?? rows.length;
   const totalDoctors = totalDoctorsRes.count ?? rows.filter((u) => u.type === "doctor").length;
   const totalPatients = totalPatientsRes.count ?? rows.filter((u) => u.type === "patient").length;
+  const totalFiltered = totalFilteredRes.count ?? users.length;
 
   async function handleBlock(formData: FormData) {
     "use server";
@@ -112,6 +130,9 @@ export default async function AdminUsersPage(props: {
           <div>
             <span className="font-semibold mr-1">Total users:</span>
             {totalUsers}
+            {search || roleFilter !== 'all' ? (
+              <span className="ml-2 text-xs text-gray-500">(matching filter: {totalFiltered})</span>
+            ) : null}
           </div>
           <div className="mt-1 flex gap-4 text-xs text-gray-600">
             <span>
@@ -245,6 +266,27 @@ export default async function AdminUsersPage(props: {
                   })}
                 </tbody>
               </table>
+              <div className="flex items-center justify-between mt-3">
+                <div className="text-xs text-gray-600">
+                  Showing {(from + 1)}-{Math.min(from + users.length, totalFiltered)} of {totalFiltered}
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    className={`px-3 py-1 rounded border text-xs ${page > 1 ? 'bg-white' : 'opacity-50 cursor-not-allowed'}`}
+                    href={`/admin/users?role=${roleFilter}&q=${encodeURIComponent(search)}&page=${Math.max(1, page - 1)}&perPage=${perPage}`}
+                    aria-disabled={page <= 1}
+                  >
+                    Prev
+                  </a>
+                  <a
+                    className={`px-3 py-1 rounded border text-xs ${from + users.length < totalFiltered ? 'bg-white' : 'opacity-50 cursor-not-allowed'}`}
+                    href={`/admin/users?role=${roleFilter}&q=${encodeURIComponent(search)}&page=${page + 1}&perPage=${perPage}`}
+                    aria-disabled={from + users.length >= totalFiltered}
+                  >
+                    Next
+                  </a>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
