@@ -56,6 +56,8 @@ export default async function AdminAppointmentsPage() {
   const completed = rows.filter((r) => r.status === "Completed").length;
   const scheduled = rows.filter((r) => r.status === "Scheduled").length;
   const cancelled = rows.filter((r) => r.status === "Cancelled").length;
+  const missed = rows.filter((r) => r.status === "Missed").length;
+  const expired = rows.filter((r) => r.status === "Expired").length;
 
   return (
     <div className="space-y-4">
@@ -87,6 +89,14 @@ export default async function AdminAppointmentsPage() {
           <div>
             <span className="font-semibold mr-1">Cancelled:</span>
             {cancelled}
+          </div>
+          <div>
+            <span className="font-semibold mr-1">Missed:</span>
+            {missed}
+          </div>
+          <div>
+            <span className="font-semibold mr-1">Expired:</span>
+            {expired}
           </div>
         </CardContent>
       </Card>
@@ -131,6 +141,10 @@ export default async function AdminAppointmentsPage() {
                         ? "bg-green-100 text-green-800"
                         : statusValue === "Cancelled"
                         ? "bg-red-100 text-red-800"
+                        : statusValue === "Missed"
+                        ? "bg-orange-100 text-orange-800"
+                        : statusValue === "Expired"
+                        ? "bg-gray-200 text-gray-800"
                         : "bg-blue-100 text-blue-800";
 
                     return (

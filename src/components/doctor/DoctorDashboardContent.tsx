@@ -73,10 +73,6 @@ const DoctorDashboardContent = () => {
       router.push("/onboarding/doctor");
       return;
     }
-
-    if (user.isSuspended || user.isDeclined) {
-      router.push("/onboarding/doctor");
-    }
   }, [isAuthenticated, user, router]);
 
   useEffect(() => {

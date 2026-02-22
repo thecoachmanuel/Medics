@@ -207,7 +207,7 @@ async function updateExpiredAndMissedAppointments(supabase: ReturnType<typeof ge
 
   const { data: scheduledRows, error: scheduledError } = await supabase
     .from("appointments")
-    .select("id,slot_start_iso,slot_end_iso,status")
+    .select("id,slot_start_iso,slot_end_iso,status,doctor_id,patient_id")
     .eq("status", "Scheduled")
     .lt("slot_start_iso", now.toISOString());
 
@@ -274,12 +274,52 @@ async function updateExpiredAndMissedAppointments(supabase: ReturnType<typeof ge
   }
 
   if (missedIds.length) {
-    const { error: missedError } = await supabase
+    const { data: missedRows, error: missedError } = await supabase
       .from("appointments")
-      .update({ status: "Missed" })
+      .select("id,doctor_id,patient_id,slot_start_iso")
       .in("id", missedIds);
-    if (!missedError) {
-      missedCount = missedIds.length;
+
+    if (!missedError && missedRows && missedRows.length) {
+      const notifications: any[] = [];
+
+      for (const row of missedRows as any[]) {
+        const doctorId = row.doctor_id as string | null;
+        const patientId = row.patient_id as string | null;
+        const slotIso = row.slot_start_iso as string | null;
+
+        const whenText = slotIso
+          ? new Date(slotIso).toLocaleString("en-NG", {
+              timeZone: "Africa/Lagos",
+              year: "numeric",
+              month: "short",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "the scheduled time";
+
+        if (doctorId) {
+          notifications.push({
+            user_id: doctorId,
+            role: "doctor",
+            title: "Appointment missed",
+            message: `A paid appointment scheduled for ${whenText} was not attended by the patient and has been marked as missed.`,
+          });
+        }
+      }
+
+      if (notifications.length) {
+        await supabase.from("notifications").insert(notifications);
+      }
+
+      const { error: updateMissedError } = await supabase
+        .from("appointments")
+        .update({ status: "Missed" })
+        .in("id", missedIds);
+
+      if (!updateMissedError) {
+        missedCount = missedIds.length;
+      }
     }
   }
 
