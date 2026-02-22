@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Stethoscope } from "lucide-react";
 import { healthcareCategoriesList, specializations as defaultSpecializations } from "@/lib/constant";
 
 type HomepageFaqItem = {
@@ -300,6 +301,18 @@ export default function AdminSettingsPage() {
                 value={homepageContent.headerLogoUrl ?? ''}
                 onChange={(e) => setHomepageContent((prev) => ({ ...prev, headerLogoUrl: e.target.value }))}
               />
+              <div className="mt-2">
+                {homepageContent.headerLogoUrl ? (
+                  <img src={homepageContent.headerLogoUrl || undefined} alt="Header logo" className="h-10 w-auto rounded border" />
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className="w-8 h-8 rounded bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
+                      <Stethoscope className="w-4 h-4 text-white" />
+                    </div>
+                    <span>No header logo set</span>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2">
                 <label className="inline-flex items-center gap-2 text-xs">
                   <span>Upload</span>
@@ -348,6 +361,18 @@ export default function AdminSettingsPage() {
                 value={homepageContent.footerLogoUrl ?? ''}
                 onChange={(e) => setHomepageContent((prev) => ({ ...prev, footerLogoUrl: e.target.value }))}
               />
+              <div className="mt-2">
+                {homepageContent.footerLogoUrl ? (
+                  <img src={homepageContent.footerLogoUrl || undefined} alt="Footer logo" className="h-10 w-auto rounded border" />
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className="w-8 h-8 rounded bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
+                      <Stethoscope className="w-4 h-4 text-white" />
+                    </div>
+                    <span>No footer logo set</span>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2">
                 <label className="inline-flex items-center gap-2 text-xs">
                   <span>Upload</span>
