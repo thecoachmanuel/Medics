@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateUserBlockStatus, adminCreateUser, adminDeleteUser, adminUpdateUser } from "@/actions/admin-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { redirect } from "next/navigation";
 
 interface UserRow {
   id: string;
@@ -35,7 +36,7 @@ const calculateAge = (dob: string | null): number | null => {
 };
 
 export default async function AdminUsersPage(props: {
-  searchParams: Promise<{ role?: string; q?: string; page?: string; perPage?: string }>;
+  searchParams: Promise<{ role?: string; q?: string; page?: string; perPage?: string; account?: string; notice?: string }>;
 }) {
   const searchParams = (await props.searchParams) || {};
   const roleParam = (searchParams.role || "all").toLowerCase();
@@ -47,6 +48,10 @@ export default async function AdminUsersPage(props: {
   const page = Math.max(1, parseInt(String(searchParams.page || "1"), 10) || 1);
   const perPageRaw = parseInt(String(searchParams.perPage || "20"), 10) || 20;
   const perPage = Math.min(100, Math.max(5, perPageRaw));
+  const accountParam = (searchParams.account || "any").toLowerCase();
+  const accountFilter: "any" | "blocked" | "active" =
+    accountParam === "blocked" || accountParam === "active" ? (accountParam as any) : "any";
+  const notice = typeof searchParams.notice === "string" ? searchParams.notice : "";
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
   const supabase = getServiceSupabase();
@@ -59,8 +64,12 @@ export default async function AdminUsersPage(props: {
   if (roleFilter !== "all") {
     query = query.eq("type", roleFilter);
   }
+  if (accountFilter === "blocked") {
+    query = query.eq("is_blocked", true);
+  } else if (accountFilter === "active") {
+    query = query.eq("is_blocked", false);
+  }
   if (search) {
-    // OR filter across name/email/phone with ilike
     const like = `%${search}%`;
     query = query.or(
       `name.ilike.${like},email.ilike.${like},phone.ilike.${like}`,
@@ -75,6 +84,8 @@ export default async function AdminUsersPage(props: {
   const filteredCountQ = (() => {
     let q = supabase.from("profiles").select("id", { count: "exact", head: true });
     if (roleFilter !== "all") q = q.eq("type", roleFilter);
+    if (accountFilter === "blocked") q = q.eq("is_blocked", true);
+    if (accountFilter === "active") q = q.eq("is_blocked", false);
     if (search) {
       const like = `%${search}%`;
       q = q.or(`name.ilike.${like},email.ilike.${like},phone.ilike.${like}`);
@@ -105,12 +116,19 @@ export default async function AdminUsersPage(props: {
     const id = String(formData.get("id") || "");
     const roleValue = String(formData.get("role") || "");
     const actionValue = String(formData.get("action") || "");
+    const roleKeep = String(formData.get("roleKeep") || "all");
+    const qKeep = String(formData.get("qKeep") || "");
+    const pageKeep = String(formData.get("pageKeep") || "1");
+    const perPageKeep = String(formData.get("perPageKeep") || "20");
+    const accountKeep = String(formData.get("accountKeep") || "any");
 
     if (!id) return;
     if (roleValue !== "doctor" && roleValue !== "patient") return;
     if (actionValue !== "block" && actionValue !== "unblock") return;
 
     await updateUserBlockStatus(id, roleValue, actionValue === "block" ? "block" : "unblock");
+    const msg = actionValue === "block" ? "User account blocked" : "User account unblocked";
+    redirect(`/admin/users?role=${encodeURIComponent(roleKeep)}&q=${encodeURIComponent(qKeep)}&page=${encodeURIComponent(pageKeep)}&perPage=${encodeURIComponent(perPageKeep)}&account=${encodeURIComponent(accountKeep)}&notice=${encodeURIComponent(msg)}`);
   }
 
   async function handleCreate(formData: FormData) {
@@ -122,15 +140,27 @@ export default async function AdminUsersPage(props: {
     const phone = String(formData.get("new_phone") || "");
     const gender = String(formData.get("new_gender") || "");
     const blood = String(formData.get("new_blood") || "");
+    const roleKeep = String(formData.get("roleKeep") || "all");
+    const qKeep = String(formData.get("qKeep") || "");
+    const pageKeep = String(formData.get("pageKeep") || "1");
+    const perPageKeep = String(formData.get("perPageKeep") || "20");
+    const accountKeep = String(formData.get("accountKeep") || "any");
     if (!email || !password || (role !== "doctor" && role !== "patient")) return;
     await adminCreateUser({ email, password, name: name || undefined, type: role as any, phone: phone || undefined, gender: gender || undefined, blood_group: blood || undefined });
+    redirect(`/admin/users?role=${encodeURIComponent(roleKeep)}&q=${encodeURIComponent(qKeep)}&page=${encodeURIComponent(pageKeep)}&perPage=${encodeURIComponent(perPageKeep)}&account=${encodeURIComponent(accountKeep)}&notice=${encodeURIComponent("User created")}`);
   }
 
   async function handleDelete(formData: FormData) {
     "use server";
     const id = String(formData.get("id") || "");
+    const roleKeep = String(formData.get("roleKeep") || "all");
+    const qKeep = String(formData.get("qKeep") || "");
+    const pageKeep = String(formData.get("pageKeep") || "1");
+    const perPageKeep = String(formData.get("perPageKeep") || "20");
+    const accountKeep = String(formData.get("accountKeep") || "any");
     if (!id) return;
     await adminDeleteUser(id);
+    redirect(`/admin/users?role=${encodeURIComponent(roleKeep)}&q=${encodeURIComponent(qKeep)}&page=${encodeURIComponent(pageKeep)}&perPage=${encodeURIComponent(perPageKeep)}&account=${encodeURIComponent(accountKeep)}&notice=${encodeURIComponent("User deleted")}`);
   }
 
   async function handleUpdate(formData: FormData) {
@@ -141,8 +171,14 @@ export default async function AdminUsersPage(props: {
     const gender = String(formData.get("gender") || "");
     const blood = String(formData.get("blood_group") || "");
     const type = String(formData.get("type") || "");
+    const roleKeep = String(formData.get("roleKeep") || "all");
+    const qKeep = String(formData.get("qKeep") || "");
+    const pageKeep = String(formData.get("pageKeep") || "1");
+    const perPageKeep = String(formData.get("perPageKeep") || "20");
+    const accountKeep = String(formData.get("accountKeep") || "any");
     if (!id) return;
     await adminUpdateUser({ id, name: name || undefined, phone: phone || undefined, gender: gender || undefined, blood_group: blood || undefined, type: type === "doctor" || type === "patient" ? (type as any) : undefined });
+    redirect(`/admin/users?role=${encodeURIComponent(roleKeep)}&q=${encodeURIComponent(qKeep)}&page=${encodeURIComponent(pageKeep)}&perPage=${encodeURIComponent(perPageKeep)}&account=${encodeURIComponent(accountKeep)}&notice=${encodeURIComponent("User updated")}`);
   }
 
   return (
@@ -160,6 +196,11 @@ export default async function AdminUsersPage(props: {
           <CardTitle className="text-sm font-medium text-gray-700">Overview</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-gray-700">
+          {notice ? (
+            <div className="mb-3 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-green-800 text-sm">
+              {notice}
+            </div>
+          ) : null}
           <div>
             <span className="font-semibold mr-1">Total users:</span>
             {totalUsers}
@@ -206,6 +247,11 @@ export default async function AdminUsersPage(props: {
               <input name="new_gender" placeholder="Gender" className="border rounded px-3 py-2 text-sm" />
               <input name="new_blood" placeholder="Blood group" className="border rounded px-3 py-2 text-sm" />
               <input name="new_password" placeholder="Temp password" className="border rounded px-3 py-2 text-sm" />
+              <input type="hidden" name="roleKeep" value={roleFilter} />
+              <input type="hidden" name="qKeep" value={search} />
+              <input type="hidden" name="pageKeep" value={String(page)} />
+              <input type="hidden" name="perPageKeep" value={String(perPage)} />
+              <input type="hidden" name="accountKeep" value={accountFilter} />
               <div className="md:col-span-7">
                 <Button type="submit" size="sm">Create user</Button>
               </div>
@@ -227,6 +273,16 @@ export default async function AdminUsersPage(props: {
                 <option value="all">All roles</option>
                 <option value="patient">Patients</option>
                 <option value="doctor">Doctors</option>
+              </select>
+              <select
+                name="account"
+                defaultValue={accountFilter}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Account filter"
+              >
+                <option value="any">Any account</option>
+                <option value="active">Active only</option>
+                <option value="blocked">Blocked only</option>
               </select>
               <select
                 name="perPage"
@@ -332,6 +388,11 @@ export default async function AdminUsersPage(props: {
                                 <option value="patient">Patient</option>
                                 <option value="doctor">Doctor</option>
                               </select>
+                              <input type="hidden" name="roleKeep" value={roleFilter} />
+                              <input type="hidden" name="qKeep" value={search} />
+                              <input type="hidden" name="pageKeep" value={String(page)} />
+                              <input type="hidden" name="perPageKeep" value={String(perPage)} />
+                              <input type="hidden" name="accountKeep" value={accountFilter} />
                               <Button type="submit" size="sm" variant="outline">Save</Button>
                             </div>
                           </form>
@@ -346,6 +407,11 @@ export default async function AdminUsersPage(props: {
                                 name="action"
                                 value={isBlocked ? "unblock" : "block"}
                               />
+                              <input type="hidden" name="roleKeep" value={roleFilter} />
+                              <input type="hidden" name="qKeep" value={search} />
+                              <input type="hidden" name="pageKeep" value={String(page)} />
+                              <input type="hidden" name="perPageKeep" value={String(perPage)} />
+                              <input type="hidden" name="accountKeep" value={accountFilter} />
                               <Button type="submit" size="sm" variant="outline">
                                 {isBlocked ? "Unblock" : "Block"}
                               </Button>
@@ -353,6 +419,11 @@ export default async function AdminUsersPage(props: {
                           ) : null}
                           <form action={handleDelete} className="inline ml-2">
                             <input type="hidden" name="id" value={p.id} />
+                            <input type="hidden" name="roleKeep" value={roleFilter} />
+                            <input type="hidden" name="qKeep" value={search} />
+                            <input type="hidden" name="pageKeep" value={String(page)} />
+                            <input type="hidden" name="perPageKeep" value={String(perPage)} />
+                            <input type="hidden" name="accountKeep" value={accountFilter} />
                             <Button type="submit" size="sm" variant="outline">Delete</Button>
                           </form>
                         </td>
@@ -368,14 +439,14 @@ export default async function AdminUsersPage(props: {
                 <div className="flex items-center gap-2">
                   <a
                     className={`px-3 py-1 rounded border text-xs ${page > 1 ? 'bg-white' : 'opacity-50 cursor-not-allowed'}`}
-                    href={`/admin/users?role=${roleFilter}&q=${encodeURIComponent(search)}&page=${Math.max(1, page - 1)}&perPage=${perPage}`}
+                    href={`/admin/users?role=${roleFilter}&account=${accountFilter}&q=${encodeURIComponent(search)}&page=${Math.max(1, page - 1)}&perPage=${perPage}`}
                     aria-disabled={page <= 1}
                   >
                     Prev
                   </a>
                   <a
                     className={`px-3 py-1 rounded border text-xs ${from + users.length < totalFiltered ? 'bg-white' : 'opacity-50 cursor-not-allowed'}`}
-                    href={`/admin/users?role=${roleFilter}&q=${encodeURIComponent(search)}&page=${page + 1}&perPage=${perPage}`}
+                    href={`/admin/users?role=${roleFilter}&account=${accountFilter}&q=${encodeURIComponent(search)}&page=${page + 1}&perPage=${perPage}`}
                     aria-disabled={from + users.length >= totalFiltered}
                   >
                     Next
