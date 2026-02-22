@@ -4,18 +4,8 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  BarChart3,
-  Bell,
-  ClipboardList,
-  CreditCard,
-  LayoutDashboard,
-  LogOut,
-  Mail,
-  Settings,
-  Stethoscope,
-  Users2,
-} from "lucide-react";
+import { BarChart3, Bell, ClipboardList, CreditCard, LayoutDashboard, LogOut, Mail, Settings, Stethoscope, Users2 } from "lucide-react";
+import AdminNotificationsBell from "@/components/admin/AdminNotificationsBell";
 
 const items = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -145,6 +135,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <p className="text-xs text-gray-500">Manage doctors, patients, appointments, and payments.</p>
           </div>
           <div className="flex items-center gap-2">
+            <AdminNotificationsBell />
             {pendingPayouts > 0 && (
               <Link href="/admin/payments" className="hidden sm:inline-flex">
                 <span className="inline-flex items-center rounded-full bg-yellow-100 text-yellow-800 text-xs px-3 py-1">

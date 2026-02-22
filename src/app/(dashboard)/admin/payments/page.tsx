@@ -97,7 +97,7 @@ export default async function AdminPaymentsPage(props: { searchParams?: Promise<
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh />
+      <AdminAutoRefresh intervalMs={300} />
       {notice ? <ToastNotice message={notice} /> : null}
       <div>
         <h2 className="text-2xl font-semibold text-gray-900">Payments & Payouts</h2>

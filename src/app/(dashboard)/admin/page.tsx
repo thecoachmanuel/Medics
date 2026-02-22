@@ -87,7 +87,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <>
-      <AdminAutoRefresh />
+      <AdminAutoRefresh intervalMs={300} />
       <AdminDashboardContent
         stats={{ totalPatients, totalDoctors, totalAppointments, totalRevenue }}
         monthlyRevenue={monthlyRevenue}

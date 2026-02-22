@@ -238,7 +238,7 @@ export default async function AdminDoctorDetailPage(props: {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh />
+      <AdminAutoRefresh intervalMs={300} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Doctor details</h2>

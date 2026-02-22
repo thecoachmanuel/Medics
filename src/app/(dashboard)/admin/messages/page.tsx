@@ -23,7 +23,7 @@ export default async function AdminMessagesPage() {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh />
+      <AdminAutoRefresh intervalMs={300} />
       <div>
         <h2 className="text-2xl font-semibold text-gray-900">Contact Messages</h2>
         <p className="text-sm text-gray-600">

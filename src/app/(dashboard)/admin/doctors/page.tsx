@@ -74,7 +74,7 @@ export default async function AdminDoctorsPage(props: {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh />
+      <AdminAutoRefresh intervalMs={300} />
       <div>
         <h2 className="text-2xl font-semibold text-gray-900">Doctors</h2>
         <p className="text-sm text-gray-600">
