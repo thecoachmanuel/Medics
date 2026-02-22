@@ -3,6 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import { updatePayoutStatus } from "@/actions/admin-actions";
+import ToastNotice from "@/components/admin/ToastNotice";
+import { redirect } from "next/navigation";
 
 interface PayoutRow {
   id: string;
@@ -33,7 +35,9 @@ const statusClass = (status: string): string => {
   return "bg-yellow-100 text-yellow-800";
 };
 
-export default async function AdminPaymentsPage() {
+export default async function AdminPaymentsPage(props: { searchParams?: Promise<{ notice?: string }> }) {
+  const sp = (await props.searchParams) || {};
+  const notice = sp.notice || "";
   const supabase = getServiceSupabase();
 
   const { data: payoutRows } = await supabase
@@ -76,6 +80,8 @@ export default async function AdminPaymentsPage() {
       | "paid";
     if (!id) return;
     await updatePayoutStatus(id, status);
+    const title = status === "approved" ? "Payout approved" : status === "rejected" ? "Payout rejected" : status === "paid" ? "Payout marked as paid" : "Payout set to pending";
+    redirect(`/admin/payments?notice=${encodeURIComponent(title)}`);
   }
 
   const totalPending = payouts
@@ -92,6 +98,7 @@ export default async function AdminPaymentsPage() {
   return (
     <div className="space-y-4">
       <AdminAutoRefresh />
+      {notice ? <ToastNotice message={notice} /> : null}
       <div>
         <h2 className="text-2xl font-semibold text-gray-900">Payments & Payouts</h2>
         <p className="text-sm text-gray-600">

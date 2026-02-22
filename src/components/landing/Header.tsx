@@ -1,5 +1,5 @@
 "use client";
-import { Bell, Calendar, LogOut, Settings, Stethoscope, User } from "lucide-react";
+import { Bell, Calendar, CreditCard, LogOut, Settings, Stethoscope, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -137,6 +137,12 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
           href: "/doctor/appointments",
           active: pathname?.includes("/doctor/appointments") || false,
         },
+        {
+          lable: "Payments",
+          icon: CreditCard,
+          href: "/doctor/payments",
+          active: pathname?.includes("/doctor/payments") || false,
+        },
       ];
     }
     return [];
@@ -265,6 +271,22 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
                     </div>
                   </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {user?.type === "doctor" ? (
+                  <DropdownMenuItem asChild>
+                    <Link href="/doctor/payments" className="flex items-center">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Payments
+                    </Link>
+                  </DropdownMenuItem>
+                ) : user?.type === "patient" ? (
+                  <DropdownMenuItem asChild>
+                    <Link href="/patient/payments" className="flex items-center">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Payments
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link

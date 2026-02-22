@@ -33,6 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
+  const [pendingPayouts, setPendingPayouts] = useState<number>(0);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -60,6 +61,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
     loadBrand();
     return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadPending = async () => {
+      try {
+        const res = await fetch('/api/admin/payouts/summary', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = (await res.json()) as { pendingCount?: number };
+        if (active) setPendingPayouts(Math.max(0, Number(json?.pendingCount || 0)));
+      } catch {}
+    };
+    loadPending();
+    const id = setInterval(loadPending, 60000);
+    return () => { active = false; clearInterval(id); };
   }, []);
 
   return (
@@ -129,6 +145,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <p className="text-xs text-gray-500">Manage doctors, patients, appointments, and payments.</p>
           </div>
           <div className="flex items-center gap-2">
+            {pendingPayouts > 0 && (
+              <Link href="/admin/payments" className="hidden sm:inline-flex">
+                <span className="inline-flex items-center rounded-full bg-yellow-100 text-yellow-800 text-xs px-3 py-1">
+                  Pending payouts: {pendingPayouts}
+                </span>
+              </Link>
+            )}
+            {pendingPayouts > 0 && (
+              <Link href="/admin/payments" className="sm:hidden">
+                <Button variant="outline" size="sm">
+                  <CreditCard className="h-4 w-4 mr-2" /> {pendingPayouts}
+                </Button>
+              </Link>
+            )}
             <Button
               variant="ghost"
               size="sm"

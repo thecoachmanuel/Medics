@@ -29,11 +29,20 @@ export default function DoctorPaymentsContent() {
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
   const [payoutMessage, setPayoutMessage] = useState<string | null>(null);
   const [payoutRequestedTotal, setPayoutRequestedTotal] = useState(0);
+  const [lastPayout, setLastPayout] = useState<{
+    id: string;
+    amount: number;
+    status: string;
+    created_at: string;
+  } | null>(null);
   const [bankName, setBankName] = useState("");
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [bankSaving, setBankSaving] = useState(false);
   const [bankMessage, setBankMessage] = useState<string | null>(null);
+  const [payoutList, setPayoutList] = useState<Array<{ id: string; amount: number; status: string; created_at: string; note: string | null }>>([]);
+  const [payoutListLoading, setPayoutListLoading] = useState(false);
+  const [payoutListFilter, setPayoutListFilter] = useState<string>("");
 
   useEffect(() => {
     fetchPayments("doctor", filters);
@@ -56,16 +65,27 @@ export default function DoctorPaymentsContent() {
         }
         const { data, error } = await supabase
           .from("doctor_payout_requests")
-          .select("amount,status")
+          .select("id,amount,status,created_at")
           .eq("doctor_id", uid);
         if (error) {
           return;
         }
-        const rows = (data || []) as { amount: number | null; status: string | null }[];
+        const rows = (data || []) as { id: string; amount: number | null; status: string | null; created_at: string }[];
         const requested = rows
           .filter((r) => String(r.status || "").toLowerCase() !== "rejected")
           .reduce((sum, r) => sum + Number(r.amount || 0), 0);
         setPayoutRequestedTotal(requested);
+        if (rows.length) {
+          const last = [...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+          setLastPayout({
+            id: last.id,
+            amount: Number(last.amount || 0),
+            status: String(last.status || "pending"),
+            created_at: last.created_at,
+          });
+        } else {
+          setLastPayout(null);
+        }
       } catch {
         setPayoutRequestedTotal(0);
       }
@@ -73,6 +93,44 @@ export default function DoctorPaymentsContent() {
 
     loadPayoutStats();
   }, []);
+
+  useEffect(() => {
+    const loadPayouts = async () => {
+      setPayoutListLoading(true);
+      try {
+        const { data: session } = await supabase.auth.getUser();
+        const uid = session.user?.id;
+        if (!uid) {
+          setPayoutList([]);
+          return;
+        }
+        let q = supabase
+          .from("doctor_payout_requests")
+          .select("id,amount,status,created_at,note")
+          .eq("doctor_id", uid)
+          .order("created_at", { ascending: false });
+        if (payoutListFilter) q = q.eq("status", payoutListFilter);
+        const { data, error } = await q;
+        if (error) {
+          setPayoutList([]);
+          return;
+        }
+        const rows = (data || []) as { id: string; amount: number | null; status: string | null; created_at: string; note: string | null }[];
+        setPayoutList(
+          rows.map((r) => ({
+            id: r.id,
+            amount: Number(r.amount || 0),
+            status: String(r.status || "pending"),
+            created_at: r.created_at,
+            note: r.note,
+          }))
+        );
+      } finally {
+        setPayoutListLoading(false);
+      }
+    };
+    loadPayouts();
+  }, [payoutListFilter]);
 
   useEffect(() => {
     const loadBankDetails = async () => {
@@ -153,6 +211,22 @@ export default function DoctorPaymentsContent() {
       setPayoutAmount("");
       setPayoutNote("");
       setPayoutRequestedTotal((current) => current + amountValue);
+      // reload recent payout list and last payout
+      try {
+        const { data } = await supabase
+          .from("doctor_payout_requests")
+          .select("id,amount,status,created_at,note")
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data[0]) {
+          const row = data[0] as any;
+          setLastPayout({ id: row.id, amount: Number(row.amount || 0), status: String(row.status || "pending"), created_at: row.created_at });
+        }
+      } catch {}
+      setPayoutList((prev) => [
+        { id: rows!.id as string, amount: amountValue, status: "pending", created_at: new Date().toISOString(), note: payoutNote || null },
+        ...prev,
+      ]);
       const requestId = rows?.id as string | undefined;
       if (requestId) {
         try {
@@ -310,8 +384,87 @@ export default function DoctorPaymentsContent() {
                 )}
               </CardContent>
             </Card>
-
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle>Payout Requests</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <select
+                    className="w-full border rounded px-3 py-2"
+                    value={payoutListFilter}
+                    onChange={(e) => setPayoutListFilter(e.target.value)}
+                  >
+                    <option value="">All statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="paid">Paid</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                {payoutListLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />
+                    ))}
+                  </div>
+                ) : payoutList.length ? (
+                  <div className="relative pl-4 border-l">
+                    {payoutList.map((r) => (
+                      <div key={r.id} className="mb-4">
+                        <div className="absolute -left-[7px] mt-1 w-3 h-3 rounded-full bg-blue-500" />
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">{currency(r.amount, "NGN")}</div>
+                          <span className="text-xs capitalize text-gray-600">{r.status}</span>
+                        </div>
+                        <div className="text-xs text-gray-500">{new Date(r.created_at).toLocaleString("en-NG", {
+                          timeZone: "Africa/Lagos",
+                          year: "numeric",
+                          month: "short",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}</div>
+                        {r.note ? (
+                          <div className="text-xs text-gray-600 mt-1">{r.note}</div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">No payout requests yet.</div>
+                )}
+              </CardContent>
+            </Card>
             <div className="space-y-4">
+              {lastPayout && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Last Payout Request</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-gray-700 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Amount</span>
+                      <span className="font-semibold">{currency(lastPayout.amount, "NGN")}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Status</span>
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">{lastPayout.status}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Requested</span>
+                      <span className="text-xs text-gray-600">{new Date(lastPayout.created_at).toLocaleString("en-NG", {
+                        timeZone: "Africa/Lagos",
+                        year: "numeric",
+                        month: "short",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               <Card>
                 <CardHeader>
                   <CardTitle>Bank Details</CardTitle>
@@ -382,7 +535,7 @@ export default function DoctorPaymentsContent() {
                   </div>
                 </CardContent>
               </Card>
-
+              <Card id="request-payout">
               <Card>
                 <CardHeader>
                   <CardTitle>Request Payout</CardTitle>
@@ -420,8 +573,21 @@ export default function DoctorPaymentsContent() {
               </Card>
             </div>
           </div>
+        <div className="fixed bottom-0 left-0 right-0 md:hidden border-t bg-white/95 backdrop:blur px-4 py-3">
+          <div className="container mx-auto">
+            <Button
+              type="button"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+              onClick={() => {
+                const el = document.getElementById("request-payout");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              Request payout
+            </Button>
+          </div>
+        </div>
         </div>
       </div>
     </>
   );
-}
