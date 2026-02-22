@@ -30,6 +30,7 @@ type HomepageSocialLink = {
 
 type HomepageContent = {
   siteName: string;
+  headerLogoUrl?: string | null;
   heroTitle: string;
   heroHighlight: string;
   heroDescription: string;
@@ -46,6 +47,7 @@ type HomepageContent = {
   footerContactPhone: string;
   footerContactEmail: string;
   footerContactLocation: string;
+  footerLogoUrl?: string | null;
   testimonials?: HomepageTestimonial[];
   socials?: HomepageSocialLink[];
 };

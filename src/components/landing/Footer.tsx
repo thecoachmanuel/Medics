@@ -10,9 +10,10 @@ interface FooterProps {
   contactEmail?: string;
   contactLocation?: string;
   socialLinks?: { name: string; url: string }[];
+  footerLogoUrl?: string | null;
 }
 
-const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, contactLocation, socialLinks }) => {
+const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, contactLocation, socialLinks, footerLogoUrl }) => {
   const resolvedIntro =
     introText && introText.trim().length > 0
       ? introText
@@ -77,12 +78,18 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4">
               <div className="flex items-center space-x-2 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600  rounded-lg flex items-center justify-center">
-                  <Stethoscope className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-3xl font-bold bg-gradient-to-br from-white to-blue-100  bg-clip-text text-transparent">
-                  MedicsOnline
-                </div>
+                {footerLogoUrl ? (
+                  <img src={footerLogoUrl} alt="MedicsOnline" className="h-10 w-auto" />
+                ) : (
+                  <>
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600  rounded-lg flex items-center justify-center">
+                      <Stethoscope className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-3xl font-bold bg-gradient-to-br from-white to-blue-100  bg-clip-text text-transparent">
+                      MedicsOnline
+                    </div>
+                  </>
+                )}
               </div>
 
               <p className="text-blue-100 mb-6 text-lg leading-relaxed">

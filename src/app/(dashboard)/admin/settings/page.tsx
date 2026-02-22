@@ -33,6 +33,7 @@ type HomepageSocialLink = {
 
 type HomepageContent = {
   siteName: string;
+  headerLogoUrl?: string | null;
   heroTitle: string;
   heroHighlight: string;
   heroDescription: string;
@@ -51,10 +52,12 @@ type HomepageContent = {
   footerContactLocation: string;
   testimonials: HomepageTestimonial[];
   socials?: HomepageSocialLink[];
+  footerLogoUrl?: string | null;
 };
 
 const defaultHomepageContent: HomepageContent = {
   siteName: "MedicsOnline",
+  headerLogoUrl: null,
   heroTitle: "Connect with doctors",
   heroHighlight: "anytime, anywhere",
   heroDescription:
@@ -110,6 +113,7 @@ const defaultHomepageContent: HomepageContent = {
     { name: "linkedin", url: "https://linkedin.com/company/medicsonlineng" },
     { name: "instagram", url: "https://instagram.com/medicsonlineng" },
   ],
+  footerLogoUrl: null,
 };
 
 type DoctorTaxonomiesConfig = {
@@ -276,6 +280,67 @@ export default function AdminSettingsPage() {
         <h2 className="text-2xl font-semibold text-gray-900">Settings</h2>
         <p className="text-sm text-gray-600">Control how the admin dashboard behaves.</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">Branding</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 text-sm text-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-600">Header logo URL</label>
+              <input
+                type="url"
+                className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                placeholder="https://..."
+                value={homepageContent.headerLogoUrl ?? ''}
+                onChange={(e) => setHomepageContent((prev) => ({ ...prev, headerLogoUrl: e.target.value }))}
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setHomepageContent((prev) => ({ ...prev, headerLogoUrl: null }))}
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-600">Footer logo URL</label>
+              <input
+                type="url"
+                className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                placeholder="https://..."
+                value={homepageContent.footerLogoUrl ?? ''}
+                onChange={(e) => setHomepageContent((prev) => ({ ...prev, footerLogoUrl: e.target.value }))}
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setHomepageContent((prev) => ({ ...prev, footerLogoUrl: null }))}
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              size="sm"
+              className="bg-blue-600 text-white hover:bg-blue-700"
+              onClick={handleSaveHomepage}
+              disabled={savingHomepage}
+            >
+              {savingHomepage ? 'Saving...' : 'Save branding'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

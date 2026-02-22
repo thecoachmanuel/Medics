@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { loginAdmin } from "@/actions/admin-actions";
 import { Stethoscope } from "lucide-react";
+import Link from "next/link";
+import React from "react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -34,9 +36,7 @@ export default function AdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md space-y-6">
         <div className="flex flex-col items-center">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center mb-2">
-            <Stethoscope className="w-5 h-5 text-white" />
-          </div>
+          <AdminBrandLogo />
           <div className="text-center">
             <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">MedicsOnline Admin</div>
             <p className="text-xs text-gray-500 mt-1">Secure access to the MedicsOnline admin console</p>
@@ -84,5 +84,33 @@ export default function AdminLoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function AdminBrandLogo() {
+  const [logo, setLogo] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      try {
+        const res = await fetch('/api/homepage');
+        if (!res.ok) return;
+        const json = (await res.json()) as { config?: { headerLogoUrl?: string | null } };
+        if (mounted) setLogo(json?.config?.headerLogoUrl ?? null);
+      } catch {}
+    };
+    run();
+    return () => { mounted = false; };
+  }, []);
+  return (
+    <Link href="/" className="flex items-center justify-center mb-2">
+      {logo ? (
+        <img src={logo} alt="MedicsOnline" className="h-10 w-auto" />
+      ) : (
+        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
+          <Stethoscope className="w-5 h-5 text-white" />
+        </div>
+      )}
+    </Link>
   );
 }

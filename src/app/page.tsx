@@ -33,6 +33,7 @@ type HomepageTestimonial = {
 
 type HomepageContent = {
   siteName: string;
+  headerLogoUrl?: string | null;
   heroTitle: string;
   heroHighlight: string;
   heroDescription: string;
@@ -51,6 +52,7 @@ type HomepageContent = {
   footerContactLocation: string;
   testimonials?: HomepageTestimonial[];
   socials?: { name: string; url: string }[];
+  footerLogoUrl?: string | null;
 };
 
 export default function Home() {
@@ -245,6 +247,7 @@ export default function Home() {
           contactEmail={content?.footerContactEmail}
           contactLocation={content?.footerContactLocation}
           socialLinks={content?.socials}
+          footerLogoUrl={content?.footerLogoUrl}
         />
       </main>
      </div>

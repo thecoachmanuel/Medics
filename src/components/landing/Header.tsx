@@ -1,12 +1,5 @@
 "use client";
-import {
-  Bell,
-  Calendar,
-  LogOut,
-  Settings,
-  Stethoscope,
-  User,
-} from "lucide-react";
+import { Bell, Calendar, LogOut, Settings, Stethoscope, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -41,11 +34,28 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const brandName = siteName && siteName.trim().length > 0 ? siteName : "MedicsOnline";
+  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
 
   const handleLogout = () => {
     logout();
     router.push("/");
   };
+
+  useEffect(() => {
+    let mounted = true;
+    const loadBrand = async () => {
+      try {
+        const res = await fetch("/api/homepage");
+        if (!res.ok) return;
+        const json = (await res.json()) as { config?: { headerLogoUrl?: string | null } };
+        if (mounted) setHeaderLogoUrl(json?.config?.headerLogoUrl ?? null);
+      } catch {}
+    };
+    loadBrand();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!user || !showDashboardNav) {
@@ -153,13 +163,18 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
             }}
             className="flex items-center space-x-2 focus:outline-none"
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-              <Stethoscope className="w-5 h-5 text-white" />
-            </div>
-
-            <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800  bg-clip-text text-transparent">
-              {brandName}
-            </div>
+            {headerLogoUrl ? (
+              <img src={headerLogoUrl} alt="MedicsOnline" className="h-8 w-auto" />
+            ) : (
+              <>
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+                  <Stethoscope className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800  bg-clip-text text-transparent">
+                  {brandName}
+                </div>
+              </>
+            )}
           </button>
 
           {/* Dashboard navigation */}
