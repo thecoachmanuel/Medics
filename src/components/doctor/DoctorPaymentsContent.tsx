@@ -536,7 +536,6 @@ export default function DoctorPaymentsContent() {
                 </CardContent>
               </Card>
               <Card id="request-payout">
-              <Card>
                 <CardHeader>
                   <CardTitle>Request Payout</CardTitle>
                 </CardHeader>
@@ -573,7 +572,7 @@ export default function DoctorPaymentsContent() {
               </Card>
             </div>
           </div>
-        <div className="fixed bottom-0 left-0 right-0 md:hidden border-t bg-white/95 backdrop:blur px-4 py-3">
+        <div className="fixed bottom-0 left-0 right-0 md:hidden border-t bg-white/95 backdrop-blur px-4 py-3">
           <div className="container mx-auto">
             <Button
               type="button"
@@ -591,3 +590,4 @@ export default function DoctorPaymentsContent() {
       </div>
     </>
   );
+}
