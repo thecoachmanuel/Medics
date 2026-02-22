@@ -62,7 +62,7 @@ begin
     for each row execute function public.set_updated_at();
   end if;
 end
-$$;
+$$ language plpgsql;
 
 -- Row Level Security posture
 alter table public.homepage_content enable row level security;
@@ -78,15 +78,13 @@ begin
       and tablename = 'homepage_content'
       and policyname = 'homepage_content_read_public'
   ) then
-    execute $$
-      create policy "homepage_content_read_public"
-      on public.homepage_content
-      for select
-      to public
-      using (true);
-    $$;
+    execute 'create policy "homepage_content_read_public" '
+         || 'on public.homepage_content '
+         || 'for select '
+         || 'to public '
+         || 'using (true)';
   end if;
 end
-$$;
+$$ language plpgsql;
 
 -- No public policies for doctor_taxonomies and newsletter_subscribers; service role will access them.
