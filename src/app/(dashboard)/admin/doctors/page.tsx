@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import { updateDoctorAdminStatus, DoctorAdminAction } from "@/actions/admin-actions";
+import Link from "next/link";
 
 interface DoctorRow {
   id: string;
@@ -118,7 +119,14 @@ export default async function AdminDoctorsPage() {
                     }
                     return (
                       <tr key={d.id} className="border-b last:border-0">
-                        <td className="px-3 py-2 text-gray-900">{d.name || "Unnamed"}</td>
+                        <td className="px-3 py-2 text-gray-900">
+                          <Link
+                            href={`/admin/doctors/${d.id}`}
+                            className="text-blue-600 hover:underline"
+                          >
+                            {d.name || "Unnamed"}
+                          </Link>
+                        </td>
                         <td className="px-3 py-2 text-gray-700">{d.email}</td>
                         <td className="px-3 py-2 text-gray-700">{d.specialization || "-"}</td>
                         <td className="px-3 py-2 text-xs text-gray-500">

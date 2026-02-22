@@ -110,6 +110,29 @@ export async function updateDoctorAdminStatus(
   if (error) {
     return { success: false, error: "Unable to update doctor status." };
   }
+  let title: string | null = null;
+  let message: string | null = null;
+
+  if (action === "approve") {
+    title = "Your profile has been approved";
+    message = "Your MedicsOnline doctor profile has been approved by the admin team.";
+  } else if (action === "suspend") {
+    title = "Your account has been suspended";
+    message = "Your doctor account has been suspended. Please contact support if you believe this is a mistake.";
+  } else if (action === "unsuspend") {
+    title = "Your account has been reactivated";
+    message = "Your doctor account has been reactivated. You can now receive new bookings again.";
+  }
+
+  if (title && message) {
+    await supabase.from("notifications").insert({
+      user_id: doctorId,
+      role: "doctor",
+      title,
+      message,
+    });
+  }
+
   return { success: true };
 }
 

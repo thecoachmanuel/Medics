@@ -111,6 +111,7 @@ const DoctorOnboardingForm = () => {
         },
         dailyTimeRanges: formData.dailyTimeRanges,
         slotDurationMinutes: formData.slotDurationMinutes,
+        isVerified: false,
       });
       router.push("/doctor/dashboard");
     } catch (error) {
