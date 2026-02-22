@@ -43,11 +43,17 @@ export default async function AdminUsersPage(props: {
       : "patient";
   const search = (searchParams.q || "").trim().toLowerCase();
   const supabase = getServiceSupabase();
-  const { data } = await supabase
+  let query = supabase
     .from("profiles")
     .select("id,name,email,phone,gender,age,dob,blood_group,type,is_blocked,created_at")
     .order("created_at", { ascending: false })
     .limit(200);
+
+  if (roleFilter !== "all") {
+    query = query.eq("type", roleFilter);
+  }
+
+  const { data } = await query;
 
   const rows = (data || []) as UserRow[];
 
@@ -65,8 +71,8 @@ export default async function AdminUsersPage(props: {
   });
 
   const totalUsers = rows.length;
-  const totalPatients = rows.filter((u) => u.type === "patient").length;
-  const totalDoctors = rows.filter((u) => u.type === "doctor").length;
+  const totalPatients = roleFilter === "doctor" ? 0 : rows.filter((u) => u.type === "patient").length;
+  const totalDoctors = roleFilter === "patient" ? 0 : rows.filter((u) => u.type === "doctor").length;
 
   async function handleBlock(formData: FormData) {
     "use server";

@@ -122,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           className="fixed inset-0 bg-black/40 z-30 lg:hidden"
         />
       )}
-      <main className="flex-1">
+      <main className="flex-1 min-w-0">
         <header className="h-16 bg-white border-b flex items-center justify-between px-4 sm:px-6">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Admin Dashboard</h1>
@@ -142,7 +142,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Button>
           </div>
         </header>
-        <div className="p-4 sm:p-6">{children}</div>
+        <div className="p-4 sm:p-6 overflow-x-hidden">{children}</div>
       </main>
     </div>
   );
