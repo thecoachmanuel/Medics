@@ -31,6 +31,7 @@ const items = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -48,11 +49,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <aside className={`bg-white border-r transition-all duration-200 ${collapsed ? "w-16" : "w-64"}`}>
+      <aside
+        className={`bg-white border-r transition-all duration-200 z-40 h-screen lg:h-auto lg:static fixed top-0 left-0 ${
+          collapsed ? "lg:w-16" : "lg:w-64"
+        } w-64 transform ${mobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+      >
         <div className="h-16 flex items-center justify-between px-3">
           <button
             type="button"
-            onClick={() => router.push("/admin")}
+            onClick={() => {
+              router.push("/admin");
+              setMobileOpen(false);
+            }}
             className="flex items-center gap-2 focus:outline-none"
           >
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
@@ -64,7 +72,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             )}
           </button>
-          <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)}>
+          <Button variant="ghost" size="sm" className="hidden lg:inline-flex" onClick={() => setCollapsed(!collapsed)}>
             <BarChart3 className="h-4 w-4 rotate-90" />
           </Button>
         </div>
@@ -73,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {items.map((item) => {
             const active = pathname === item.href;
             return (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
                 <div
                   className={`flex items-center gap-3 rounded-md px-3 py-2 cursor-pointer hover:bg-accent/50 ${
                     active ? "bg-accent/70" : ""
@@ -87,17 +95,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
       </aside>
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+        />
+      )}
       <main className="flex-1">
-        <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+        <header className="h-16 bg-white border-b flex items-center justify-between px-4 sm:px-6">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Admin Dashboard</h1>
             <p className="text-xs text-gray-500">Manage doctors, patients, appointments, and payments.</p>
           </div>
-          <Button variant="outline" size="sm" onClick={logout} className="cursor-pointer">
-            <LogOut className="h-4 w-4 mr-2" /> Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={logout} className="cursor-pointer">
+              <LogOut className="h-4 w-4 mr-2" /> Logout
+            </Button>
+          </div>
         </header>
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </main>
     </div>
   );

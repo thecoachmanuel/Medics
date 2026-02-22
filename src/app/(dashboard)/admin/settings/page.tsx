@@ -26,6 +26,11 @@ type HomepageTestimonial = {
   bgColor: string;
 };
 
+type HomepageSocialLink = {
+  name: string;
+  url: string;
+};
+
 type HomepageContent = {
   siteName: string;
   heroTitle: string;
@@ -45,6 +50,7 @@ type HomepageContent = {
   footerContactEmail: string;
   footerContactLocation: string;
   testimonials: HomepageTestimonial[];
+  socials?: HomepageSocialLink[];
 };
 
 const defaultHomepageContent: HomepageContent = {
@@ -98,6 +104,12 @@ const defaultHomepageContent: HomepageContent = {
   footerContactEmail: "medicsonlineng@gmail.com",
   footerContactLocation: "Available across Nigeria",
   testimonials: [],
+  socials: [
+    { name: "twitter", url: "https://twitter.com/medicsonlineng" },
+    { name: "facebook", url: "https://facebook.com/medicsonlineng" },
+    { name: "linkedin", url: "https://linkedin.com/company/medicsonlineng" },
+    { name: "instagram", url: "https://instagram.com/medicsonlineng" },
+  ],
 };
 
 type DoctorTaxonomiesConfig = {
@@ -116,6 +128,8 @@ export default function AdminSettingsPage() {
   const [savingHomepage, setSavingHomepage] = useState(false);
   const [homepageError, setHomepageError] = useState<string | null>(null);
   const [homepageSaved, setHomepageSaved] = useState(false);
+  const [subscribers, setSubscribers] = useState<{ id: string; email: string; created_at: string }[]>([]);
+  const [loadingSubscribers, setLoadingSubscribers] = useState(false);
   const [taxonomies, setTaxonomies] = useState<DoctorTaxonomiesConfig>(defaultTaxonomiesConfig);
   const [savingTaxonomies, setSavingTaxonomies] = useState(false);
   const [taxonomiesError, setTaxonomiesError] = useState<string | null>(null);
@@ -126,6 +140,27 @@ export default function AdminSettingsPage() {
     if (stored === "off") {
       setAutoRefresh(false);
     }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadSubscribers = async () => {
+      setLoadingSubscribers(true);
+      try {
+        const response = await fetch("/api/admin/subscribers");
+        if (!response.ok) return;
+        const json = (await response.json()) as { subscribers?: { id: string; email: string; created_at: string }[] };
+        if (!isMounted) return;
+        setSubscribers(json.subscribers ?? []);
+      } catch {
+      } finally {
+        if (isMounted) setLoadingSubscribers(false);
+      }
+    };
+    loadSubscribers();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -655,6 +690,68 @@ export default function AdminSettingsPage() {
                   }
                 />
               </div>
+              <div className="space-y-2 md:col-span-3">
+                <div className="text-xs font-medium text-gray-600">Social links</div>
+                <div className="space-y-2">
+                  {(homepageContent.socials ?? []).map((item, index) => (
+                    <div key={index} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <select
+                        className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+                        value={item.name}
+                        onChange={(event) => {
+                          const next = [...(homepageContent.socials ?? [])];
+                          next[index] = { ...next[index], name: event.target.value };
+                          setHomepageContent((prev) => ({ ...prev, socials: next }));
+                        }}
+                      >
+                        <option value="twitter">Twitter</option>
+                        <option value="facebook">Facebook</option>
+                        <option value="linkedin">LinkedIn</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="youtube">YouTube</option>
+                        <option value="github">GitHub</option>
+                      </select>
+                      <input
+                        type="url"
+                        placeholder="https://"
+                        className="sm:col-span-2 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                        value={item.url}
+                        onChange={(event) => {
+                          const next = [...(homepageContent.socials ?? [])];
+                          next[index] = { ...next[index], url: event.target.value };
+                          setHomepageContent((prev) => ({ ...prev, socials: next }));
+                        }}
+                      />
+                      <div className="sm:col-span-3 flex justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const next = (homepageContent.socials ?? []).filter((_, i) => i !== index);
+                            setHomepageContent((prev) => ({ ...prev, socials: next }));
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setHomepageContent((prev) => ({
+                        ...prev,
+                        socials: [...(prev.socials ?? []), { name: "twitter", url: "" }],
+                      }))
+                    }
+                  >
+                    Add social link
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -775,6 +872,71 @@ export default function AdminSettingsPage() {
               {savingHomepage ? "Saving..." : "Save homepage content"}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">Newsletter subscribers</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm text-gray-700">
+          {loadingSubscribers ? (
+            <p className="text-sm text-gray-500">Loading subscribers...</p>
+          ) : subscribers.length === 0 ? (
+            <p className="text-sm text-gray-500">No subscribers yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Email</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Subscribed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscribers.map((s) => (
+                    <tr key={s.id} className="border-b last:border-0">
+                      <td className="px-3 py-2 text-gray-900">{s.email}</td>
+                      <td className="px-3 py-2 text-gray-700">
+                        {new Date(s.created_at).toLocaleString("en-NG", {
+                          timeZone: "Africa/Lagos",
+                          year: "numeric",
+                          month: "short",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="flex justify-end mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const header = "email,created_at\n";
+                    const rows = subscribers
+                      .map((s) => `${s.email},${new Date(s.created_at).toISOString()}`)
+                      .join("\n");
+                    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "newsletter_subscribers.csv";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Export CSV
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

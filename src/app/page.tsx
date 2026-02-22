@@ -50,6 +50,7 @@ type HomepageContent = {
   footerContactEmail: string;
   footerContactLocation: string;
   testimonials?: HomepageTestimonial[];
+  socials?: { name: string; url: string }[];
 };
 
 export default function Home() {
@@ -243,6 +244,7 @@ export default function Home() {
           contactPhone={content?.footerContactPhone}
           contactEmail={content?.footerContactEmail}
           contactLocation={content?.footerContactLocation}
+          socialLinks={content?.socials}
         />
       </main>
      </div>

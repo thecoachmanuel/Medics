@@ -11,6 +11,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { userAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Stethoscope } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
 interface AuthFormProps {
@@ -119,9 +120,9 @@ interface AuthFormProps {
       <div className="text-center mb-8">
         <Link href="/" className="inline-flex items-center justify-center gap-2">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
-            <span className="text-white font-semibold text-lg">M</span>
+            <Stethoscope className="w-5 h-5 text-white" />
           </div>
-          <span className="text-2xl font-bold text-blue-900">MedicsOnline</span>
+          <span className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">MedicsOnline</span>
         </Link>
       </div>
 

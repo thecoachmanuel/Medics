@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { loginAdmin } from "@/actions/admin-actions";
+import { Stethoscope } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -34,10 +35,10 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="flex flex-col items-center">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center mb-2">
-            <span className="text-white font-semibold text-lg">M</span>
+            <Stethoscope className="w-5 h-5 text-white" />
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">MedicsOnline Admin</div>
+            <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">MedicsOnline Admin</div>
             <p className="text-xs text-gray-500 mt-1">Secure access to the MedicsOnline admin console</p>
           </div>
         </div>

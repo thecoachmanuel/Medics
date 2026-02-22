@@ -1,7 +1,7 @@
 "use client";
-import { contactInfo, footerSections, socials } from "@/lib/constant";
-import { Stethoscope } from "lucide-react";
-import React from "react";
+import { contactInfo, footerSections, socials as defaultSocials } from "@/lib/constant";
+import { Stethoscope, Twitter, Facebook, Linkedin, Instagram, Youtube, Github } from "lucide-react";
+import React, { useState } from "react";
 import { Button } from "../ui/button";
 
 interface FooterProps {
@@ -9,9 +9,10 @@ interface FooterProps {
   contactPhone?: string;
   contactEmail?: string;
   contactLocation?: string;
+  socialLinks?: { name: string; url: string }[];
 }
 
-const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, contactLocation }) => {
+const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, contactLocation, socialLinks }) => {
   const resolvedIntro =
     introText && introText.trim().length > 0
       ? introText
@@ -27,6 +28,48 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
     { ...contactInfo[1], text: emailText },
     { ...contactInfo[2], text: locationText },
   ];
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    twitter: Twitter,
+    facebook: Facebook,
+    linkedin: Linkedin,
+    instagram: Instagram,
+    youtube: Youtube,
+    github: Github,
+  };
+  const computedSocials = Array.isArray(socialLinks) && socialLinks.length
+    ? socialLinks
+        .map((s) => ({ ...s, icon: iconMap[s.name.toLowerCase()] }))
+        .filter((s) => !!s.icon)
+    : defaultSocials;
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubscribe = async () => {
+    setSubmitting(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        setError(json?.error || "Unable to subscribe. Try again later.");
+        return;
+      }
+      setMessage("Subscribed successfully. Thank you!");
+      setEmail("");
+    } catch {
+      setError("Unable to subscribe. Try again later.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <footer className="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -103,11 +146,19 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
                 type="email"
                 placeholder="Enter your email"
                 className="px-4 py-2 rpounded-lg bg-blue-800/50 border border-blue-600 text-white placeholder:blue-300  focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent min-w-[280px]"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
-              <Button className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg whitespace-nowrap">
-                Subscribe
+              <Button
+                onClick={handleSubscribe}
+                disabled={submitting || !email}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg whitespace-nowrap"
+              >
+                {submitting ? "Subscribing..." : "Subscribe"}
               </Button>
             </div>
+            {message && <p className="text-xs text-green-300 mt-2">{message}</p>}
+            {error && <p className="text-xs text-red-300 mt-2">{error}</p>}
           </div>
         </div>
 
@@ -122,7 +173,7 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
             <div className="flex items-center space-x-4">
               <span className="text-blue-200 text-sm">Follow use:</span>
               <div className="flex space-x-3">
-                {socials.map(({ name, icon: Icon, url }) => (
+                {computedSocials.map(({ name, icon: Icon, url }: any) => (
                   <a
                     key={name}
                     href={url}

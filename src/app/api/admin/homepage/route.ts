@@ -23,6 +23,11 @@ type HomepageTestimonial = {
   bgColor: string;
 };
 
+type HomepageSocialLink = {
+  name: string;
+  url: string;
+};
+
 type HomepageContent = {
   siteName: string;
   heroTitle: string;
@@ -42,6 +47,7 @@ type HomepageContent = {
   footerContactEmail: string;
   footerContactLocation: string;
   testimonials?: HomepageTestimonial[];
+  socials?: HomepageSocialLink[];
 };
 
 type HomepageRow = {
