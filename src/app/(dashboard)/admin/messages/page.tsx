@@ -1,5 +1,6 @@
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 
 interface ContactMessageRow {
   id: string;
@@ -22,6 +23,7 @@ export default async function AdminMessagesPage() {
 
   return (
     <div className="space-y-4">
+      <AdminAutoRefresh />
       <div>
         <h2 className="text-2xl font-semibold text-gray-900">Contact Messages</h2>
         <p className="text-sm text-gray-600">
@@ -62,4 +64,3 @@ export default async function AdminMessagesPage() {
     </div>
   );
 }
-

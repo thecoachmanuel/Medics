@@ -89,11 +89,26 @@ export async function createAnnouncement(input: CreateAnnouncementInput): Promis
   return { success: true };
 }
 
-export async function setDoctorVerification(doctorId: string, verified: boolean): Promise<{ success: boolean; error?: string }> {
+export type DoctorAdminAction = "approve" | "suspend" | "unsuspend";
+
+export async function updateDoctorAdminStatus(
+  doctorId: string,
+  action: DoctorAdminAction,
+): Promise<{ success: boolean; error?: string }> {
   const supabase = getServiceSupabase();
-  const { error } = await supabase.from("profiles").update({ is_verified: verified }).eq("id", doctorId);
+  let patch: Record<string, unknown> = {};
+
+  if (action === "approve") {
+    patch = { is_verified: true, is_suspended: false };
+  } else if (action === "suspend") {
+    patch = { is_suspended: true };
+  } else if (action === "unsuspend") {
+    patch = { is_suspended: false };
+  }
+
+  const { error } = await supabase.from("profiles").update(patch).eq("id", doctorId);
   if (error) {
-    return { success: false, error: "Unable to update doctor verification." };
+    return { success: false, error: "Unable to update doctor status." };
   }
   return { success: true };
 }

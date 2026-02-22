@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Header from "@/components/landing/Header";
 import { supabase } from "@/lib/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface NotificationRow {
   id: string;
@@ -15,9 +16,31 @@ interface NotificationRow {
 export default function Page() {
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data: session } = await supabase.auth.getUser();
+      const uid = session.user?.id;
+      if (!uid) {
+        setItems([]);
+        return;
+      }
+      const { data } = await supabase
+        .from("notifications")
+        .select("id,title,message,created_at,read_at")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      setItems((data || []) as NotificationRow[]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
+    const run = async () => {
       setLoading(true);
       try {
         const { data: session } = await supabase.auth.getUser();
@@ -37,8 +60,25 @@ export default function Page() {
         setLoading(false);
       }
     };
-    load();
+    run();
   }, []);
+
+  const handleMarkAllRead = async () => {
+    setUpdating(true);
+    try {
+      const { data: session } = await supabase.auth.getUser();
+      const uid = session.user?.id;
+      if (!uid) return;
+      await supabase
+        .from("notifications")
+        .update({ read_at: new Date().toISOString() })
+        .eq("user_id", uid)
+        .is("read_at", null);
+      await load();
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   return (
     <>
@@ -48,6 +88,18 @@ export default function Page() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Notifications</h1>
             <p className="text-sm text-gray-600">Updates from MedicsOnline and your patients.</p>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={loading || updating || items.length === 0}
+              onClick={handleMarkAllRead}
+            >
+              {updating ? "Marking..." : "Mark all as read"}
+            </Button>
           </div>
 
           <Card>
@@ -66,7 +118,10 @@ export default function Page() {
               ) : (
                 <div className="space-y-3">
                   {items.map((n) => (
-                    <div key={n.id} className="border rounded-lg p-3 bg-white">
+                    <div
+                      key={n.id}
+                      className={`border rounded-lg p-3 bg-white ${n.read_at ? "opacity-70" : ""}`}
+                    >
                       <div className="flex items-center justify-between mb-1">
                         <div className="font-semibold text-gray-900">{n.title}</div>
                         <div className="text-xs text-gray-500">

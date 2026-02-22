@@ -74,5 +74,49 @@ export async function POST(request: Request) {
     await supabase.from('payments').insert(paymentRow)
   }
 
+  const { data: doctorProfile } = await supabase
+    .from('profiles')
+    .select('id,name')
+    .eq('id', appointment.doctor_id)
+    .maybeSingle()
+
+  const { data: patientProfile } = await supabase
+    .from('profiles')
+    .select('id,name')
+    .eq('id', appointment.patient_id)
+    .maybeSingle()
+
+  const doctorName = (doctorProfile as any)?.name || 'Doctor'
+  const patientName = (patientProfile as any)?.name || 'Patient'
+  const dateStr = appointment.date as string | null
+  const slotStart = appointment.slot_start_iso as string | null
+
+  const whenText = slotStart
+    ? new Date(slotStart).toLocaleString('en-NG', { hour12: true })
+    : dateStr || 'your scheduled time'
+
+  const patientTitle = 'Payment confirmed for your appointment'
+  const patientMessage = `Your payment was successful for your appointment with ${doctorName} on ${whenText}.`
+
+  const doctorTitle = 'New appointment booked'
+  const doctorMessage = `${patientName} has booked a new appointment with you for ${whenText}.`
+
+  const notifications = [
+    {
+      user_id: appointment.patient_id,
+      role: 'patient',
+      title: patientTitle,
+      message: patientMessage,
+    },
+    {
+      user_id: appointment.doctor_id,
+      role: 'doctor',
+      title: doctorTitle,
+      message: doctorMessage,
+    },
+  ]
+
+  await supabase.from('notifications').insert(notifications)
+
   return NextResponse.json({ success: true, data: { appointmentId, reference, amount: nairaAmount, currency } })
 }

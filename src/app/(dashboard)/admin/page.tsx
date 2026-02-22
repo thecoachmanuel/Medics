@@ -1,4 +1,5 @@
 import AdminDashboardContent from "@/components/admin/AdminDashboardContent";
+import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import { getServiceSupabase } from "@/lib/supabase/service";
 
 const formatMonth = (date: Date): string => {
@@ -77,12 +78,14 @@ export default async function AdminDashboardPage() {
   const userGrowth = Array.from(userGrowthMap.entries()).map(([month, value]) => ({ month, ...value }));
 
   return (
-    <AdminDashboardContent
-      stats={{ totalPatients, totalDoctors, totalAppointments, totalRevenue }}
-      monthlyRevenue={monthlyRevenue}
-      appointmentStatus={appointmentStatus}
-      userGrowth={userGrowth}
-    />
+    <>
+      <AdminAutoRefresh />
+      <AdminDashboardContent
+        stats={{ totalPatients, totalDoctors, totalAppointments, totalRevenue }}
+        monthlyRevenue={monthlyRevenue}
+        appointmentStatus={appointmentStatus}
+        userGrowth={userGrowth}
+      />
+    </>
   );
 }
-

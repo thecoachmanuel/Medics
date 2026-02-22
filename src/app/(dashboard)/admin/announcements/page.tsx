@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createAnnouncement } from "@/actions/admin-actions";
 import { supabase } from "@/lib/supabase/client";
+import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 
 type Audience = "all" | "doctors" | "patients" | "user";
 
@@ -72,6 +73,7 @@ export default function AdminAnnouncementsPage() {
 
   return (
     <div className="space-y-4">
+      <AdminAutoRefresh />
       <div>
         <h2 className="text-2xl font-semibold text-gray-900">Announcements</h2>
         <p className="text-sm text-gray-600">
@@ -175,4 +177,3 @@ export default function AdminAnnouncementsPage() {
     </div>
   );
 }
-

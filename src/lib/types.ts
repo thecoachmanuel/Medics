@@ -135,6 +135,7 @@ export interface Doctor {
   slotDurationMinutes: number;
   profileImage: string;
   isVerified: boolean;
+  isSuspended?: boolean;
   createdAt: Date;
   updatedAt: Date;
   averageRating?: number;
