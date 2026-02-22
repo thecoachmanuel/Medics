@@ -29,6 +29,11 @@ export default function DoctorPaymentsContent() {
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
   const [payoutMessage, setPayoutMessage] = useState<string | null>(null);
   const [payoutRequestedTotal, setPayoutRequestedTotal] = useState(0);
+  const [bankName, setBankName] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankMessage, setBankMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPayments("doctor", filters);
@@ -69,6 +74,27 @@ export default function DoctorPaymentsContent() {
     loadPayoutStats();
   }, []);
 
+  useEffect(() => {
+    const loadBankDetails = async () => {
+      try {
+        const { data: session } = await supabase.auth.getUser();
+        const uid = session.user?.id;
+        if (!uid) return;
+        const { data } = await supabase
+          .from("doctor_bank_accounts")
+          .select("bank_name,account_name,account_number")
+          .eq("doctor_id", uid)
+          .maybeSingle();
+        if (data) {
+          setBankName(String((data as any).bank_name || ""));
+          setAccountName(String((data as any).account_name || ""));
+          setAccountNumber(String((data as any).account_number || ""));
+        }
+      } catch {}
+    };
+    loadBankDetails();
+  }, []);
+
   const availableForPayout = useMemo(() => {
     const available = totals.paid - payoutRequestedTotal;
     if (!Number.isFinite(available)) return 0;
@@ -92,6 +118,10 @@ export default function DoctorPaymentsContent() {
 
   const submitPayoutRequest = async () => {
     setPayoutMessage(null);
+    if (!bankName || !accountName || !accountNumber) {
+      setPayoutMessage("Add bank details before requesting a payout.");
+      return;
+    }
     const amountValue = parseInt(payoutAmount, 10);
     if (Number.isNaN(amountValue) || amountValue <= 0) {
       setPayoutMessage("Enter a valid payout amount.");
@@ -138,6 +168,40 @@ export default function DoctorPaymentsContent() {
       setPayoutMessage(error.message || "Unable to submit payout request.");
     } finally {
       setPayoutSubmitting(false);
+    }
+  };
+
+  const saveBankDetails = async () => {
+    setBankMessage(null);
+    if (!bankName || !accountName || !accountNumber) {
+      setBankMessage("All bank fields are required.");
+      return;
+    }
+    if (!/^\d{10,}$/.test(accountNumber)) {
+      setBankMessage("Enter a valid account number.");
+      return;
+    }
+    setBankSaving(true);
+    try {
+      const { data: session } = await supabase.auth.getUser();
+      const uid = session.user?.id;
+      if (!uid) throw new Error("Not authenticated");
+      const payload = {
+        doctor_id: uid,
+        bank_name: bankName,
+        account_name: accountName,
+        account_number: accountNumber,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase
+        .from("doctor_bank_accounts")
+        .upsert(payload, { onConflict: "doctor_id" });
+      if (error) throw error;
+      setBankMessage("Bank details saved.");
+    } catch (e: any) {
+      setBankMessage(e.message || "Unable to save bank details.");
+    } finally {
+      setBankSaving(false);
     }
   };
 
@@ -248,6 +312,49 @@ export default function DoctorPaymentsContent() {
             </Card>
 
             <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Bank Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-sm text-gray-600">Bank name</label>
+                    <input
+                      className="w-full border rounded px-3 py-2"
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      placeholder="e.g. Access Bank"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-gray-600">Account name</label>
+                    <input
+                      className="w-full border rounded px-3 py-2"
+                      value={accountName}
+                      onChange={(e) => setAccountName(e.target.value)}
+                      placeholder="e.g. John Doe"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-gray-600">Account number</label>
+                    <input
+                      className="w-full border rounded px-3 py-2"
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                      placeholder="e.g. 0123456789"
+                    />
+                  </div>
+                  {bankMessage && <p className="text-xs text-gray-600">{bankMessage}</p>}
+                  <Button
+                    type="button"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                    onClick={saveBankDetails}
+                    disabled={bankSaving}
+                  >
+                    {bankSaving ? "Saving..." : "Save bank details"}
+                  </Button>
+                </CardContent>
+              </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>Summary</CardTitle>

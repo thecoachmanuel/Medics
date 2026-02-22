@@ -38,11 +38,11 @@ export default async function AdminUsersPage(props: {
   searchParams: Promise<{ role?: string; q?: string; page?: string; perPage?: string }>;
 }) {
   const searchParams = (await props.searchParams) || {};
-  const roleParam = (searchParams.role || "patient").toLowerCase();
+  const roleParam = (searchParams.role || "all").toLowerCase();
   const roleFilter: "all" | "doctor" | "patient" =
     roleParam === "all" || roleParam === "doctor" || roleParam === "patient"
       ? (roleParam as "all" | "doctor" | "patient")
-      : "patient";
+      : "all";
   const search = (searchParams.q || "").trim().toLowerCase();
   const page = Math.max(1, parseInt(String(searchParams.page || "1"), 10) || 1);
   const perPageRaw = parseInt(String(searchParams.perPage || "20"), 10) || 20;
@@ -166,6 +166,16 @@ export default async function AdminUsersPage(props: {
                 <option value="all">All roles</option>
                 <option value="patient">Patients</option>
                 <option value="doctor">Doctors</option>
+              </select>
+              <select
+                name="perPage"
+                defaultValue={String(perPage)}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Rows per page"
+              >
+                <option value="20">20 / page</option>
+                <option value="50">50 / page</option>
+                <option value="100">100 / page</option>
               </select>
               <div className="flex gap-2">
                 <Button type="submit" size="sm">

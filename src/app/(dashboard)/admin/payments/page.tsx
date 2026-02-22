@@ -19,6 +19,13 @@ interface DoctorInfo {
   email: string | null;
 }
 
+interface BankInfo {
+  doctor_id: string;
+  bank_name: string | null;
+  account_name: string | null;
+  account_number: string | null;
+}
+
 const statusClass = (status: string): string => {
   const value = status.toLowerCase();
   if (value === "approved" || value === "paid") return "bg-green-100 text-green-800";
@@ -39,16 +46,25 @@ export default async function AdminPaymentsPage() {
   const doctorIds = Array.from(new Set(payouts.map((p) => p.doctor_id)));
 
   let doctors: DoctorInfo[] = [];
+  let banks: BankInfo[] = [];
   if (doctorIds.length) {
     const { data: doctorProfiles } = await supabase
       .from("profiles")
       .select("id,name,email")
       .in("id", doctorIds);
     doctors = (doctorProfiles || []) as DoctorInfo[];
+
+    const { data: bankRows } = await supabase
+      .from("doctor_bank_accounts")
+      .select("doctor_id,bank_name,account_name,account_number")
+      .in("doctor_id", doctorIds);
+    banks = (bankRows || []) as BankInfo[];
   }
 
   const doctorMap = new Map<string, DoctorInfo>();
   doctors.forEach((d) => doctorMap.set(d.id, d));
+  const bankMap = new Map<string, BankInfo>();
+  banks.forEach((b) => bankMap.set(b.doctor_id, b));
 
   async function handleStatus(formData: FormData) {
     "use server";
@@ -121,6 +137,7 @@ export default async function AdminPaymentsPage() {
                   <tr className="border-b bg-gray-50">
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Doctor</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Amount (NGN)</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Bank</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Status</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Requested</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Note</th>
@@ -130,6 +147,7 @@ export default async function AdminPaymentsPage() {
                 <tbody>
                   {payouts.map((p) => {
                     const doc = doctorMap.get(p.doctor_id);
+                    const bank = bankMap.get(p.doctor_id);
                     return (
                       <tr key={p.id} className="border-b last:border-0">
                         <td className="px-3 py-2">
@@ -137,6 +155,17 @@ export default async function AdminPaymentsPage() {
                           <div className="text-xs text-gray-500">{doc?.email}</div>
                         </td>
                         <td className="px-3 py-2 text-gray-900">{(p.amount || 0).toLocaleString("en-NG")}</td>
+                        <td className="px-3 py-2 text-xs text-gray-700">
+                          {bank ? (
+                            <div className="space-y-0.5">
+                              <div className="font-medium">{bank.bank_name}</div>
+                              <div>{bank.account_name}</div>
+                              <div className="font-mono">{bank.account_number}</div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">No bank on file</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2">
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(
