@@ -628,6 +628,14 @@ const DoctorDashboardContent = () => {
         </div>
       </div>
 
+      <div className="fixed bottom-0 left-0 right-0 md:hidden border-t bg-white/95 backdrop-blur px-4 py-3">
+        <div className="container mx-auto">
+          <a href="/doctor/payouts">
+            <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">Request payout</Button>
+          </a>
+        </div>
+      </div>
+
       <PrescriptionModal
         isOpen={showPrescriptionModal}
         onClose={handleCloseModal}

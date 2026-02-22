@@ -386,54 +386,12 @@ export default function DoctorPaymentsContent() {
             </Card>
             <Card className="lg:col-span-1">
               <CardHeader>
-                <CardTitle>Payout Requests</CardTitle>
+                <CardTitle>Payouts</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <select
-                    className="w-full border rounded px-3 py-2"
-                    value={payoutListFilter}
-                    onChange={(e) => setPayoutListFilter(e.target.value)}
-                  >
-                    <option value="">All statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="paid">Paid</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
-                </div>
-                {payoutListLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />
-                    ))}
-                  </div>
-                ) : payoutList.length ? (
-                  <div className="relative pl-4 border-l">
-                    {payoutList.map((r) => (
-                      <div key={r.id} className="mb-4">
-                        <div className="absolute -left-[7px] mt-1 w-3 h-3 rounded-full bg-blue-500" />
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium">{currency(r.amount, "NGN")}</div>
-                          <span className="text-xs capitalize text-gray-600">{r.status}</span>
-                        </div>
-                        <div className="text-xs text-gray-500">{new Date(r.created_at).toLocaleString("en-NG", {
-                          timeZone: "Africa/Lagos",
-                          year: "numeric",
-                          month: "short",
-                          day: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}</div>
-                        {r.note ? (
-                          <div className="text-xs text-gray-600 mt-1">{r.note}</div>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-500">No payout requests yet.</div>
-                )}
+              <CardContent>
+                <a href="/doctor/payouts">
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">Go to Payouts</Button>
+                </a>
               </CardContent>
             </Card>
             <div className="space-y-4">
@@ -572,20 +530,7 @@ export default function DoctorPaymentsContent() {
               </Card>
             </div>
           </div>
-        <div className="fixed bottom-0 left-0 right-0 md:hidden border-t bg-white/95 backdrop-blur px-4 py-3">
-          <div className="container mx-auto">
-            <Button
-              type="button"
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-              onClick={() => {
-                const el = document.getElementById("request-payout");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-            >
-              Request payout
-            </Button>
-          </div>
-        </div>
+        
         </div>
       </div>
     </>
