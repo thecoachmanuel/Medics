@@ -10,7 +10,7 @@ interface NotificationRow {
   title: string;
   message: string;
   created_at: string;
-  read_at: string | null;
+  is_read: boolean;
 }
 
 export default function Page() {
@@ -29,7 +29,7 @@ export default function Page() {
       }
       const { data } = await supabase
         .from("notifications")
-        .select("id,title,message,created_at,read_at")
+        .select("id,title,message,created_at,is_read")
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -51,7 +51,7 @@ export default function Page() {
         }
         const { data } = await supabase
           .from("notifications")
-          .select("id,title,message,created_at,read_at")
+          .select("id,title,message,created_at,is_read")
           .eq("user_id", uid)
           .order("created_at", { ascending: false })
           .limit(100);
@@ -71,10 +71,13 @@ export default function Page() {
       if (!uid) return;
       await supabase
         .from("notifications")
-        .update({ read_at: new Date().toISOString() })
+        .update({ is_read: true })
         .eq("user_id", uid)
-        .is("read_at", null);
+        .eq("is_read", false);
       await load();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("notifications:markAllRead"));
+      }
     } finally {
       setUpdating(false);
     }
@@ -120,12 +123,19 @@ export default function Page() {
                   {items.map((n) => (
                     <div
                       key={n.id}
-                      className={`border rounded-lg p-3 bg-white ${n.read_at ? "opacity-70" : ""}`}
+                      className={`border rounded-lg p-3 bg-white ${n.is_read ? "opacity-70" : ""}`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="font-semibold text-gray-900">{n.title}</div>
                         <div className="text-xs text-gray-500">
-                          {new Date(n.created_at).toLocaleString()}
+                          {new Date(n.created_at).toLocaleString("en-NG", {
+                            timeZone: "Africa/Lagos",
+                            year: "numeric",
+                            month: "short",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </div>
                       </div>
                       <p className="text-sm text-gray-700 whitespace-pre-line">{n.message}</p>

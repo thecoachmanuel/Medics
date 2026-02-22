@@ -51,12 +51,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-gray-50 flex">
       <aside className={`bg-white border-r transition-all duration-200 ${collapsed ? "w-16" : "w-64"}`}>
         <div className="h-16 flex items-center justify-between px-3">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>MO</AvatarFallback>
-            </Avatar>
-            {!collapsed && <span className="font-bold text-gray-900">MedicsOnline</span>}
-          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/admin")}
+            className="flex items-center gap-2 focus:outline-none"
+          >
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+              <Stethoscope className="w-5 h-5 text-white" />
+            </div>
+            {!collapsed && (
+              <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                MedicsOnline
+              </div>
+            )}
+          </button>
           <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)}>
             <BarChart3 className="h-4 w-4 rotate-90" />
           </Button>
@@ -83,8 +91,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="flex-1">
         <header className="h-16 bg-white border-b flex items-center justify-between px-6">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Admin Portal</h1>
-            <p className="text-xs text-gray-500">Welcome back, System Administrator</p>
+            <h1 className="text-lg font-semibold text-gray-900">MedicsOnline Admin</h1>
+            <p className="text-xs text-gray-500">Manage doctors, patients, appointments, and payments.</p>
           </div>
           <Button variant="outline" size="sm" onClick={logout} className="cursor-pointer">
             <LogOut className="h-4 w-4 mr-2" /> Logout

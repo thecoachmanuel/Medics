@@ -166,7 +166,9 @@ export default async function AdminUsersPage(props: {
                         <td className="px-3 py-2 text-gray-700">{p.blood_group || "-"}</td>
                         <td className="px-3 py-2 text-gray-700">{p.phone || "-"}</td>
                         <td className="px-3 py-2 text-xs text-gray-500">
-                          {new Date(p.created_at).toLocaleDateString()}
+                          {new Date(p.created_at).toLocaleDateString("en-NG", {
+                            timeZone: "Africa/Lagos",
+                          })}
                         </td>
                       </tr>
                     );

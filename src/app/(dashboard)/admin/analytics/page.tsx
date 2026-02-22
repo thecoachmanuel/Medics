@@ -117,7 +117,14 @@ export default async function AdminAnalyticsPage() {
                       {doctorMap.get(r.doctor_id) || "Doctor"}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {new Date(r.created_at).toLocaleString()}
+                      {new Date(r.created_at).toLocaleString("en-NG", {
+                        timeZone: "Africa/Lagos",
+                        year: "numeric",
+                        month: "short",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </div>
                   </div>
                   <div className="flex items-center justify-between mb-1">

@@ -37,6 +37,8 @@ const statusColors: Record<string, string> = {
   Completed: "#22c55e",
   Cancelled: "#f97316",
   "In Progress": "#a855f7",
+  Missed: "#f97316",
+  Expired: "#6b7280",
 };
 
 const AdminDashboardContent = ({ stats, monthlyRevenue, appointmentStatus, userGrowth }: AdminDashboardContentProps) => {
@@ -75,7 +77,7 @@ const AdminDashboardContent = ({ stats, monthlyRevenue, appointmentStatus, userG
             <CardTitle className="text-sm font-medium text-gray-500">Total Revenue (NGN)</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-gray-900">{stats.totalRevenue.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalRevenue.toLocaleString("en-NG")}</p>
             <p className="text-xs text-gray-500 mt-1">From completed payments</p>
           </CardContent>
         </Card>
@@ -159,4 +161,3 @@ const AdminDashboardContent = ({ stats, monthlyRevenue, appointmentStatus, userG
 };
 
 export default AdminDashboardContent;
-

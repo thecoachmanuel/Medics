@@ -129,7 +129,16 @@ export default function PatientPaymentsContent() {
                           </div>
                           <div>
                             <div className="font-medium">{currency(p.amount, p.currency)}</div>
-                            <div className="text-xs text-gray-500">{new Date(p.createdAt).toLocaleString()}</div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(p.createdAt).toLocaleString("en-NG", {
+                                timeZone: "Africa/Lagos",
+                                year: "numeric",
+                                month: "short",
+                                day: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -166,4 +175,3 @@ export default function PatientPaymentsContent() {
     </>
   );
 }
-

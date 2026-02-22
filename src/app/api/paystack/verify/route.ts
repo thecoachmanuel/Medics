@@ -92,7 +92,10 @@ export async function POST(request: Request) {
   const slotStart = appointment.slot_start_iso as string | null
 
   const whenText = slotStart
-    ? new Date(slotStart).toLocaleString('en-NG', { hour12: true })
+    ? new Date(slotStart).toLocaleString('en-NG', {
+        hour12: true,
+        timeZone: 'Africa/Lagos',
+      })
     : dateStr || 'your scheduled time'
 
   const patientTitle = 'Payment confirmed for your appointment'

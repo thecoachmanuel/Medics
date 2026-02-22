@@ -271,7 +271,7 @@ export  const cities = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'H
 
 
     
-        export const emptyStates = {
+    export const emptyStates = {
       upcoming: {
         icon: Clock,
         title: "No Upcoming Appointments",
@@ -279,8 +279,8 @@ export  const cities = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'H
       },
       completed: {
         icon: FileText,
-        title: "No Completed Appointments",
-        description: "Completed consultations will appear here.",
+        title: "No Past Appointments",
+        description: "Your completed, expired or missed consultations will appear here.",
       },
     };
 
@@ -293,6 +293,8 @@ export  const cities = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'H
       case 'completed': return 'bg-blue-100 text-blue-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       case 'in progress': return 'bg-purple-100 text-purple-800';
+      case 'missed': return 'bg-orange-100 text-orange-800';
+      case 'expired': return 'bg-gray-200 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };

@@ -34,6 +34,10 @@ const PatientDashboardContent = () => {
       }
       return;
     }
+    if (user.isBlocked) {
+      router.push("/appeal");
+      return;
+    }
     if (!user.isVerified) {
       router.push(`/onboarding/${user.type}`);
     }
@@ -46,7 +50,8 @@ const PatientDashboardContent = () => {
   }, [user, fetchAppointments]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-NG", {
+      timeZone: "Africa/Lagos",
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -95,7 +100,9 @@ const PatientDashboardContent = () => {
     return (
       aptDate < now ||
       apt.status === "Completed" ||
-      apt.status === "Cancelled"
+      apt.status === "Cancelled" ||
+      apt.status === "Missed" ||
+      apt.status === "Expired"
     );
   });
 

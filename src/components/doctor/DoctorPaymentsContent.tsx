@@ -28,6 +28,7 @@ export default function DoctorPaymentsContent() {
   const [payoutNote, setPayoutNote] = useState("");
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
   const [payoutMessage, setPayoutMessage] = useState<string | null>(null);
+  const [payoutRequestedTotal, setPayoutRequestedTotal] = useState(0);
 
   useEffect(() => {
     fetchPayments("doctor", filters);
@@ -38,6 +39,41 @@ export default function DoctorPaymentsContent() {
     const pending = payments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
     return { paid, pending };
   }, [payments]);
+
+  useEffect(() => {
+    const loadPayoutStats = async () => {
+      try {
+        const { data: session } = await supabase.auth.getUser();
+        const uid = session.user?.id;
+        if (!uid) {
+          setPayoutRequestedTotal(0);
+          return;
+        }
+        const { data, error } = await supabase
+          .from("doctor_payout_requests")
+          .select("amount,status")
+          .eq("doctor_id", uid);
+        if (error) {
+          return;
+        }
+        const rows = (data || []) as { amount: number | null; status: string | null }[];
+        const requested = rows
+          .filter((r) => String(r.status || "").toLowerCase() !== "rejected")
+          .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        setPayoutRequestedTotal(requested);
+      } catch {
+        setPayoutRequestedTotal(0);
+      }
+    };
+
+    loadPayoutStats();
+  }, []);
+
+  const availableForPayout = useMemo(() => {
+    const available = totals.paid - payoutRequestedTotal;
+    if (!Number.isFinite(available)) return 0;
+    return available > 0 ? available : 0;
+  }, [totals.paid, payoutRequestedTotal]);
 
   const exportCSV = () => {
     const header = ["Date", "Reference", "Amount", "Currency", "Status"].join(",");
@@ -61,21 +97,43 @@ export default function DoctorPaymentsContent() {
       setPayoutMessage("Enter a valid payout amount.");
       return;
     }
+    if (amountValue > availableForPayout) {
+      setPayoutMessage(
+        `You can request up to ${currency(availableForPayout, "NGN")} based on your available balance.`,
+      );
+      return;
+    }
     setPayoutSubmitting(true);
     try {
       const { data: session } = await supabase.auth.getUser();
       const uid = session.user?.id;
       if (!uid) throw new Error("Not authenticated");
-      const { error } = await supabase.from("doctor_payout_requests").insert({
-        doctor_id: uid,
-        amount: amountValue,
-        note: payoutNote || null,
-        status: "pending",
-      });
+      const { data: rows, error } = await supabase
+        .from("doctor_payout_requests")
+        .insert({
+          doctor_id: uid,
+          amount: amountValue,
+          note: payoutNote || null,
+          status: "pending",
+        })
+        .select("id")
+        .single();
       if (error) throw error;
       setPayoutMessage("Payout request submitted to admin.");
       setPayoutAmount("");
       setPayoutNote("");
+      setPayoutRequestedTotal((current) => current + amountValue);
+      const requestId = rows?.id as string | undefined;
+      if (requestId) {
+        try {
+          await fetch("/api/admin/activity", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "payout_request", payload: { requestId } }),
+          });
+        } catch {
+        }
+      }
     } catch (error: any) {
       setPayoutMessage(error.message || "Unable to submit payout request.");
     } finally {
@@ -164,7 +222,16 @@ export default function DoctorPaymentsContent() {
                           </div>
                           <div>
                             <div className="font-medium">{currency(p.amount, p.currency)}</div>
-                            <div className="text-xs text-gray-500">{new Date(p.createdAt).toLocaleString()}</div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(p.createdAt).toLocaleString("en-NG", {
+                                timeZone: "Africa/Lagos",
+                                year: "numeric",
+                                month: "short",
+                                day: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -197,6 +264,14 @@ export default function DoctorPaymentsContent() {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Pending total</span>
                     <span className="font-semibold">{currency(totals.pending, "NGN")}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Requested payouts</span>
+                    <span className="font-semibold">{currency(payoutRequestedTotal, "NGN")}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Available for payout</span>
+                    <span className="font-semibold">{currency(availableForPayout, "NGN")}</span>
                   </div>
                 </CardContent>
               </Card>

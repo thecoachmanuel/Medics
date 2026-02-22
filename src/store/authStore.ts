@@ -116,6 +116,7 @@ export const userAuthStore = create<AuthState>()(
           isVerified: !!profile?.is_verified,
           isSuspended: !!profile?.is_suspended,
           isDeclined: !!profile?.is_declined,
+          isBlocked: !!profile?.is_blocked,
           adminReviewNote: profile?.admin_review_note || undefined,
           dob: profile?.dob || undefined,
           gender: profile?.gender || undefined,
@@ -167,6 +168,7 @@ export const userAuthStore = create<AuthState>()(
           isVerified: !!profile?.is_verified,
           isSuspended: !!profile?.is_suspended,
           isDeclined: !!profile?.is_declined,
+          isBlocked: !!profile?.is_blocked,
           adminReviewNote: profile?.admin_review_note || undefined,
           dob: profile?.dob || undefined,
           gender: profile?.gender || undefined,
@@ -213,6 +215,14 @@ export const userAuthStore = create<AuthState>()(
         });
         if (upsertError) throw upsertError;
         await get().fetchProfile();
+        try {
+          await fetch('/api/admin/activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'signup', payload: { userId } }),
+          });
+        } catch {
+        }
       } catch (error: any) {
         set({ error: error.message });
         throw error;
@@ -240,6 +250,14 @@ export const userAuthStore = create<AuthState>()(
         });
         if (upsertError) throw upsertError;
         await get().fetchProfile();
+        try {
+          await fetch('/api/admin/activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'signup', payload: { userId } }),
+          });
+        } catch {
+        }
       } catch (error: any) {
         set({ error: error.message });
         throw error;

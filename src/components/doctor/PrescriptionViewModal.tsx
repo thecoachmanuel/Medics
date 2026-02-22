@@ -21,7 +21,8 @@ const PrescriptionViewModal = ({
   const closeModal = () => setIsOpen(false);
 
   const formateDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-NG", {
+      timeZone: "Africa/Lagos",
       year: "numeric",
       month: "short",
       day: "numeric",

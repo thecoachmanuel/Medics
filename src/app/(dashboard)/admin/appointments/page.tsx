@@ -114,10 +114,16 @@ export default async function AdminAppointmentsPage() {
                 <tbody>
                   {rows.map((r) => {
                     const dateLabel = r.slot_start_iso
-                      ? new Date(r.slot_start_iso).toLocaleDateString()
+                      ? new Date(r.slot_start_iso).toLocaleDateString("en-NG", {
+                          timeZone: "Africa/Lagos",
+                        })
                       : r.date || "-";
                     const timeLabel = r.slot_start_iso
-                      ? new Date(r.slot_start_iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      ? new Date(r.slot_start_iso).toLocaleTimeString("en-NG", {
+                          timeZone: "Africa/Lagos",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
                       : "-";
                     const statusValue = r.status || "Unknown";
                     const statusColor =

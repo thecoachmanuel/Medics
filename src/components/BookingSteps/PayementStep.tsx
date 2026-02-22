@@ -213,7 +213,12 @@ const PayementStep = ({
             <div className="flex justify-between">
               <span className="text-gray-600">Date & Time</span>
               <span className="font-medium">
-                {selectedDate?.toLocaleDateString()} at {selectedSlot}
+                {selectedDate?.toLocaleDateString("en-NG", {
+                  timeZone: "Africa/Lagos",
+                  year: "numeric",
+                  month: "short",
+                  day: "2-digit",
+                })} at {selectedSlot}
               </span>
             </div>
 

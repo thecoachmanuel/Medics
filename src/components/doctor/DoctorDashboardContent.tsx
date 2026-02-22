@@ -46,6 +46,7 @@ const DoctorDashboardContent = () => {
       router.push("/login/doctor");
       return;
     }
+
     if (user.type !== "doctor") {
       if (!user.isVerified) {
         router.push(`/onboarding/${user.type}`);
@@ -54,6 +55,12 @@ const DoctorDashboardContent = () => {
       }
       return;
     }
+
+    if (user.isBlocked) {
+      router.push("/appeal");
+      return;
+    }
+
     const hasCompletedProfile = Boolean(
       user.specialization &&
         user.hospitalInfo?.name &&
@@ -63,6 +70,11 @@ const DoctorDashboardContent = () => {
     );
 
     if (!hasCompletedProfile) {
+      router.push("/onboarding/doctor");
+      return;
+    }
+
+    if (user.isSuspended || user.isDeclined) {
       router.push("/onboarding/doctor");
     }
   }, [isAuthenticated, user, router]);
@@ -116,7 +128,8 @@ const DoctorDashboardContent = () => {
   };
 
   const formateDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-NG", {
+      timeZone: "Africa/Lagos",
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
@@ -179,6 +192,41 @@ const DoctorDashboardContent = () => {
 
   const isSuspended = doctorStatus.isSuspended;
   const isDeclined = doctorStatus.isDeclined;
+
+  if (isPendingApproval) {
+    return (
+      <>
+        <Header showDashboardNav={true} />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pt-16">
+          <div className="container mx-auto px-4 py-12 max-w-xl">
+            <Card className="border border-amber-200 bg-amber-50/80">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold text-amber-900">
+                  Your profile is under review
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-amber-900">
+                <p>
+                  Thank you for completing your MedicsOnline doctor onboarding. Our
+                  admin team is reviewing your profile to ensure it meets our
+                  clinical and compliance standards.
+                </p>
+                <p>
+                  You will be able to access your full dashboard and start
+                  receiving bookings once your account is approved.
+                </p>
+                {doctorStatus.adminReviewNote && (
+                  <p className="text-gray-800">
+                    Admin note: {doctorStatus.adminReviewNote}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   const statsCards = [
     {
@@ -281,16 +329,10 @@ const DoctorDashboardContent = () => {
             </div>
           </div>
 
-          {(isPendingApproval || isSuspended || isDeclined) && (
+          {(isSuspended || isDeclined) && (
             <div className="mb-6">
               <Card className="border border-amber-200 bg-amber-50/80">
                 <CardContent className="py-4 flex flex-col gap-2">
-                  {isPendingApproval && (
-                    <p className="text-sm font-medium text-amber-800">
-                      Your profile has been submitted and is awaiting admin approval.
-                      You will start receiving bookings once your account is approved.
-                    </p>
-                  )}
                   {isSuspended && (
                     <p className="text-sm font-medium text-red-800">
                       Your account is currently suspended. You will not receive new bookings

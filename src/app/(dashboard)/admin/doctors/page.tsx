@@ -205,7 +205,9 @@ export default async function AdminDoctorsPage(props: {
                         <td className="px-3 py-2 text-gray-700">{d.email}</td>
                         <td className="px-3 py-2 text-gray-700">{d.specialization || "-"}</td>
                         <td className="px-3 py-2 text-xs text-gray-500">
-                          {new Date(d.created_at).toLocaleDateString()}
+                          {new Date(d.created_at).toLocaleDateString("en-NG", {
+                            timeZone: "Africa/Lagos",
+                          })}
                         </td>
                         <td className="px-3 py-2">
                           <span

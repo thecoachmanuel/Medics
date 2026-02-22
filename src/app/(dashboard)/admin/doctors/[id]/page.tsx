@@ -134,7 +134,14 @@ export default async function AdminDoctorDetailPage(props: {
     }
     if (time > lastPaymentTime) {
       lastPaymentTime = time;
-      lastPaymentText = created.toLocaleString();
+      lastPaymentText = created.toLocaleString("en-NG", {
+        timeZone: "Africa/Lagos",
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     }
 
     const key = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, "0")}`;
@@ -304,11 +311,25 @@ export default async function AdminDoctorDetailPage(props: {
           <div className="flex flex-wrap gap-4 text-xs text-gray-500">
             <div>
               <span className="font-semibold mr-1">Joined:</span>
-              {new Date(profile.created_at).toLocaleString()}
+              {new Date(profile.created_at).toLocaleString("en-NG", {
+                timeZone: "Africa/Lagos",
+                year: "numeric",
+                month: "short",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </div>
             <div>
               <span className="font-semibold mr-1">Last updated:</span>
-              {new Date(profile.updated_at).toLocaleString()}
+              {new Date(profile.updated_at).toLocaleString("en-NG", {
+                timeZone: "Africa/Lagos",
+                year: "numeric",
+                month: "short",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </div>
           </div>
         </CardContent>
@@ -474,7 +495,16 @@ export default async function AdminDoctorDetailPage(props: {
                 <div key={`${r.created_at}-${idx}`} className="border-b last:border-b-0 pb-2 last:pb-0">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>{patientNameMap.get(r.patient_id || "") || "Patient"}</span>
-                    <span>{new Date(r.created_at).toLocaleString()}</span>
+                    <span>
+                      {new Date(r.created_at).toLocaleString("en-NG", {
+                        timeZone: "Africa/Lagos",
+                        year: "numeric",
+                        month: "short",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
                   <div className="font-semibold text-gray-800 mb-1">
                     {typeof r.rating === "number" ? `${r.rating.toFixed(1)} / 5` : "No rating"}
@@ -502,7 +532,16 @@ export default async function AdminDoctorDetailPage(props: {
                 <div key={e.id} className="border-b last:border-b-0 pb-2 last:pb-0">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>{e.title}</span>
-                    <span>{new Date(e.created_at).toLocaleString()}</span>
+                    <span>
+                      {new Date(e.created_at).toLocaleString("en-NG", {
+                        timeZone: "Africa/Lagos",
+                        year: "numeric",
+                        month: "short",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
                   {e.message && <p className="text-sm text-gray-700">{e.message}</p>}
                 </div>

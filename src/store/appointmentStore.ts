@@ -22,7 +22,7 @@ export interface Appointment {
   slotStartIso: string;
   slotEndIso: string;
   consultationType: "Video Consultation" | "Voice Call";
-  status: "Scheduled" | "Completed" | "Cancelled" | "In Progress";
+  status: "Scheduled" | "Completed" | "Cancelled" | "In Progress" | "Missed" | "Expired";
   symptoms: string;
   zegoRoomId: string;
   fees: number;
@@ -454,6 +454,15 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         .select('appointment_id,rating,comment')
         .single();
       if (error) throw error;
+
+      try {
+        await fetch('/api/admin/activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'review', payload: { appointmentId } }),
+        });
+      } catch {
+      }
 
       set((state) => ({
         appointments: state.appointments.map((apt) =>

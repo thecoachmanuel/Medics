@@ -69,6 +69,10 @@ export default async function AdminPaymentsPage() {
     .filter((p) => p.status === "approved")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
+  const totalPaidOut = payouts
+    .filter((p) => p.status === "paid")
+    .reduce((sum, p) => sum + (p.amount || 0), 0);
+
   return (
     <div className="space-y-4">
       <AdminAutoRefresh />
@@ -90,11 +94,15 @@ export default async function AdminPaymentsPage() {
           </div>
           <div>
             <span className="font-semibold mr-1">Pending amount (NGN):</span>
-            {totalPending.toLocaleString()}
+            {totalPending.toLocaleString("en-NG")}
           </div>
           <div>
             <span className="font-semibold mr-1">Approved amount (NGN):</span>
-            {totalApproved.toLocaleString()}
+            {totalApproved.toLocaleString("en-NG")}
+          </div>
+          <div>
+            <span className="font-semibold mr-1">Paid out amount (NGN):</span>
+            {totalPaidOut.toLocaleString("en-NG")}
           </div>
         </CardContent>
       </Card>
@@ -128,7 +136,7 @@ export default async function AdminPaymentsPage() {
                           <div className="font-medium text-gray-900">{doc?.name || "Doctor"}</div>
                           <div className="text-xs text-gray-500">{doc?.email}</div>
                         </td>
-                        <td className="px-3 py-2 text-gray-900">{(p.amount || 0).toLocaleString()}</td>
+                        <td className="px-3 py-2 text-gray-900">{(p.amount || 0).toLocaleString("en-NG")}</td>
                         <td className="px-3 py-2">
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(
@@ -139,7 +147,14 @@ export default async function AdminPaymentsPage() {
                           </span>
                         </td>
                         <td className="px-3 py-2 text-xs text-gray-500">
-                          {new Date(p.created_at).toLocaleString()}
+                          {new Date(p.created_at).toLocaleString("en-NG", {
+                            timeZone: "Africa/Lagos",
+                            year: "numeric",
+                            month: "short",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </td>
                         <td className="px-3 py-2 text-xs text-gray-700 max-w-xs truncate">
                           {p.note || "-"}
@@ -158,6 +173,13 @@ export default async function AdminPaymentsPage() {
                               <input type="hidden" name="status" value="rejected" />
                               <Button type="submit" size="sm" variant="outline">
                                 Reject
+                              </Button>
+                            </form>
+                            <form action={handleStatus}>
+                              <input type="hidden" name="id" value={p.id} />
+                              <input type="hidden" name="status" value="paid" />
+                              <Button type="submit" size="sm" variant="outline">
+                                Mark as paid
                               </Button>
                             </form>
                           </div>

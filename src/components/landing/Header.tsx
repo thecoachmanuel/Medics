@@ -78,10 +78,18 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false }) => {
       }
     };
 
+    const handleMarkedAllRead = () => {
+      if (!isMounted) return;
+      setUnreadCount(0);
+    };
+
     fetchUnreadCount();
+
+    window.addEventListener("notifications:markAllRead", handleMarkedAllRead);
 
     return () => {
       isMounted = false;
+      window.removeEventListener("notifications:markAllRead", handleMarkedAllRead);
     };
   }, [user?.id, showDashboardNav]);
 

@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
 
   const appointments = ((rows || []) as any[]);
   if (appointments.length === 0) {
-    return NextResponse.json({ success: true, processed: 0 });
+    const statusUpdateResult = await updateExpiredAndMissedAppointments(supabase);
+    return NextResponse.json({ success: true, processed: 0, ...statusUpdateResult });
   }
 
   const participantIds = Array.from(
@@ -75,7 +76,16 @@ export async function GET(request: NextRequest) {
     const patientProfile = profileMap.get(appt.patient_id as string);
 
     const slotIso = appt.slot_start_iso as string;
-    const whenText = slotIso ? new Date(slotIso).toLocaleString() : "soon";
+    const whenText = slotIso
+      ? new Date(slotIso).toLocaleString("en-NG", {
+          timeZone: "Africa/Lagos",
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "soon";
 
     const title = "Upcoming appointment";
     const message = `You have an appointment scheduled at ${whenText}.`;
@@ -181,11 +191,97 @@ export async function GET(request: NextRequest) {
       })
       .eq("id", appt.id);
   }
+  const statusUpdateResult = await updateExpiredAndMissedAppointments(supabase);
 
   return NextResponse.json({
     success: true,
     processed: appointments.length,
     emailSent: emailSentCount,
     smsSent: smsSentCount,
+    ...statusUpdateResult,
   });
+}
+
+async function updateExpiredAndMissedAppointments(supabase: ReturnType<typeof getServiceSupabase>) {
+  const now = new Date();
+
+  const { data: scheduledRows, error: scheduledError } = await supabase
+    .from("appointments")
+    .select("id,slot_start_iso,slot_end_iso,status")
+    .eq("status", "Scheduled")
+    .lt("slot_start_iso", now.toISOString());
+
+  if (scheduledError || !scheduledRows || !scheduledRows.length) {
+    return { statusUpdated: 0, expiredCount: 0, missedCount: 0 };
+  }
+
+  const ids = scheduledRows.map((r: any) => r.id as string);
+
+  const { data: payRows } = await supabase
+    .from("payments")
+    .select("appointment_id,status")
+    .in("appointment_id", ids)
+    .eq("status", "success");
+
+  const paidSet = new Set<string>((payRows || []).map((p: any) => p.appointment_id as string));
+
+  const expiredIds: string[] = [];
+  const missedIds: string[] = [];
+
+  for (const row of scheduledRows as any[]) {
+    const id = row.id as string;
+    if (paidSet.has(id)) {
+      const startIso = row.slot_start_iso as string | null;
+      const endIso = row.slot_end_iso as string | null;
+      let effectiveEnd: Date | null = null;
+
+      if (endIso) {
+        const end = new Date(endIso);
+        if (!Number.isNaN(end.getTime())) {
+          effectiveEnd = end;
+        }
+      }
+
+      if (!effectiveEnd && startIso) {
+        const start = new Date(startIso);
+        if (!Number.isNaN(start.getTime())) {
+          effectiveEnd = start;
+        }
+      }
+
+      if (effectiveEnd) {
+        const cutoff = new Date(effectiveEnd.getTime() + 60 * 60 * 1000);
+        if (now >= cutoff) {
+          missedIds.push(id);
+        }
+      }
+    } else {
+      expiredIds.push(id);
+    }
+  }
+
+  let expiredCount = 0;
+  let missedCount = 0;
+
+  if (expiredIds.length) {
+    const { error: expiredError } = await supabase
+      .from("appointments")
+      .update({ status: "Expired" })
+      .in("id", expiredIds);
+    if (!expiredError) {
+      expiredCount = expiredIds.length;
+    }
+  }
+
+  if (missedIds.length) {
+    const { error: missedError } = await supabase
+      .from("appointments")
+      .update({ status: "Missed" })
+      .in("id", missedIds);
+    if (!missedError) {
+      missedCount = missedIds.length;
+    }
+  }
+
+  return { statusUpdated: expiredCount + missedCount, expiredCount, missedCount };
 }

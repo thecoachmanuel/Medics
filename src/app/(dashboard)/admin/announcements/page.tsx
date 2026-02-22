@@ -163,7 +163,14 @@ export default function AdminAnnouncementsPage() {
                   <div className="flex items-center justify-between mb-1">
                     <div className="font-semibold text-gray-900">{a.title}</div>
                     <div className="text-xs text-gray-500">
-                      {new Date(a.created_at).toLocaleString()}
+                      {new Date(a.created_at).toLocaleString("en-NG", {
+                        timeZone: "Africa/Lagos",
+                        year: "numeric",
+                        month: "short",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </div>
                   </div>
                   <div className="text-xs text-gray-500 mb-1">Audience: {audienceLabel(a.audience)}</div>

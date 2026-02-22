@@ -25,7 +25,8 @@ const DoctorAppointmentContent = () => {
   }, [user, fetchAppointments]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-NG", {
+      timeZone: "Africa/Lagos",
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -97,7 +98,9 @@ const DoctorAppointmentContent = () => {
     return (
       aptDate < now ||
       apt.status === "Completed" ||
-      apt.status === "Cancelled"
+      apt.status === "Cancelled" ||
+      apt.status === "Missed" ||
+      apt.status === "Expired"
     );
   });
 

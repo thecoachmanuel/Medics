@@ -2,7 +2,7 @@ create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   title text not null default '',
-  body text not null default '',
+  message text not null default '',
   type text not null default 'general',
   metadata jsonb,
   is_read boolean not null default false,
@@ -64,4 +64,3 @@ using (
       or (a.patient_id = public.profiles.id and a.doctor_id = auth.uid())
   )
 );
-

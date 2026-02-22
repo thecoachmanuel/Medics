@@ -42,6 +42,7 @@ export interface User {
   isVerified: boolean;
   isSuspended?: boolean;
   isDeclined?: boolean;
+  isBlocked?: boolean;
   adminReviewNote?: string;
 
   // Patient fields

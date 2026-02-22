@@ -3,7 +3,10 @@ import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import { getServiceSupabase } from "@/lib/supabase/service";
 
 const formatMonth = (date: Date): string => {
-  return date.toLocaleDateString("en-US", { month: "short" });
+  return date.toLocaleDateString("en-NG", {
+    timeZone: "Africa/Lagos",
+    month: "short",
+  });
 };
 
 export default async function AdminDashboardPage() {
