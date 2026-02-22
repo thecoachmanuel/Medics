@@ -34,6 +34,7 @@ type HomepageSocialLink = {
 type HomepageContent = {
   siteName: string;
   headerLogoUrl?: string | null;
+  headerLogoPublicId?: string | null;
   heroTitle: string;
   heroHighlight: string;
   heroDescription: string;
@@ -53,11 +54,13 @@ type HomepageContent = {
   testimonials: HomepageTestimonial[];
   socials?: HomepageSocialLink[];
   footerLogoUrl?: string | null;
+  footerLogoPublicId?: string | null;
 };
 
 const defaultHomepageContent: HomepageContent = {
   siteName: "MedicsOnline",
   headerLogoUrl: null,
+  headerLogoPublicId: null,
   heroTitle: "Connect with doctors",
   heroHighlight: "anytime, anywhere",
   heroDescription:
@@ -114,6 +117,7 @@ const defaultHomepageContent: HomepageContent = {
     { name: "instagram", url: "https://instagram.com/medicsonlineng" },
   ],
   footerLogoUrl: null,
+  footerLogoPublicId: null,
 };
 
 type DoctorTaxonomiesConfig = {
@@ -297,11 +301,39 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setHomepageContent((prev) => ({ ...prev, headerLogoUrl: e.target.value }))}
               />
               <div className="flex gap-2">
+                <label className="inline-flex items-center gap-2 text-xs">
+                  <span>Upload</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const { uploadImage } = await import("@/lib/cloudinary");
+                        const res = await uploadImage(file, "medimeet/branding");
+                        setHomepageContent((prev) => ({ ...prev, headerLogoUrl: res.url, headerLogoPublicId: res.publicId }));
+                      } catch {
+                      } finally {
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                </label>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => setHomepageContent((prev) => ({ ...prev, headerLogoUrl: null }))}
+                  onClick={async () => {
+                    const publicId = homepageContent.headerLogoPublicId;
+                    if (publicId) {
+                      try {
+                        await fetch('/api/upload/destroy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ publicId }) });
+                      } catch {}
+                    }
+                    setHomepageContent((prev) => ({ ...prev, headerLogoUrl: null, headerLogoPublicId: null }));
+                  }}
                 >
                   Remove
                 </Button>
@@ -317,11 +349,39 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setHomepageContent((prev) => ({ ...prev, footerLogoUrl: e.target.value }))}
               />
               <div className="flex gap-2">
+                <label className="inline-flex items-center gap-2 text-xs">
+                  <span>Upload</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const { uploadImage } = await import("@/lib/cloudinary");
+                        const res = await uploadImage(file, "medimeet/branding");
+                        setHomepageContent((prev) => ({ ...prev, footerLogoUrl: res.url, footerLogoPublicId: res.publicId }));
+                      } catch {
+                      } finally {
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                </label>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => setHomepageContent((prev) => ({ ...prev, footerLogoUrl: null }))}
+                  onClick={async () => {
+                    const publicId = homepageContent.footerLogoPublicId;
+                    if (publicId) {
+                      try {
+                        await fetch('/api/upload/destroy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ publicId }) });
+                      } catch {}
+                    }
+                    setHomepageContent((prev) => ({ ...prev, footerLogoUrl: null, footerLogoPublicId: null }));
+                  }}
                 >
                   Remove
                 </Button>

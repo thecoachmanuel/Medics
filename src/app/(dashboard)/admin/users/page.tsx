@@ -4,6 +4,7 @@ import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateUserBlockStatus } from "@/actions/admin-actions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface UserRow {
   id: string;
@@ -17,6 +18,7 @@ interface UserRow {
   type: "doctor" | "patient" | null;
   is_blocked: boolean | null;
   created_at: string;
+  profile_image?: string | null;
 }
 
 const calculateAge = (dob: string | null): number | null => {
@@ -45,7 +47,7 @@ export default async function AdminUsersPage(props: {
   const supabase = getServiceSupabase();
   let query = supabase
     .from("profiles")
-    .select("id,name,email,phone,gender,age,dob,blood_group,type,is_blocked,created_at")
+    .select("id,name,email,phone,gender,age,dob,blood_group,type,is_blocked,created_at,profile_image")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -161,7 +163,7 @@ export default async function AdminUsersPage(props: {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50">
-                    <th className="text-left px-3 py-2 font-medium text-gray-600">Name</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">User</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Email</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Role</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Gender</th>
@@ -184,7 +186,15 @@ export default async function AdminUsersPage(props: {
                       : "bg-green-100 text-green-800";
                     return (
                       <tr key={p.id} className="border-b last:border-0">
-                        <td className="px-3 py-2 text-gray-900">{p.name || "Unnamed"}</td>
+                        <td className="px-3 py-2 text-gray-900">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7">
+                              <AvatarImage src={p.profile_image ?? undefined} alt={p.name ?? undefined} />
+                              <AvatarFallback>{(p.name || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <span>{p.name || "Unnamed"}</span>
+                          </div>
+                        </td>
                         <td className="px-3 py-2 text-gray-700">{p.email}</td>
                         <td className="px-3 py-2 text-gray-700">
                           {p.type === "doctor" ? "Doctor" : p.type === "patient" ? "Patient" : "-"}
