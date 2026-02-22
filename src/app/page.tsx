@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import FAQSection from "@/components/landing/FAQSection";
 import Footer from "@/components/landing/Footer";
 import Header from "@/components/landing/Header";
@@ -7,37 +7,153 @@ import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import { CalendarCheck, ShieldCheck, Smartphone, Stethoscope, Video } from "lucide-react";
 import { userAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+type HomepageFaqItem = {
+  question: string;
+  answer: string;
+};
+
+type HomepageStep = {
+  title: string;
+  description: string;
+};
+
+type HomepageHighlight = {
+  text: string;
+};
+
+type HomepageTestimonial = {
+  rating: number;
+  text: string;
+  author: string;
+  location: string;
+  bgColor: string;
+};
+
+type HomepageContent = {
+  siteName: string;
+  heroTitle: string;
+  heroHighlight: string;
+  heroDescription: string;
+  heroPrimaryCtaLabel: string;
+  heroSecondaryCtaLabel: string;
+  howTitle: string;
+  howSubtitle: string;
+  howSteps: HomepageStep[];
+  howHighlights: HomepageHighlight[];
+  faqTitle: string;
+  faqSubtitle: string;
+  faqItems: HomepageFaqItem[];
+  footerIntro: string;
+  footerContactPhone: string;
+  footerContactEmail: string;
+  footerContactLocation: string;
+  testimonials?: HomepageTestimonial[];
+};
 
 export default function Home() {
- const {user} = userAuthStore();
+  const { user } = userAuthStore();
   const router = useRouter();
+  const [content, setContent] = useState<HomepageContent | null>(null);
 
   useEffect(() => {
-    if(user?.type === 'doctor') {
-      router.replace('/doctor/dashboard')
+    if (user?.type === "doctor") {
+      router.replace("/doctor/dashboard");
     }
-  },[user,router])
+  }, [user, router]);
 
-  if(user?.type === 'doctor'){
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadContent = async () => {
+      try {
+        const response = await fetch("/api/homepage");
+        if (!response.ok) return;
+        const json = (await response.json()) as { config?: HomepageContent | null };
+        if (!isMounted) return;
+        if (json && json.config) {
+          setContent(json.config);
+        }
+      } catch {
+        // ignore and fall back to static copy
+      }
+    };
+
+    loadContent();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (user?.type === "doctor") {
     return null;
   }
 
+  const howTitle = content?.howTitle ?? "How MedicsOnline Works";
+  const howSubtitle =
+    content?.howSubtitle ??
+    "From finding the right doctor to getting your treatment plan, everything happens securely on your phone in a few simple steps.";
+
+  const steps: HomepageStep[] =
+    content?.howSteps && content.howSteps.length === 4
+      ? content.howSteps
+      : [
+          {
+            title: "Create your account",
+            description:
+              "Sign up in minutes and securely share the basic details your doctor needs to care for you.",
+          },
+          {
+            title: "Find the right doctor",
+            description:
+              "Browse verified doctors by specialty, experience, and fees, then choose who you want to speak with.",
+          },
+          {
+            title: "Join your consultation",
+            description:
+              "Connect via secure HD video or voice call from anywhere in Nigeria, at the time that works for you.",
+          },
+          {
+            title: "Get your plan & follow-up",
+            description:
+              "Receive your doctor's notes, prescriptions, and follow-up instructions all in one secure place.",
+          },
+        ];
+
+  const highlights: HomepageHighlight[] =
+    content?.howHighlights && content.howHighlights.length === 2
+      ? content.howHighlights
+      : [
+          {
+            text: "Most patients speak to a doctor within the same day.",
+          },
+          {
+            text: "All consultations are encrypted and handled by licensed Nigerian doctors.",
+          },
+        ];
+
   return (
      <div className="min-h-screen bg-white">
-      <Header showDashboardNav={false}/>
+      <Header showDashboardNav={false} siteName={content?.siteName} />
       <main className="pt-16">
-         <LandingHero/>
+         <LandingHero
+           title={content?.heroTitle}
+           highlight={content?.heroHighlight}
+           description={content?.heroDescription}
+           primaryCtaLabel={content?.heroPrimaryCtaLabel}
+           secondaryCtaLabel={content?.heroSecondaryCtaLabel}
+         />
 
          <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-blue-50">
            <div className="max-w-7xl mx-auto">
              <div className="max-w-3xl mx-auto text-center mb-12">
                <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-4">
-                 How MedicsOnline Works
+                 {howTitle}
                </h2>
                <p className="text-lg md:text-xl text-gray-600">
-                 From finding the right doctor to getting your treatment plan, everything happens
-                 securely on your phone in a few simple steps.
+                 {howSubtitle}
                </p>
              </div>
 
@@ -50,11 +166,10 @@ export default function Home() {
                    <Smartphone className="w-6 h-6 text-blue-600" />
                  </div>
                  <h3 className="text-lg md:text-xl font-semibold text-blue-900 mb-2">
-                   Create your account
+                   {steps[0]?.title}
                  </h3>
                  <p className="text-sm md:text-base text-gray-600">
-                   Sign up in minutes and securely share the basic details your doctor needs to care
-                   for you.
+                   {steps[0]?.description}
                  </p>
                </div>
 
@@ -66,11 +181,10 @@ export default function Home() {
                    <Stethoscope className="w-6 h-6 text-blue-600" />
                  </div>
                  <h3 className="text-lg md:text-xl font-semibold text-blue-900 mb-2">
-                   Find the right doctor
+                   {steps[1]?.title}
                  </h3>
                  <p className="text-sm md:text-base text-gray-600">
-                   Browse verified doctors by specialty, experience, and fees, then choose who you
-                   want to speak with.
+                   {steps[1]?.description}
                  </p>
                </div>
 
@@ -82,11 +196,10 @@ export default function Home() {
                    <Video className="w-6 h-6 text-blue-600" />
                  </div>
                  <h3 className="text-lg md:text-xl font-semibold text-blue-900 mb-2">
-                   Join your consultation
+                   {steps[2]?.title}
                  </h3>
                  <p className="text-sm md:text-base text-gray-600">
-                   Connect via secure HD video or voice call from anywhere in Nigeria, at the time
-                   that works for you.
+                   {steps[2]?.description}
                  </p>
                </div>
 
@@ -98,11 +211,10 @@ export default function Home() {
                    <ShieldCheck className="w-6 h-6 text-blue-600" />
                  </div>
                  <h3 className="text-lg md:text-xl font-semibold text-blue-900 mb-2">
-                   Get your plan & follow-up
+                   {steps[3]?.title}
                  </h3>
                  <p className="text-sm md:text-base text-gray-600">
-                   Receive your doctor&apos;s notes, prescriptions, and follow-up instructions all in
-                   one secure place.
+                   {steps[3]?.description}
                  </p>
                </div>
              </div>
@@ -110,19 +222,28 @@ export default function Home() {
              <div className="mt-10 flex flex-col md:flex-row items-center justify-between gap-4">
                <div className="flex items-center gap-3 text-sm md:text-base text-gray-600">
                  <CalendarCheck className="w-5 h-5 text-green-600" />
-                 <span>Most patients speak to a doctor within the same day.</span>
+                <span>{highlights[0]?.text}</span>
                </div>
                <div className="flex items-center gap-3 text-sm md:text-base text-gray-600">
                  <ShieldCheck className="w-5 h-5 text-blue-600" />
-                 <span>All consultations are encrypted and handled by licensed Nigerian doctors.</span>
+                <span>{highlights[1]?.text}</span>
                </div>
              </div>
            </div>
          </section>
 
-         <TestimonialsSection/>
-         <FAQSection/>
-         <Footer/>
+        <TestimonialsSection items={content?.testimonials} />
+        <FAQSection
+          title={content?.faqTitle}
+          subtitle={content?.faqSubtitle}
+          items={content?.faqItems}
+        />
+        <Footer
+          introText={content?.footerIntro}
+          contactPhone={content?.footerContactPhone}
+          contactEmail={content?.footerContactEmail}
+          contactLocation={content?.footerContactLocation}
+        />
       </main>
      </div>
   );

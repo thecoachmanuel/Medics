@@ -18,6 +18,9 @@ import {
   TrendingUp,
   Users,
   Video,
+  Sun,
+  SunMedium,
+  Moon,
 } from "lucide-react";
 import PrescriptionModal from "./PrescriptionModal";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -37,9 +40,13 @@ const DoctorDashboardContent = () => {
   const [completingAppointmentId, setCompletingAppointmentId] = useState<
     string | null
   >(null);
-  const [modalLoading, setModalLoading] = useState(false);
+  const [, setModalLoading] = useState(false);
   const { endConsultation, fetchAppointmentById, currentAppointment } =
     useAppointmentStore();
+  const [greeting, setGreeting] = useState("Good day");
+  const [greetingPeriod, setGreetingPeriod] = useState<
+    "morning" | "afternoon" | "evening"
+  >("morning");
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -60,15 +67,29 @@ const DoctorDashboardContent = () => {
       router.push("/appeal");
       return;
     }
-
-    const hasCompletedProfile = Boolean(
-      user.specialization &&
-        user.hospitalInfo?.name &&
-        user.fees &&
-        user.category &&
-        user.category.length > 0,
-    );
   }, [isAuthenticated, user, router]);
+
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat("en-NG", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: "Africa/Lagos",
+    });
+    const parts = formatter.formatToParts(new Date());
+    const hourString = parts.find((part) => part.type === "hour")?.value;
+    const hour = hourString ? parseInt(hourString, 10) : new Date().getHours();
+
+    if (hour >= 5 && hour < 12) {
+      setGreeting("Good morning");
+      setGreetingPeriod("morning");
+    } else if (hour >= 12 && hour < 17) {
+      setGreeting("Good afternoon");
+      setGreetingPeriod("afternoon");
+    } else {
+      setGreeting("Good evening");
+      setGreetingPeriod("evening");
+    }
+  }, []);
 
   useEffect(() => {
     if (user?.type === "doctor") {
@@ -167,8 +188,6 @@ const DoctorDashboardContent = () => {
     );
   }
 
-  const patientName = currentAppointment?.patientId?.name;
-
   const doctorStatus = {
     isVerified: dashboardData?.user?.isVerified ?? user?.isVerified ?? false,
     isSuspended: dashboardData?.user?.isSuspended ?? false,
@@ -264,7 +283,6 @@ const DoctorDashboardContent = () => {
     },
   ];
 
-  console.log(dashboardData);
   return (
     <>
       <Header showDashboardNav={true} />
@@ -285,9 +303,20 @@ const DoctorDashboardContent = () => {
                 </Avatar>
 
                 <div>
-                  <h1 className="text-md md:text-3xl font-bold text-gray-900">
-                    Good evening, {dashboardData?.user?.name}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    {greetingPeriod === "morning" && (
+                      <Sun className="w-6 h-6 text-yellow-500" />
+                    )}
+                    {greetingPeriod === "afternoon" && (
+                      <SunMedium className="w-6 h-6 text-orange-500" />
+                    )}
+                    {greetingPeriod === "evening" && (
+                      <Moon className="w-6 h-6 text-indigo-500" />
+                    )}
+                    <h1 className="text-md md:text-3xl font-bold text-gray-900">
+                      {greeting}, {dashboardData?.user?.name}
+                    </h1>
+                  </div>
                   <p className="text-gray-600 text-xs md:text-lg">
                     {dashboardData?.user?.specialization}
                   </p>
@@ -597,7 +626,7 @@ const DoctorDashboardContent = () => {
         isOpen={showPrescriptionModal}
         onClose={handleCloseModal}
         onSave={handleSavePrescription}
-        patientName={patientName}
+        patientName={currentAppointment?.patientId?.name ?? ""}
       />
     </>
   );

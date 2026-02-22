@@ -26,6 +26,7 @@ import { supabase } from "@/lib/supabase/client";
 
 interface HeaderProps {
   showDashboardNav?: boolean;
+  siteName?: string;
 }
 
 interface NavigationItem {
@@ -34,11 +35,12 @@ interface NavigationItem {
   href: string;
   active: boolean;
 }
-const Header: React.FC<HeaderProps> = ({ showDashboardNav = false }) => {
+const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) => {
   const { user, isAuthenticated, logout } = userAuthStore();
   const pathname = usePathname();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const brandName = siteName && siteName.trim().length > 0 ? siteName : "MedicsOnline";
 
   const handleLogout = () => {
     logout();
@@ -156,7 +158,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false }) => {
             </div>
 
             <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800  bg-clip-text text-transparent">
-              MedicsOnline
+              {brandName}
             </div>
           </button>
 

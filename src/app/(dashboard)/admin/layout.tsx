@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -91,7 +90,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="flex-1">
         <header className="h-16 bg-white border-b flex items-center justify-between px-6">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">MedicsOnline Admin</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Admin Dashboard</h1>
             <p className="text-xs text-gray-500">Manage doctors, patients, appointments, and payments.</p>
           </div>
           <Button variant="outline" size="sm" onClick={logout} className="cursor-pointer">

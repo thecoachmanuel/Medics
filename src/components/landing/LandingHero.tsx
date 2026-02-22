@@ -6,7 +6,21 @@ import { healthcareCategories } from '@/lib/constant'
 import { useRouter } from 'next/navigation';
 import { userAuthStore } from '@/store/authStore';
 
-const LandingHero = () => {
+interface LandingHeroProps {
+  title?: string;
+  highlight?: string;
+  description?: string;
+  primaryCtaLabel?: string;
+  secondaryCtaLabel?: string;
+}
+
+const LandingHero: React.FC<LandingHeroProps> = ({
+  title,
+  highlight,
+  description,
+  primaryCtaLabel,
+  secondaryCtaLabel,
+}) => {
  const {isAuthenticated} = userAuthStore();
    const router = useRouter();
 
@@ -27,26 +41,34 @@ const LandingHero = () => {
             router.push('/signup/patient')
            }
     }
+  const headingLine = title && title.trim().length > 0 ? title : 'Connect with doctors';
+  const headingHighlight = highlight && highlight.trim().length > 0 ? highlight : 'anytime, anywhere';
+  const heroDescription = description && description.trim().length > 0
+    ? description
+    : 'Book appointments, consult via video, and manage your healthcare journey all in one secure platform';
+  const primaryLabel = primaryCtaLabel && primaryCtaLabel.trim().length > 0 ? primaryCtaLabel : 'Find Doctors';
+  const secondaryLabel = secondaryCtaLabel && secondaryCtaLabel.trim().length > 0 ? secondaryCtaLabel : 'Login as Doctor';
+
   return (
     <section className='py-20 px-4 bg-gradient-to-b from-blue-50 to-white'>
 
         <div className='container mx-auto text-center'>
             <h1 className='text-5xl md:text-6xl font-bold text-blue-900 leading-tight mb-6'>
-                Connect with doctors <br/>
+                {headingLine} <br/>
                 <span className='text-blue-600'>
-                    anytime, anywhere
+                    {headingHighlight}
                 </span>
             </h1>
             <p className='text-xl text-gray-600 mb-8 max-w-2xl mx-auto'>
-                Book appointments, consult via video, and manage your healthcare journey all in one secure platform
+                {heroDescription}
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center mb-12'>
                      <Button onClick={handleBookConsultation} size='lg' className='bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-full px-8 py-3 text-lg'> 
-                        Find Doctors
+                        {primaryLabel}
                      </Button>
                      <Link href='/login/doctor'>
                         <Button size='lg' variant='outline' className='w-full border-blue-600 text-blue-600   hover:bg-blue-50 rounded-full px-8 py-3 text-lg'> 
-                         Login as Doctor
+                         {secondaryLabel}
                      </Button>
                      </Link>
                       

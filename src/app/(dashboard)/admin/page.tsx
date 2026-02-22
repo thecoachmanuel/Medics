@@ -12,11 +12,18 @@ const formatMonth = (date: Date): string => {
 export default async function AdminDashboardPage() {
   const supabase = getServiceSupabase();
 
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
   const [patientsResult, doctorsResult, appointmentsResult, revenueResult] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "patient"),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "doctor"),
     supabase.from("appointments").select("id", { count: "exact", head: true }),
-    supabase.from("payments").select("amount,created_at,status").eq("status", "success"),
+    supabase
+      .from("payments")
+      .select("amount,created_at,status")
+      .eq("status", "success")
+      .gte("created_at", sixMonthsAgo.toISOString()),
   ]);
 
   const totalPatients = patientsResult.count || 0;
@@ -25,9 +32,6 @@ export default async function AdminDashboardPage() {
   const paymentRows = (revenueResult.data || []) as { amount: number; created_at: string; status: string }[];
 
   const totalRevenue = paymentRows.reduce((sum, row) => sum + (row.amount || 0), 0);
-
-  const now = new Date();
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
   const monthlyMap = new Map<string, number>();
   for (let i = 0; i < 6; i += 1) {
@@ -49,7 +53,8 @@ export default async function AdminDashboardPage() {
   const { data: appointmentRows } = await supabase
     .from("appointments")
     .select("status")
-    .not("status", "is", null);
+    .not("status", "is", null)
+    .gte("created_at", sixMonthsAgo.toISOString());
 
   const statusCounts = new Map<string, number>();
   (appointmentRows || []).forEach((row: any) => {

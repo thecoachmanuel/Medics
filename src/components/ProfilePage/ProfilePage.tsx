@@ -1,5 +1,5 @@
 "use client";
-import { healthcareCategories, specializations } from "@/lib/constant";
+import { healthcareCategories, specializations as defaultSpecializations } from "@/lib/constant";
 import { userAuthStore } from "@/store/authStore";
 import {
   Clock,
@@ -40,6 +40,8 @@ const ProfilePage = ({ userType }: ProfileProps) => {
   const [activeSection, setActiveSection] = useState("about");
   const [isEditing, setIsEditing] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [taxonomySpecializations, setTaxonomySpecializations] = useState<string[] | null>(null);
+  const [taxonomyCategoryNames, setTaxonomyCategoryNames] = useState<string[] | null>(null);
 
   const [formData, setFormData] = useState<any>({
     name: "",
@@ -108,6 +110,37 @@ const ProfilePage = ({ userType }: ProfileProps) => {
     if (validIds.has(section)) {
       setActiveSection(section);
     }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTaxonomies = async () => {
+      try {
+        const response = await fetch("/api/taxonomies");
+        if (!response.ok) return;
+        const json = (await response.json()) as {
+          config?: {
+            specializations?: string[];
+            categories?: string[];
+          } | null;
+        };
+        if (!isMounted || !json || !json.config) return;
+        if (Array.isArray(json.config.specializations) && json.config.specializations.length) {
+          setTaxonomySpecializations(json.config.specializations);
+        }
+        if (Array.isArray(json.config.categories) && json.config.categories.length) {
+          setTaxonomyCategoryNames(json.config.categories);
+        }
+      } catch {
+      }
+    };
+
+    loadTaxonomies();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -197,9 +230,14 @@ const ProfilePage = ({ userType }: ProfileProps) => {
   };
 
   const getAvailableCategories = () => {
-    return healthcareCategories.filter(
-      (cat) => !formData.category.includes(cat.title)
-    );
+    const allowedTitles = taxonomyCategoryNames && taxonomyCategoryNames.length
+      ? new Set(taxonomyCategoryNames)
+      : null;
+    return healthcareCategories.filter((cat) => {
+      if (formData.category.includes(cat.title)) return false;
+      if (allowedTitles && !allowedTitles.has(cat.title)) return false;
+      return true;
+    });
   };
 
   const addTimeRange = () => {
@@ -359,6 +397,12 @@ const ProfilePage = ({ userType }: ProfileProps) => {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <Label>Specialization</Label>
+        {(() => {
+          const options =
+            taxonomySpecializations && taxonomySpecializations.length
+              ? taxonomySpecializations
+              : defaultSpecializations;
+          return (
         <Select
           value={formData.specialization || ""}
           onValueChange={(value) => handleInputChnage("specialization", value)}
@@ -368,13 +412,15 @@ const ProfilePage = ({ userType }: ProfileProps) => {
             <SelectValue placeholder="Select specialization" />
           </SelectTrigger>
           <SelectContent>
-            {specializations.map((spec) => (
+            {options.map((spec) => (
               <SelectItem key={spec} value={spec}>
                 {spec}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+          );
+        })()}
       </div>
 
       <div className="flex flex-col gap-2">

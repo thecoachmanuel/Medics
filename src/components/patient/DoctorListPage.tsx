@@ -8,7 +8,7 @@ import { FilterIcon, MapPin, Search, Star, X } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { cities, healthcareCategories, specializations } from "@/lib/constant";
+import { cities, healthcareCategories, specializations as defaultSpecializations } from "@/lib/constant";
 import { Card, CardContent } from "../ui/card";
 import {
   Select,
@@ -36,10 +36,43 @@ const DoctorListPage = () => {
   });
 
   const [showFilters, setShowFilters] = useState(false);
+  const [taxonomySpecializations, setTaxonomySpecializations] = useState<string[] | null>(null);
+  const [taxonomyCategoryNames, setTaxonomyCategoryNames] = useState<string[] | null>(null);
 
   useEffect(() => {
     fetchDoctors(filters);
   }, [fetchDoctors, filters]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTaxonomies = async () => {
+      try {
+        const response = await fetch("/api/taxonomies");
+        if (!response.ok) return;
+        const json = (await response.json()) as {
+          config?: {
+            specializations?: string[];
+            categories?: string[];
+          } | null;
+        };
+        if (!isMounted || !json || !json.config) return;
+        if (Array.isArray(json.config.specializations) && json.config.specializations.length) {
+          setTaxonomySpecializations(json.config.specializations);
+        }
+        if (Array.isArray(json.config.categories) && json.config.categories.length) {
+          setTaxonomyCategoryNames(json.config.categories);
+        }
+      } catch {
+      }
+    };
+
+    loadTaxonomies();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleFilterChange = (key: keyof DoctorFilters, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -59,6 +92,18 @@ const DoctorListPage = () => {
   const activeFilterCount = Object.values(filters).filter(
     (value) => value && value !== "experience" && value !== "desc"
   ).length;
+
+  const specializationOptions =
+    taxonomySpecializations && taxonomySpecializations.length
+      ? taxonomySpecializations
+      : defaultSpecializations;
+
+  const categoryChips =
+    taxonomyCategoryNames && taxonomyCategoryNames.length
+      ? healthcareCategories.filter((category) =>
+          taxonomyCategoryNames.includes(category.title),
+        )
+      : healthcareCategories;
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -119,7 +164,7 @@ const DoctorListPage = () => {
                 All Categories
               </Button>
 
-              {healthcareCategories.map((cat) => (
+              {categoryChips.map((cat) => (
                 <Button
                   key={cat.id}
                   variant={
@@ -175,7 +220,7 @@ const DoctorListPage = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Specializations</SelectItem>
-                      {specializations.map((spec) => (
+                      {specializationOptions.map((spec) => (
                         <SelectItem key={spec} value={spec}>
                           {spec}
                         </SelectItem>

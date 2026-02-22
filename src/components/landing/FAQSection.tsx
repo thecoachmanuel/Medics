@@ -3,22 +3,38 @@ import { faqs } from "@/lib/constant";
 import React, { useState } from "react";
 import { Card, CardContent } from "../ui/card";
 
-const FAQSection = () => {
+interface FAQItem {
+  question: string;
+  answer: string;
+}
+
+interface FAQSectionProps {
+  title?: string;
+  subtitle?: string;
+  items?: FAQItem[];
+}
+
+const FAQSection: React.FC<FAQSectionProps> = ({ title, subtitle, items }) => {
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
+  const headerTitle = title && title.trim().length > 0 ? title : "Frequently asked questions";
+  const headerSubtitle =
+    subtitle && subtitle.trim().length > 0
+      ? subtitle
+      : "Find quick answers to the most common questions about how MedicsOnline works for patients and doctors.";
+  const data = items && items.length > 0 ? items : faqs;
   return (
     <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-blue-50">
       <div className="max-w-7xl mx-auto">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-blue-900 text-center mb-4">
-            Frequently asked questions
+            {headerTitle}
           </h2>
           <p className="text-lg md:text-xl text-gray-600 text-center mb-10">
-            Find quick answers to the most common questions about how MedicsOnline
-            works for patients and doctors.
+            {headerSubtitle}
           </p>
 
           <div className="space-y-4">
-            {faqs.map((faq, index) => (
+            {data.map((faq, index) => (
               <Card key={index} className="bg-card border border-border shadow-sm">
                 <CardContent className="p-0">
                   <button

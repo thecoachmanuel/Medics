@@ -47,7 +47,13 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
         query = query.eq('is_verified', true).eq('is_suspended', false).eq('is_declined', false);
       }
       if (filters.search) {
-        query = query.ilike('name', `%${filters.search}%`);
+        const term = filters.search.trim();
+        if (term.length > 0) {
+          const pattern = `%${term}%`;
+          query = query.or(
+            `name.ilike.${pattern},specialization.ilike.${pattern},about.ilike.${pattern}`,
+          );
+        }
       }
       if (filters.specialization) {
         query = query.eq('specialization', filters.specialization);

@@ -19,7 +19,16 @@ interface PersonRow {
   name: string | null;
 }
 
-export default async function AdminAppointmentsPage() {
+type AdminAppointmentsPageProps = {
+  searchParams?: {
+    q?: string;
+    status?: string;
+  };
+};
+
+export default async function AdminAppointmentsPage({
+  searchParams,
+}: AdminAppointmentsPageProps) {
   const supabase = getServiceSupabase();
 
   const { data: appointmentsData } = await supabase
@@ -52,12 +61,28 @@ export default async function AdminAppointmentsPage() {
     patientMap.set(p.id, p.name || "Patient");
   });
 
-  const total = rows.length;
-  const completed = rows.filter((r) => r.status === "Completed").length;
-  const scheduled = rows.filter((r) => r.status === "Scheduled").length;
-  const cancelled = rows.filter((r) => r.status === "Cancelled").length;
-  const missed = rows.filter((r) => r.status === "Missed").length;
-  const expired = rows.filter((r) => r.status === "Expired").length;
+  const query =
+    typeof searchParams?.q === "string" ? searchParams.q.trim().toLowerCase() : "";
+  const statusFilter =
+    typeof searchParams?.status === "string" && searchParams.status !== "all"
+      ? searchParams.status
+      : undefined;
+
+  const filteredRows = rows.filter((r) => {
+    const doctorName = (doctorMap.get(r.doctor_id) || "").toLowerCase();
+    const patientName = (patientMap.get(r.patient_id) || "").toLowerCase();
+    const matchesQuery =
+      !query || doctorName.includes(query) || patientName.includes(query) || r.id.toLowerCase().includes(query);
+    const matchesStatus = !statusFilter || r.status === statusFilter;
+    return matchesQuery && matchesStatus;
+  });
+
+  const total = filteredRows.length;
+  const completed = filteredRows.filter((r) => r.status === "Completed").length;
+  const scheduled = filteredRows.filter((r) => r.status === "Scheduled").length;
+  const cancelled = filteredRows.filter((r) => r.status === "Cancelled").length;
+  const missed = filteredRows.filter((r) => r.status === "Missed").length;
+  const expired = filteredRows.filter((r) => r.status === "Expired").length;
 
   return (
     <div className="space-y-4">
@@ -110,6 +135,42 @@ export default async function AdminAppointmentsPage() {
             <p className="text-sm text-gray-500">No appointments created yet.</p>
           ) : (
             <div className="overflow-x-auto">
+              <form
+                method="GET"
+                className="mb-4 flex flex-wrap items-center gap-3 text-sm"
+              >
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Search by patient, doctor, or ID"
+                  defaultValue={typeof searchParams?.q === "string" ? searchParams.q : ""}
+                  className="w-full md:w-64 rounded-md border border-gray-300 px-2 py-1"
+                />
+                <select
+                  name="status"
+                  defaultValue={
+                    typeof searchParams?.status === "string"
+                      ? searchParams.status
+                      : "all"
+                  }
+                  className="w-full md:w-48 rounded-md border border-gray-300 px-2 py-1"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="Scheduled">Scheduled</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                  <option value="Missed">Missed</option>
+                  <option value="Expired">Expired</option>
+                </select>
+                <button
+                  type="submit"
+                  className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                >
+                  Apply filters
+                </button>
+              </form>
+
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50">
@@ -122,7 +183,7 @@ export default async function AdminAppointmentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => {
+                  {filteredRows.map((r) => {
                     const dateLabel = r.slot_start_iso
                       ? new Date(r.slot_start_iso).toLocaleDateString("en-NG", {
                           timeZone: "Africa/Lagos",

@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { updateUserBlockStatus } from "@/actions/admin-actions";
 
 interface UserRow {
   id: string;
@@ -14,6 +15,7 @@ interface UserRow {
   dob: string | null;
   blood_group: string | null;
   type: "doctor" | "patient" | null;
+  is_blocked: boolean | null;
   created_at: string;
 }
 
@@ -43,7 +45,7 @@ export default async function AdminUsersPage(props: {
   const supabase = getServiceSupabase();
   const { data } = await supabase
     .from("profiles")
-    .select("id,name,email,phone,gender,age,dob,blood_group,type,created_at")
+    .select("id,name,email,phone,gender,age,dob,blood_group,type,is_blocked,created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -65,6 +67,19 @@ export default async function AdminUsersPage(props: {
   const totalUsers = rows.length;
   const totalPatients = rows.filter((u) => u.type === "patient").length;
   const totalDoctors = rows.filter((u) => u.type === "doctor").length;
+
+  async function handleBlock(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "");
+    const roleValue = String(formData.get("role") || "");
+    const actionValue = String(formData.get("action") || "");
+
+    if (!id) return;
+    if (roleValue !== "doctor" && roleValue !== "patient") return;
+    if (actionValue !== "block" && actionValue !== "unblock") return;
+
+    await updateUserBlockStatus(id, roleValue, actionValue === "block" ? "block" : "unblock");
+  }
 
   return (
     <div className="space-y-4">
@@ -148,12 +163,19 @@ export default async function AdminUsersPage(props: {
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Blood group</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Phone</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Joined</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Account</th>
+                    <th className="px-3 py-2" />
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((p) => {
                     const effectiveAge =
                       typeof p.age === "number" && p.age > 0 ? p.age : calculateAge(p.dob);
+                    const isBlocked = !!p.is_blocked;
+                    const accountLabel = isBlocked ? "Blocked" : "Active";
+                    const accountClass = isBlocked
+                      ? "bg-red-100 text-red-800"
+                      : "bg-green-100 text-green-800";
                     return (
                       <tr key={p.id} className="border-b last:border-0">
                         <td className="px-3 py-2 text-gray-900">{p.name || "Unnamed"}</td>
@@ -169,6 +191,33 @@ export default async function AdminUsersPage(props: {
                           {new Date(p.created_at).toLocaleDateString("en-NG", {
                             timeZone: "Africa/Lagos",
                           })}
+                        </td>
+                        <td className="px-3 py-2">
+                          {p.type === "doctor" || p.type === "patient" ? (
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${accountClass}`}
+                            >
+                              {accountLabel}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {p.type === "doctor" || p.type === "patient" ? (
+                            <form action={handleBlock} className="inline">
+                              <input type="hidden" name="id" value={p.id} />
+                              <input type="hidden" name="role" value={p.type} />
+                              <input
+                                type="hidden"
+                                name="action"
+                                value={isBlocked ? "unblock" : "block"}
+                              />
+                              <Button type="submit" size="sm" variant="outline">
+                                {isBlocked ? "Unblock" : "Block"}
+                              </Button>
+                            </form>
+                          ) : null}
                         </td>
                       </tr>
                     );

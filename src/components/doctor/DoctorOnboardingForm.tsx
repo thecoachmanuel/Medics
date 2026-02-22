@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { healthcareCategoriesList, specializations } from "@/lib/constant";
+import { healthcareCategoriesList, specializations as defaultSpecializations } from "@/lib/constant";
 import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
@@ -44,6 +44,9 @@ const DoctorOnboardingForm = () => {
     slotDurationMinutes: 30,
   });
 
+  const [availableSpecializations, setAvailableSpecializations] = useState<string[]>(defaultSpecializations);
+  const [availableCategories, setAvailableCategories] = useState<string[]>(healthcareCategoriesList);
+
   const { updateProfile, user, loading } = userAuthStore();
   const router = useRouter();
 
@@ -61,6 +64,37 @@ const DoctorOnboardingForm = () => {
       }
     }
   }, [user, router]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTaxonomies = async () => {
+      try {
+        const response = await fetch("/api/taxonomies");
+        if (!response.ok) return;
+        const json = (await response.json()) as {
+          config?: {
+            specializations?: string[];
+            categories?: string[];
+          } | null;
+        };
+        if (!isMounted || !json || !json.config) return;
+        if (Array.isArray(json.config.specializations) && json.config.specializations.length) {
+          setAvailableSpecializations(json.config.specializations);
+        }
+        if (Array.isArray(json.config.categories) && json.config.categories.length) {
+          setAvailableCategories(json.config.categories);
+        }
+      } catch {
+      }
+    };
+
+    loadTaxonomies();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleCategoryToggle = (category: string): void => {
     setFormData((prev: DoctorFormData) => ({
@@ -158,7 +192,7 @@ const DoctorOnboardingForm = () => {
                       <SelectValue placeholder="Select specialization"></SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {specializations.map((spec: string) => (
+                      {availableSpecializations.map((spec: string) => (
                         <SelectItem key={spec} value={spec}>
                           {spec}
                         </SelectItem>
@@ -189,7 +223,7 @@ const DoctorOnboardingForm = () => {
                 </p>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {healthcareCategoriesList.map((category: string) => (
+                  {availableCategories.map((category: string) => (
                     <div className="flex items-center space-x-2" key={category}>
                       <Checkbox
                         id={category}

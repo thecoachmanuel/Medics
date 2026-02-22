@@ -3,7 +3,20 @@ import { testimonials } from "@/lib/constant";
 import React from "react";
 import { Card, CardContent } from "../ui/card";
 
-const TestimonialsSection = () => {
+type TestimonialItem = {
+  rating: number;
+  text: string;
+  author: string;
+  location: string;
+  bgColor: string;
+};
+
+type TestimonialsSectionProps = {
+  items?: TestimonialItem[];
+};
+
+const TestimonialsSection = ({ items }: TestimonialsSectionProps) => {
+  const source = items && items.length > 0 ? items : testimonials;
   return (
     <section className="py-16 px-4 sm:px-6 lg:px-8 bg-background">
       <div className="max-w-7xl mx-auto">
@@ -29,9 +42,8 @@ const TestimonialsSection = () => {
           </div>
         </div>
 
-        {/* Testimonila grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {testimonials.map((testimonial, index) => (
+          {source.map((testimonial, index) => (
             <Card
               key={index}
               className={`${testimonial.bgColor} border border-border hover:shadow-lg transition-shadow duration-200`}

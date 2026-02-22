@@ -4,7 +4,29 @@ import { Stethoscope } from "lucide-react";
 import React from "react";
 import { Button } from "../ui/button";
 
-const Footer = () => {
+interface FooterProps {
+  introText?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  contactLocation?: string;
+}
+
+const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, contactLocation }) => {
+  const resolvedIntro =
+    introText && introText.trim().length > 0
+      ? introText
+      : "Your trusted healthcare partner providing quality medical consultations with certified doctors online, anytime, anywhere.";
+
+  const phoneText = contactPhone && contactPhone.trim().length > 0 ? contactPhone : contactInfo[0]?.text;
+  const emailText = contactEmail && contactEmail.trim().length > 0 ? contactEmail : contactInfo[1]?.text;
+  const locationText =
+    contactLocation && contactLocation.trim().length > 0 ? contactLocation : contactInfo[2]?.text;
+
+  const mergedContactInfo = [
+    { ...contactInfo[0], text: phoneText },
+    { ...contactInfo[1], text: emailText },
+    { ...contactInfo[2], text: locationText },
+  ];
   return (
     <footer className="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,12 +43,11 @@ const Footer = () => {
               </div>
 
               <p className="text-blue-100 mb-6 text-lg leading-relaxed">
-                Your trusted healthcare partner providing quality medical
-                consultations with certified doctors online, anytime, anywhere.
+                {resolvedIntro}
               </p>
 
               <div className="space-y-3 mb-6">
-                {contactInfo.map((item, index) => (
+                {mergedContactInfo.map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center space-x-3 text-blue-100"
