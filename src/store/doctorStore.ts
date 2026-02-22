@@ -339,6 +339,24 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
         if (year === lastYear) lastYearRevenue += amount;
       });
 
+      // deduct non-rejected payout requests from current year revenue
+      let thisYearPayouts = 0;
+      {
+        const { data: payoutRows } = await supabase
+          .from('doctor_payout_requests')
+          .select('amount,status,created_at')
+          .eq('doctor_id', uid)
+          .neq('status', 'rejected');
+        ((payoutRows as { amount: number | null; status: string | null; created_at: string | null }[] ) || []).forEach((r) => {
+          const createdAt = r.created_at;
+          if (!createdAt) return;
+          const year = new Date(createdAt).getFullYear();
+          const amount = Number(r.amount || 0);
+          if (year === thisYear) thisYearPayouts += amount;
+        });
+      }
+      const netThisYearRevenue = Math.max(0, thisYearRevenue - thisYearPayouts);
+
       const thisYearPatientIds = new Set<string>();
       const lastYearPatientIds = new Set<string>();
       let thisYearCompletedCount = 0;
@@ -433,7 +451,7 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
         stats: {
           totalPatients,
           todayAppointments: todayAppointments.length,
-          totalRevenue: thisYearRevenue,
+          totalRevenue: netThisYearRevenue,
           completedAppointments: thisYearCompletedCount,
           averageRating: Number(avgRating.toFixed(1)),
         },
@@ -453,8 +471,8 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
             positive: isPositive(lastYearTodayCount, todayAppointments.length),
           },
           totalRevenue: {
-            value: computePercentChange(lastYearRevenue, thisYearRevenue),
-            positive: isPositive(lastYearRevenue, thisYearRevenue),
+            value: computePercentChange(lastYearRevenue, netThisYearRevenue),
+            positive: isPositive(lastYearRevenue, netThisYearRevenue),
           },
           completedAppointments: {
             value: computePercentChange(
