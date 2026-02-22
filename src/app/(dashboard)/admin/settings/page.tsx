@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Stethoscope } from "lucide-react";
+import { Stethoscope, ChevronDown, ChevronRight } from "lucide-react";
 import { healthcareCategoriesList, specializations as defaultSpecializations } from "@/lib/constant";
 
 type HomepageFaqItem = {
@@ -133,6 +133,11 @@ const defaultTaxonomiesConfig: DoctorTaxonomiesConfig = {
 
 export default function AdminSettingsPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [brandingOpen, setBrandingOpen] = useState(true);
+  const [realtimeOpen, setRealtimeOpen] = useState(true);
+  const [taxonomiesOpen, setTaxonomiesOpen] = useState(true);
+  const [homepageOpen, setHomepageOpen] = useState(true);
+  const [subscribersOpen, setSubscribersOpen] = useState(true);
   const [homepageContent, setHomepageContent] = useState<HomepageContent>(defaultHomepageContent);
   const [savingHomepage, setSavingHomepage] = useState(false);
   const [homepageError, setHomepageError] = useState<string | null>(null);
@@ -287,9 +292,13 @@ export default function AdminSettingsPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-gray-700">Branding</CardTitle>
+          <button onClick={() => setBrandingOpen((v) => !v)} className="text-gray-500 hover:text-gray-700">
+            {brandingOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
         </CardHeader>
+        {brandingOpen && (
         <CardContent className="space-y-6 text-sm text-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -312,6 +321,23 @@ export default function AdminSettingsPage() {
                     <span>No header logo set</span>
                   </div>
                 )}
+              </div>
+              <p className="text-xs text-gray-500">Recommended: SVG or PNG, ~40x40 for header.</p>
+              <div
+                className="mt-2 rounded border border-dashed border-gray-300 p-3 text-xs text-gray-600"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files?.[0];
+                  if (!file) return;
+                  try {
+                    const { uploadImage } = await import("@/lib/cloudinary");
+                    const res = await uploadImage(file, "medimeet/branding");
+                    setHomepageContent((prev) => ({ ...prev, headerLogoUrl: res.url, headerLogoPublicId: res.publicId }));
+                  } catch {}
+                }}
+              >
+                Drag & drop header logo here
               </div>
               <div className="flex gap-2">
                 <label className="inline-flex items-center gap-2 text-xs">
@@ -373,6 +399,23 @@ export default function AdminSettingsPage() {
                   </div>
                 )}
               </div>
+              <p className="text-xs text-gray-500">Recommended: SVG or PNG, ~48x48 for footer.</p>
+              <div
+                className="mt-2 rounded border border-dashed border-gray-300 p-3 text-xs text-gray-600"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files?.[0];
+                  if (!file) return;
+                  try {
+                    const { uploadImage } = await import("@/lib/cloudinary");
+                    const res = await uploadImage(file, "medimeet/branding");
+                    setHomepageContent((prev) => ({ ...prev, footerLogoUrl: res.url, footerLogoPublicId: res.publicId }));
+                  } catch {}
+                }}
+              >
+                Drag & drop footer logo here
+              </div>
               <div className="flex gap-2">
                 <label className="inline-flex items-center gap-2 text-xs">
                   <span>Upload</span>
@@ -425,12 +468,17 @@ export default function AdminSettingsPage() {
             </Button>
           </div>
         </CardContent>
+        )}
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-gray-700">Real-time updates</CardTitle>
+          <button onClick={() => setRealtimeOpen((v) => !v)} className="text-gray-500 hover:text-gray-700">
+            {realtimeOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
         </CardHeader>
+        {realtimeOpen && (
         <CardContent className="flex items-center justify-between text-sm text-gray-700">
           <div>
             <div className="font-semibold">Auto refresh admin pages</div>
@@ -447,12 +495,17 @@ export default function AdminSettingsPage() {
             {autoRefresh ? "On" : "Off"}
           </Button>
         </CardContent>
+        )}
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-gray-700">Doctor taxonomies</CardTitle>
+          <button onClick={() => setTaxonomiesOpen((v) => !v)} className="text-gray-500 hover:text-gray-700">
+            {taxonomiesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
         </CardHeader>
+        {taxonomiesOpen && (
         <CardContent className="space-y-6 text-sm text-gray-700">
           <div className="space-y-2">
             <div className="font-semibold">Specializations</div>
@@ -559,6 +612,7 @@ export default function AdminSettingsPage() {
             </Button>
           </div>
         </CardContent>
+        )}
       </Card>
 
       <Card>
@@ -1026,9 +1080,13 @@ export default function AdminSettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-gray-700">Newsletter subscribers</CardTitle>
+          <button onClick={() => setSubscribersOpen((v) => !v)} className="text-gray-500 hover:text-gray-700">
+            {subscribersOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
         </CardHeader>
+        {subscribersOpen && (
         <CardContent className="space-y-4 text-sm text-gray-700">
           {loadingSubscribers ? (
             <p className="text-sm text-gray-500">Loading subscribers...</p>
@@ -1088,6 +1146,7 @@ export default function AdminSettingsPage() {
             </div>
           )}
         </CardContent>
+        )}
       </Card>
     </div>
   );

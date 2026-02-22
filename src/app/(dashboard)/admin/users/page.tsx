@@ -55,7 +55,12 @@ export default async function AdminUsersPage(props: {
     query = query.eq("type", roleFilter);
   }
 
-  const { data } = await query;
+  const [{ data }, totalAllRes, totalDoctorsRes, totalPatientsRes] = await Promise.all([
+    query,
+    supabase.from("profiles").select("id", { count: "exact", head: true }),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "doctor"),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "patient"),
+  ]);
 
   const rows = (data || []) as UserRow[];
 
@@ -72,9 +77,9 @@ export default async function AdminUsersPage(props: {
     );
   });
 
-  const totalUsers = rows.length;
-  const totalPatients = roleFilter === "doctor" ? 0 : rows.filter((u) => u.type === "patient").length;
-  const totalDoctors = roleFilter === "patient" ? 0 : rows.filter((u) => u.type === "doctor").length;
+  const totalUsers = totalAllRes.count ?? rows.length;
+  const totalDoctors = totalDoctorsRes.count ?? rows.filter((u) => u.type === "doctor").length;
+  const totalPatients = totalPatientsRes.count ?? rows.filter((u) => u.type === "patient").length;
 
   async function handleBlock(formData: FormData) {
     "use server";
