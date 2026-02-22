@@ -346,9 +346,14 @@ const DoctorDashboardContent = () => {
                   </Button>
                 </Link>
                 <Link href="/doctor/payments">
+                  <Button variant="outline">
+                    Payments
+                  </Button>
+                </Link>
+                <Link href="/doctor/payouts">
                   <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800">
                     <DollarSign className="w-4 h-4 mr-2" />
-                    Request Payout
+                    Payouts
                   </Button>
                 </Link>
               </div>

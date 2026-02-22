@@ -36,16 +36,45 @@ const statusClass = (status: string): string => {
   return "bg-yellow-100 text-yellow-800";
 };
 
-export default async function AdminPaymentsPage(props: { searchParams?: Promise<{ notice?: string }> }) {
-  const sp = (await props.searchParams) || {};
+type SearchParams = {
+  notice?: string;
+  status?: string;
+  from?: string;
+  to?: string;
+  q?: string;
+  min?: string;
+  max?: string;
+};
+
+export default async function AdminPaymentsPage(props: { searchParams?: Promise<SearchParams> }) {
+  const sp = (await props.searchParams) || {} as SearchParams;
   const notice = sp.notice || "";
   const supabase = getServiceSupabase();
 
-  const { data: payoutRows } = await supabase
+  let doctorIdsFilter: string[] | null = null;
+  const q = (sp.q || "").trim();
+  if (q) {
+    const { data: docsByQuery } = await supabase
+      .from("profiles")
+      .select("id")
+      .or(`name.ilike.%${q}%,email.ilike.%${q}%`)
+      .limit(200);
+    if (docsByQuery && docsByQuery.length) doctorIdsFilter = (docsByQuery as any[]).map((d) => d.id as string);
+    else doctorIdsFilter = [];
+  }
+
+  let payoutsQuery = supabase
     .from("doctor_payout_requests")
-    .select("id,doctor_id,amount,status,note,created_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
+    .select("id,doctor_id,amount,status,note,created_at");
+  if (doctorIdsFilter) payoutsQuery = payoutsQuery.in("doctor_id", doctorIdsFilter);
+  if (sp.status && sp.status !== "all") payoutsQuery = payoutsQuery.eq("status", sp.status);
+  if (sp.from) payoutsQuery = payoutsQuery.gte("created_at", sp.from);
+  if (sp.to) payoutsQuery = payoutsQuery.lte("created_at", sp.to);
+  if (sp.min) payoutsQuery = payoutsQuery.gte("amount", Number(sp.min));
+  if (sp.max) payoutsQuery = payoutsQuery.lte("amount", Number(sp.max));
+  payoutsQuery = payoutsQuery.order("created_at", { ascending: false }).limit(500);
+
+  const { data: payoutRows } = await payoutsQuery;
 
   const payouts = (payoutRows || []) as PayoutRow[];
   const doctorIds = Array.from(new Set(payouts.map((p) => p.doctor_id)));
@@ -137,6 +166,24 @@ export default async function AdminPaymentsPage(props: { searchParams?: Promise<
           <CardTitle className="text-sm font-medium text-gray-700">Doctor payout requests</CardTitle>
         </CardHeader>
         <CardContent>
+          <form method="get" className="grid grid-cols-1 md:grid-cols-6 gap-2 mb-4">
+            <select name="status" defaultValue={sp.status || "all"} className="border rounded px-2 py-2">
+              <option value="all">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="paid">Paid</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <input name="from" type="date" defaultValue={sp.from || ""} className="border rounded px-2 py-2" />
+            <input name="to" type="date" defaultValue={sp.to || ""} className="border rounded px-2 py-2" />
+            <input name="min" type="number" inputMode="numeric" placeholder="Min NGN" defaultValue={sp.min || ""} className="border rounded px-2 py-2" />
+            <input name="max" type="number" inputMode="numeric" placeholder="Max NGN" defaultValue={sp.max || ""} className="border rounded px-2 py-2" />
+            <input name="q" placeholder="Doctor name/email" defaultValue={sp.q || ""} className="border rounded px-2 py-2 md:col-span-2" />
+            <div className="md:col-span-4 flex gap-2">
+              <Button type="submit" variant="outline">Apply</Button>
+              <a href="/admin/payments" className="inline-flex items-center border rounded px-3">Reset</a>
+            </div>
+          </form>
           {payouts.length === 0 ? (
             <p className="text-sm text-gray-500">No payout requests submitted yet.</p>
           ) : (
