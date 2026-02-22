@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateUserBlockStatus } from "@/actions/admin-actions";
+import { updateUserBlockStatus, adminCreateUser, adminDeleteUser, adminUpdateUser } from "@/actions/admin-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface UserRow {
@@ -112,6 +112,38 @@ export default async function AdminUsersPage(props: {
     await updateUserBlockStatus(id, roleValue, actionValue === "block" ? "block" : "unblock");
   }
 
+  async function handleCreate(formData: FormData) {
+    "use server";
+    const role = String(formData.get("new_role") || "");
+    const email = String(formData.get("new_email") || "");
+    const password = String(formData.get("new_password") || "");
+    const name = String(formData.get("new_name") || "");
+    const phone = String(formData.get("new_phone") || "");
+    const gender = String(formData.get("new_gender") || "");
+    const blood = String(formData.get("new_blood") || "");
+    if (!email || !password || (role !== "doctor" && role !== "patient")) return;
+    await adminCreateUser({ email, password, name: name || undefined, type: role as any, phone: phone || undefined, gender: gender || undefined, blood_group: blood || undefined });
+  }
+
+  async function handleDelete(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "");
+    if (!id) return;
+    await adminDeleteUser(id);
+  }
+
+  async function handleUpdate(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "");
+    const name = String(formData.get("name") || "");
+    const phone = String(formData.get("phone") || "");
+    const gender = String(formData.get("gender") || "");
+    const blood = String(formData.get("blood_group") || "");
+    const type = String(formData.get("type") || "");
+    if (!id) return;
+    await adminUpdateUser({ id, name: name || undefined, phone: phone || undefined, gender: gender || undefined, blood_group: blood || undefined, type: type === "doctor" || type === "patient" ? (type as any) : undefined });
+  }
+
   return (
     <div className="space-y-4">
       <AdminAutoRefresh />
@@ -150,6 +182,23 @@ export default async function AdminUsersPage(props: {
           <CardTitle className="text-sm font-medium text-gray-700">User list</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-6">
+            <form action={handleCreate} className="grid grid-cols-1 md:grid-cols-7 gap-2">
+              <select name="new_role" className="border rounded px-3 py-2 text-sm">
+                <option value="patient">Patient</option>
+                <option value="doctor">Doctor</option>
+              </select>
+              <input name="new_name" placeholder="Full name" className="border rounded px-3 py-2 text-sm" />
+              <input name="new_email" placeholder="Email" className="border rounded px-3 py-2 text-sm" />
+              <input name="new_phone" placeholder="Phone" className="border rounded px-3 py-2 text-sm" />
+              <input name="new_gender" placeholder="Gender" className="border rounded px-3 py-2 text-sm" />
+              <input name="new_blood" placeholder="Blood group" className="border rounded px-3 py-2 text-sm" />
+              <input name="new_password" placeholder="Temp password" className="border rounded px-3 py-2 text-sm" />
+              <div className="md:col-span-7">
+                <Button type="submit" size="sm">Create user</Button>
+              </div>
+            </form>
+          </div>
           <div className="mb-4 flex flex-col md:flex-row md:items-center gap-3">
             <form className="flex flex-1 flex-col md:flex-row gap-3" action="/admin/users" method="get">
               <Input
@@ -208,6 +257,7 @@ export default async function AdminUsersPage(props: {
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Phone</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Joined</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Account</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Edit</th>
                     <th className="px-3 py-2" />
                   </tr>
                 </thead>
@@ -255,6 +305,25 @@ export default async function AdminUsersPage(props: {
                             <span className="text-xs text-gray-500">-</span>
                           )}
                         </td>
+                        <td className="px-3 py-2">
+                          <form action={handleUpdate} className="flex flex-col gap-1">
+                            <input type="hidden" name="id" value={p.id} />
+                            <div className="flex gap-2">
+                              <input name="name" defaultValue={p.name || ''} placeholder="Name" className="w-28 border rounded px-2 py-1 text-xs" />
+                              <input name="phone" defaultValue={p.phone || ''} placeholder="Phone" className="w-28 border rounded px-2 py-1 text-xs" />
+                            </div>
+                            <div className="flex gap-2">
+                              <input name="gender" defaultValue={p.gender || ''} placeholder="Gender" className="w-24 border rounded px-2 py-1 text-xs" />
+                              <input name="blood_group" defaultValue={p.blood_group || ''} placeholder="Blood" className="w-20 border rounded px-2 py-1 text-xs" />
+                              <select name="type" defaultValue={p.type || ''} className="border rounded px-2 py-1 text-xs">
+                                <option value="">Role</option>
+                                <option value="patient">Patient</option>
+                                <option value="doctor">Doctor</option>
+                              </select>
+                              <Button type="submit" size="sm" variant="outline">Save</Button>
+                            </div>
+                          </form>
+                        </td>
                         <td className="px-3 py-2 text-right">
                           {p.type === "doctor" || p.type === "patient" ? (
                             <form action={handleBlock} className="inline">
@@ -270,6 +339,10 @@ export default async function AdminUsersPage(props: {
                               </Button>
                             </form>
                           ) : null}
+                          <form action={handleDelete} className="inline ml-2">
+                            <input type="hidden" name="id" value={p.id} />
+                            <Button type="submit" size="sm" variant="outline">Delete</Button>
+                          </form>
                         </td>
                       </tr>
                     );

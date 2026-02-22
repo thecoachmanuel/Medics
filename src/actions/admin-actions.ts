@@ -316,3 +316,156 @@ export async function reviewAccountAppeal(
 
   return { success: true };
 }
+
+type UserRole = "doctor" | "patient";
+
+interface AdminCreateUserInput {
+  email: string;
+  password: string;
+  name?: string;
+  type: UserRole;
+  phone?: string;
+  gender?: string;
+  blood_group?: string;
+}
+
+export async function adminCreateUser(input: AdminCreateUserInput): Promise<{ success: boolean; error?: string }>{
+  const supabase = getServiceSupabase();
+  const email = input.email.trim();
+  const password = input.password;
+  if (!email || !password || (input.type !== "doctor" && input.type !== "patient")) {
+    return { success: false, error: "Email, password and role are required." };
+  }
+
+  const createRes = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { type: input.type },
+  } as any);
+
+  const userId = (createRes as any)?.data?.user?.id as string | undefined;
+  if (!userId) {
+    return { success: false, error: "Unable to create auth user." };
+  }
+
+  const patch: Record<string, unknown> = {
+    type: input.type,
+  };
+  if (input.name) patch.name = input.name;
+  if (input.phone) patch.phone = input.phone;
+  if (input.gender) patch.gender = input.gender;
+  if (input.blood_group) patch.blood_group = input.blood_group;
+
+  if (Object.keys(patch).length) {
+    await supabase.from("profiles").update(patch).eq("id", userId);
+  }
+
+  await supabase.from("notifications").insert([
+    {
+      user_id: userId,
+      role: input.type,
+      title: "Welcome to MedicsOnline",
+      message: "Your account has been created by an admin. Please log in and complete your profile.",
+    },
+  ]);
+
+  return { success: true };
+}
+
+interface AdminUpdateUserInput {
+  id: string;
+  name?: string;
+  phone?: string;
+  gender?: string;
+  blood_group?: string;
+  type?: UserRole;
+}
+
+export async function adminUpdateUser(input: AdminUpdateUserInput): Promise<{ success: boolean; error?: string }>{
+  const supabase = getServiceSupabase();
+  const id = input.id;
+  if (!id) return { success: false, error: "Missing user id" };
+  const patch: Record<string, unknown> = {};
+  if (typeof input.name === "string") patch.name = input.name;
+  if (typeof input.phone === "string") patch.phone = input.phone;
+  if (typeof input.gender === "string") patch.gender = input.gender;
+  if (typeof input.blood_group === "string") patch.blood_group = input.blood_group;
+  if (input.type === "doctor" || input.type === "patient") patch.type = input.type;
+  if (!Object.keys(patch).length) return { success: false, error: "No fields to update." };
+  const { error } = await supabase.from("profiles").update(patch).eq("id", id);
+  if (error) return { success: false, error: "Unable to update user." };
+  return { success: true };
+}
+
+export async function adminDeleteUser(id: string): Promise<{ success: boolean; error?: string }>{
+  const supabase = getServiceSupabase();
+  if (!id) return { success: false, error: "Missing user id" };
+  try {
+    await supabase.from("profiles").delete().eq("id", id);
+  } catch {}
+  try {
+    await (supabase.auth as any).admin.deleteUser(id);
+  } catch {}
+  return { success: true };
+}
+
+interface AdminCreateAppointmentInput {
+  patientId: string;
+  doctorId: string;
+  date: string; // YYYY-MM-DD
+  startIso: string; // ISO string
+  endIso: string; // ISO string
+  type: string; // Video Consultation | Phone Consultation
+}
+
+export async function adminCreateAppointment(input: AdminCreateAppointmentInput): Promise<{ success: boolean; error?: string }>{
+  const supabase = getServiceSupabase();
+  const { patientId, doctorId, date, startIso, endIso, type } = input;
+  if (!patientId || !doctorId || !date || !startIso || !endIso || !type) {
+    return { success: false, error: "All fields are required." };
+  }
+  const { error, data } = await supabase
+    .from("appointments")
+    .insert({
+      patient_id: patientId,
+      doctor_id: doctorId,
+      date,
+      slot_start_iso: startIso,
+      slot_end_iso: endIso,
+      consultation_type: type,
+      status: "Scheduled",
+    })
+    .select("id")
+    .single();
+  if (error) return { success: false, error: "Unable to create appointment." };
+
+  const apptId = (data as any)?.id as string | undefined;
+  await supabase.from("notifications").insert([
+    {
+      user_id: doctorId,
+      role: "doctor",
+      title: "New appointment scheduled",
+      message: "An admin scheduled a new appointment for you. Please review your schedule.",
+    },
+    {
+      user_id: patientId,
+      role: "patient",
+      title: "Your appointment is scheduled",
+      message: "An admin has scheduled your appointment. Please be available at the selected time.",
+    },
+  ]);
+
+  if (apptId) {
+    await supabase.from("admin_activity").insert({ type: "appointment_created", payload: { apptId } } as any);
+  }
+  return { success: true };
+}
+
+export async function adminUpdateAppointmentStatus(id: string, status: string): Promise<{ success: boolean; error?: string }>{
+  const supabase = getServiceSupabase();
+  if (!id) return { success: false, error: "Missing appointment id" };
+  const { error } = await supabase.from("appointments").update({ status }).eq("id", id);
+  if (error) return { success: false, error: "Unable to update appointment." };
+  return { success: true };
+}

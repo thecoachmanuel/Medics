@@ -1,6 +1,7 @@
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
+import { adminCreateAppointment, adminUpdateAppointmentStatus } from "@/actions/admin-actions";
 
 interface AppointmentRow {
   id: string;
@@ -84,6 +85,37 @@ export default async function AdminAppointmentsPage(
   const missed = filteredRows.filter((r) => r.status === "Missed").length;
   const expired = filteredRows.filter((r) => r.status === "Expired").length;
 
+  const { data: allDoctors } = await supabase
+    .from("profiles")
+    .select("id,name")
+    .eq("type", "doctor")
+    .order("name", { ascending: true });
+  const { data: allPatients } = await supabase
+    .from("profiles")
+    .select("id,name")
+    .eq("type", "patient")
+    .order("name", { ascending: true });
+
+  async function handleCreate(formData: FormData) {
+    "use server";
+    const doctorId = String(formData.get("doctorId") || "");
+    const patientId = String(formData.get("patientId") || "");
+    const date = String(formData.get("date") || "");
+    const start = String(formData.get("startIso") || "");
+    const end = String(formData.get("endIso") || "");
+    const type = String(formData.get("type") || "");
+    if (!doctorId || !patientId || !date || !start || !end || !type) return;
+    await adminCreateAppointment({ doctorId, patientId, date, startIso: start, endIso: end, type });
+  }
+
+  async function handleMarkStatus(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "");
+    const status = String(formData.get("status") || "");
+    if (!id || !status) return;
+    await adminUpdateAppointmentStatus(id, status);
+  }
+
   return (
     <div className="space-y-4">
       <AdminAutoRefresh />
@@ -131,6 +163,30 @@ export default async function AdminAppointmentsPage(
           <CardTitle className="text-sm font-medium text-gray-700">Appointment list</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-6">
+            <form action={handleCreate} className="grid grid-cols-1 md:grid-cols-7 gap-2">
+              <select name="patientId" className="border rounded px-3 py-2 text-sm">
+                <option value="">Select patient</option>
+                {(allPatients as PersonRow[] | null || []).map((p) => (
+                  <option key={p.id} value={p.id}>{p.name || p.id}</option>
+                ))}
+              </select>
+              <select name="doctorId" className="border rounded px-3 py-2 text-sm">
+                <option value="">Select doctor</option>
+                {(allDoctors as PersonRow[] | null || []).map((d) => (
+                  <option key={d.id} value={d.id}>{d.name || d.id}</option>
+                ))}
+              </select>
+              <input type="date" name="date" className="border rounded px-3 py-2 text-sm" />
+              <input type="datetime-local" name="startIso" className="border rounded px-3 py-2 text-sm" />
+              <input type="datetime-local" name="endIso" className="border rounded px-3 py-2 text-sm" />
+              <select name="type" className="border rounded px-3 py-2 text-sm">
+                <option value="Video Consultation">Video Consultation</option>
+                <option value="Phone Consultation">Phone Consultation</option>
+              </select>
+              <button type="submit" className="rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">Create appointment</button>
+            </form>
+          </div>
           {rows.length === 0 ? (
             <p className="text-sm text-gray-500">No appointments created yet.</p>
           ) : (
@@ -223,6 +279,18 @@ export default async function AdminAppointmentsPage(
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor}`}>
                             {statusValue}
                           </span>
+                          <div className="mt-2 flex gap-2">
+                            <form action={handleMarkStatus}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <input type="hidden" name="status" value="Missed" />
+                              <button className="rounded border px-2 py-0.5 text-xs">Mark missed</button>
+                            </form>
+                            <form action={handleMarkStatus}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <input type="hidden" name="status" value="Cancelled" />
+                              <button className="rounded border px-2 py-0.5 text-xs">Cancel</button>
+                            </form>
+                          </div>
                         </td>
                       </tr>
                     );

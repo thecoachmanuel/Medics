@@ -345,6 +345,12 @@ const DoctorDashboardContent = () => {
                     Update Availability
                   </Button>
                 </Link>
+                <Link href="/doctor/payments">
+                  <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800">
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Request Payout
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
