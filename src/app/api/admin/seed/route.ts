@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/service";
+import { cities, healthcareCategoriesList } from "@/lib/constant";
 
 const specs = [
   "Cardiology",
@@ -36,6 +37,34 @@ const lastNames = [
 
 const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const randomNigerianName = (): string => `${pick(firstNames)} ${pick(lastNames)}`;
+const randomGender = (): "male" | "female" => (Math.random() < 0.5 ? "male" : "female");
+const randomAvatar = (gender: "male" | "female"): string => {
+  const idx = 5 + Math.floor(Math.random() * 90);
+  return `https://randomuser.me/api/portraits/${gender === "female" ? "women" : "men"}/${idx}.jpg`;
+};
+const randomQualification = (): string => pick(["MBBS", "MBBS, FWACS", "MBBS, FMCPath", "MBBS, MPH", "MBBS, FMCP", "MBBS, FRCP"]);
+const randomCategories = (): string[] => {
+  const n = 1 + Math.floor(Math.random() * 2);
+  const bag = [...healthcareCategoriesList];
+  const selected: string[] = [];
+  for (let i = 0; i < n && bag.length; i++) {
+    const idx = Math.floor(Math.random() * bag.length);
+    selected.push(bag.splice(idx, 1)[0]);
+  }
+  return selected;
+};
+const randomAbout = (spec: string, exp: number): string =>
+  `Experienced ${spec.toLowerCase()} with ${exp}+ years providing high-quality care to patients across Nigeria. Passionate about preventive medicine, evidence-based treatment and patient education.`;
+const randomBloodGroup = (): string => pick(["A+","A-","B+","B-","AB+","O+","O-"]);
+const randomInt = (min: number, max: number): number => Math.floor(Math.random() * (max - min + 1)) + min;
+const dobFromAge = (age: number): string => {
+  const now = new Date();
+  const year = now.getFullYear() - age;
+  const month = randomInt(1, 12);
+  const day = randomInt(1, 28);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return d.toISOString().slice(0, 10);
+};
 
 async function ensureUser(supabase: any, email: string, password: string, type: "doctor" | "patient", name: string) {
   const { data: existing } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle();
@@ -64,16 +93,34 @@ export async function GET(request: Request) {
     for (let i = 1; i <= 20; i++) {
       const email = `doctor${i}@medicsonline.com`;
       const name = randomNigerianName();
+      const gender = randomGender();
+      const avatar = randomAvatar(gender);
       const id = await ensureUser(supabase, email, "111111", "doctor", name);
       doctorIds.push(id);
       const spec = specs[(i - 1) % specs.length];
       const fees = 3000 + Math.floor(Math.random() * 12) * 1000;
+      const experience = 2 + Math.floor(Math.random() * 23);
+      const qualification = randomQualification();
+      const city = pick(cities);
+      const hospital = {
+        name: `${city} Medical Center`,
+        address: `Plot ${randomInt(1, 99)}, ${city} Ring Road`,
+        city,
+      };
+      const category = randomCategories();
       doctorFees.set(id, fees);
       await supabase.from("profiles").update({
         type: "doctor",
         name,
         email,
         specialization: spec,
+        qualification,
+        experience,
+        about: randomAbout(spec, experience),
+        hospital_info: hospital as any,
+        category,
+        gender,
+        profile_image: avatar,
         is_verified: true,
         is_active: true,
         fees,
@@ -83,9 +130,25 @@ export async function GET(request: Request) {
     for (let i = 1; i <= 30; i++) {
       const email = `patient${i}@medicsonline.com`;
       const name = randomNigerianName();
+      const gender = randomGender();
+      const avatar = randomAvatar(gender);
+      const age = 18 + Math.floor(Math.random() * 53);
+      const dob = dobFromAge(age);
+      const blood = randomBloodGroup();
       const id = await ensureUser(supabase, email, "111111", "patient", name);
       patientIds.push(id);
-      await supabase.from("profiles").update({ type: "patient", name, email, is_verified: true, is_active: true }).eq("id", id);
+      await supabase.from("profiles").update({
+        type: "patient",
+        name,
+        email,
+        gender,
+        profile_image: avatar,
+        age,
+        dob,
+        blood_group: blood,
+        is_verified: true,
+        is_active: true,
+      }).eq("id", id);
     }
 
     const appts: any[] = [];
