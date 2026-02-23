@@ -226,6 +226,19 @@ export default function DoctorPayoutsContent() {
             </div>
           </div>
 
+          <Card id="request-payout">
+            <CardHeader>
+              <CardTitle>Request Payout</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1"><label className="text-sm text-gray-600">Amount (NGN)</label><input type="number" min={0} className="w-full border rounded px-3 py-2" value={payoutAmount} onChange={(e) => setPayoutAmount(e.target.value)} /></div>
+              <div className="space-y-1"><label className="text-sm text-gray-600">Notes for admin</label><textarea className="w-full border rounded px-3 py-2 min-h-[72px]" value={payoutNote} onChange={(e) => setPayoutNote(e.target.value)} placeholder="Include account or payout details if needed." /></div>
+              <div className="text-xs text-gray-600">Available for payout: <span className="font-semibold">{currency(availableForPayout, "NGN")}</span></div>
+              {payoutMessage && <p className="text-xs text-gray-600">{payoutMessage}</p>}
+              <Button type="button" className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" onClick={submitPayoutRequest} disabled={payoutSubmitting}>{payoutSubmitting ? "Submitting request..." : "Submit payout request"}</Button>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
               <CardHeader>
@@ -288,18 +301,6 @@ export default function DoctorPayoutsContent() {
                   <Button type="button" className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" onClick={saveBankDetails} disabled={bankSaving}>{bankSaving ? "Saving..." : "Save bank details"}</Button>
                 </CardContent>
               </Card>
-              <Card id="request-payout">
-                <CardHeader>
-                  <CardTitle>Request Payout</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-1"><label className="text-sm text-gray-600">Amount (NGN)</label><input type="number" min={0} className="w-full border rounded px-3 py-2" value={payoutAmount} onChange={(e) => setPayoutAmount(e.target.value)} /></div>
-                  <div className="space-y-1"><label className="text-sm text-gray-600">Notes for admin</label><textarea className="w-full border rounded px-3 py-2 min-h-[72px]" value={payoutNote} onChange={(e) => setPayoutNote(e.target.value)} placeholder="Include account or payout details if needed." /></div>
-                  <div className="text-xs text-gray-600">Available for payout: <span className="font-semibold">{currency(availableForPayout, "NGN")}</span></div>
-                  {payoutMessage && <p className="text-xs text-gray-600">{payoutMessage}</p>}
-                  <Button type="button" className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" onClick={submitPayoutRequest} disabled={payoutSubmitting}>{payoutSubmitting ? "Submitting request..." : "Submit payout request"}</Button>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
@@ -307,4 +308,3 @@ export default function DoctorPayoutsContent() {
     </>
   );
 }
-
