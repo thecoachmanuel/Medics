@@ -19,6 +19,24 @@ const specs = [
   "Rheumatology",
 ];
 
+const firstNames = [
+  "Aisha","Amina","Halima","Hauwa","Zainab","Maryam","Fatima","Hadiza",
+  "Abubakar","Ibrahim","Sani","Suleiman","Yusuf","Usman","Bello","Aminu",
+  "Chinedu","Emeka","Ifeoma","Ngozi","Nneka","Kelechi","Uche","Ijeoma","Nnamdi",
+  "Femi","Tunde","Segun","Kemi","Funke","Yemi","Taiwo","Kehinde","Damilola","Bukola",
+  "Ada","Blessing","Joy","John","Paul","Peter","Michael","Samuel","David"
+];
+
+const lastNames = [
+  "Okafor","Okoye","Obi","Eze","Nwosu","Nwachukwu","Nwankwo","Chukwuma","Ezeh",
+  "Balogun","Abiola","Adeyemi","Adebayo","Ogunleye","Ogunbiyi","Olatunji","Ojo",
+  "Mohammed","Bello","Musa","Yusuf","Abdullahi","Aliyu","Danjuma","Lawal","Ibrahim",
+  "Udo","Essien","Ekanem","Etim","Akpan","Danladi","Tanko","Yakubu","Sanusi","Adamu",
+];
+
+const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const randomNigerianName = (): string => `${pick(firstNames)} ${pick(lastNames)}`;
+
 async function ensureUser(supabase: any, email: string, password: string, type: "doctor" | "patient", name: string) {
   const { data: existing } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle();
   if (existing?.id) return existing.id as string;
@@ -45,7 +63,7 @@ export async function GET(request: Request) {
 
     for (let i = 1; i <= 20; i++) {
       const email = `doctor${i}@medicsonline.com`;
-      const name = `Doctor ${i}`;
+      const name = randomNigerianName();
       const id = await ensureUser(supabase, email, "111111", "doctor", name);
       doctorIds.push(id);
       const spec = specs[(i - 1) % specs.length];
@@ -64,7 +82,7 @@ export async function GET(request: Request) {
 
     for (let i = 1; i <= 30; i++) {
       const email = `patient${i}@medicsonline.com`;
-      const name = `Patient ${i}`;
+      const name = randomNigerianName();
       const id = await ensureUser(supabase, email, "111111", "patient", name);
       patientIds.push(id);
       await supabase.from("profiles").update({ type: "patient", name, email, is_verified: true, is_active: true }).eq("id", id);
@@ -116,4 +134,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: e.message || "seed failed" }, { status: 500 });
   }
 }
-
