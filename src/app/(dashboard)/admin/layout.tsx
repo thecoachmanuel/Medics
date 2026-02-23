@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <aside
-        className={`bg-white border-r transition-all duration-200 z-40 h-screen lg:h-auto lg:static fixed top-0 left-0 ${
+        className={`bg-white border-r transition-all duration-200 z-40 h-screen lg:h-screen overflow-y-auto lg:overflow-y-auto fixed lg:sticky top-0 lg:top-0 left-0 ${
           collapsed ? "lg:w-16" : "lg:w-64"
         } w-64 transform ${mobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
       >
