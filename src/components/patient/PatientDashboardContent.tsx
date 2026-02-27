@@ -65,18 +65,14 @@ const PatientDashboardContent = () => {
   };
 
   const canJoinCall = (appointment: any) => {
-    const startTime = new Date(appointment.slotStartIso);
-    const endTime = appointment.slotEndIso
-      ? new Date(appointment.slotEndIso)
-      : new Date(startTime.getTime() + (appointment.duration || 30) * 60000);
-
+    const appointmentTime = new Date(appointment.slotStartIso);
     const now = new Date();
-    const windowStart = new Date(startTime.getTime() - 30 * 60000);
-    const windowEnd = new Date(endTime.getTime() + 30 * 60000);
+    const diffMintues = (appointmentTime.getTime() - now.getTime()) / (1000 * 60);
 
     return (
-      now >= windowStart &&
-      now <= windowEnd &&
+      isToday(appointment.slotStartIso) &&
+      diffMintues <= 15 && //not earliar than 15 min before start
+      diffMintues >= -120 && //not later than 2 hours after start
       (appointment.status === "Scheduled" ||
         appointment.status === "In Progress") &&
       appointment.paymentStatus === "success"
