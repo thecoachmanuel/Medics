@@ -223,18 +223,18 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
 
       const { data: paidRows, error: payErr } = await supabase
         .from('payments')
-        .select('amount,created_at,consultation_fee,commission_amount')
+        .select('amount,created_at')
         .eq('doctor_id', uid)
         .eq('status', 'success');
       if (payErr) throw payErr;
 
       const { data: allPays } = await supabase
         .from('payments')
-        .select('appointment_id,status,amount,consultation_fee,commission_amount')
+        .select('appointment_id,status,amount')
         .eq('doctor_id', uid)
         .eq('status', 'success');
 
-      type PayRow = { appointment_id: string; status: string; amount: number; consultation_fee?: number; commission_amount?: number };
+      type PayRow = { appointment_id: string; status: string; amount: number };
       const payMap: Map<string, PayRow> = new Map(
         ((allPays as PayRow[]) || []).map((p) => [p.appointment_id, p])
       );
@@ -324,8 +324,6 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
           updatedAt: r.updated_at,
           paymentStatus: pay ? pay.status : undefined,
           paidAmount: pay ? pay.amount : undefined,
-          consultationFee: pay?.consultation_fee,
-          commissionAmount: pay?.commission_amount,
         };
       };
 
@@ -346,9 +344,7 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
         const createdAt = r.created_at as string | null;
         if (!createdAt) return;
         const year = new Date(createdAt).getFullYear();
-        const amount = (r.consultation_fee && r.consultation_fee > 0) 
-          ? Math.round(r.consultation_fee - (r.commission_amount || 0))
-          : Math.round((r.amount || 0) * commissionFactor);
+        const amount = Math.round((r.amount || 0) * commissionFactor);
         if (year === thisYear) thisYearRevenue += amount;
         if (year === lastYear) lastYearRevenue += amount;
       });

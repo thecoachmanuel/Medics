@@ -48,15 +48,9 @@ export async function POST(req: NextRequest) {
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
-  const b = body as any;
-  
-  let platform = Number(b.platformFeePercent);
-  if (Number.isNaN(platform)) platform = DEFAULTS.platformFeePercent;
-  platform = Math.max(0, Math.min(100, platform));
-
-  let commission = Number(b.adminCommissionPercent);
-  if (Number.isNaN(commission)) commission = DEFAULTS.adminCommissionPercent;
-  commission = Math.max(0, Math.min(100, commission));
+  const b = body as Partial<BillingSettings>;
+  const platform = Math.max(0, Math.min(100, Number(b.platformFeePercent ?? DEFAULTS.platformFeePercent)));
+  const commission = Math.max(0, Math.min(100, Number(b.adminCommissionPercent ?? DEFAULTS.adminCommissionPercent)));
 
   const config: BillingSettings = { platformFeePercent: platform, adminCommissionPercent: commission };
 

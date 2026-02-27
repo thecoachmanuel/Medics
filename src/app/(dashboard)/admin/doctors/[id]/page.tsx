@@ -1,6 +1,5 @@
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { notFound } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
@@ -8,9 +7,8 @@ import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { updateDoctorAdminStatus, DoctorAdminAction, deleteDoctorCredential } from "@/actions/admin-actions";
+import { updateDoctorAdminStatus, DoctorAdminAction } from "@/actions/admin-actions";
 import { formatDateTimeNG } from "@/lib/datetime";
-import { FileText, Link as LinkIcon, ExternalLink, Trash2 } from "lucide-react";
 
 interface DoctorProfileRow {
   id: string;
@@ -76,14 +74,6 @@ export default async function AdminDoctorDetailPage(props: {
     .eq("doctor_id", profile.id)
     .order("created_at", { ascending: false })
     .limit(20);
-
-  const { data: credentialsData } = await supabase
-    .from("doctor_credentials")
-    .select("id,url,label,created_at")
-    .eq("doctor_id", profile.id)
-    .order("created_at", { ascending: false });
-  
-  const credentials = (credentialsData || []) as { id: string; url: string; label: string | null; created_at: string }[];
 
   const ratings = (ratingRows || []) as RatingRow[];
   const patientIds = Array.from(
@@ -248,14 +238,6 @@ export default async function AdminDoctorDetailPage(props: {
     await updateDoctorAdminStatus(profile.id, action, note);
   }
 
-  async function handleDeleteCredential(formData: FormData) {
-    "use server";
-    const credId = String(formData.get("credId") || "");
-    if (!credId) return;
-    await deleteDoctorCredential(credId);
-    revalidatePath(`/admin/doctors/${id}`);
-  }
-
   return (
     <div className="space-y-4">
       <AdminAutoRefresh intervalMs={300} storageKey={`admin_auto_refresh:/admin/doctors/${profile.id}`} defaultEnabled={true} />
@@ -338,62 +320,6 @@ export default async function AdminDoctorDetailPage(props: {
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-gray-700">Credentials & Documents</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {credentials.length === 0 ? (
-            <p className="text-sm text-gray-500 italic">No credentials uploaded.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {credentials.map((cred) => (
-                <div
-                  key={cred.id}
-                  className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex-shrink-0">
-                    {cred.url.endsWith(".pdf") ? (
-                      <FileText className="w-8 h-8 text-red-500" />
-                    ) : cred.url.startsWith("http") && !cred.url.match(/\.(jpeg|jpg|png|gif)$/i) ? (
-                      <LinkIcon className="w-8 h-8 text-blue-500" />
-                    ) : (
-                      <div className="w-8 h-8 rounded bg-gray-200 overflow-hidden">
-                        <img src={cred.url} alt="Credential" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {cred.label || "Unnamed Document"}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">{new Date(cred.created_at).toLocaleDateString()}</p>
-                  </div>
-                  <div className="flex-shrink-0 flex items-center gap-1">
-                    <a
-                      href={cred.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 text-gray-400 hover:text-blue-600"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                    <form action={handleDeleteCredential}>
-                      <input type="hidden" name="credId" value={cred.id} />
-                      <Button type="submit" variant="ghost" size="sm" className="p-2 text-gray-400 hover:text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </form>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-
 
       <Card>
         <CardHeader>

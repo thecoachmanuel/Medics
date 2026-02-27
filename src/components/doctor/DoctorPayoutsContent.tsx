@@ -41,12 +41,10 @@ export default function DoctorPayoutsContent() {
     fetchPayments("doctor", filters);
   }, [fetchPayments, filters]);
 
-  const successfulPayments = useMemo(() => payments.filter((p) => p.status === "success"), [payments]);
-
   const totals = useMemo(() => {
-    const paidRaw = successfulPayments.reduce((s, p) => s + p.amount, 0);
+    const paidRaw = payments.filter((p) => p.status === "success").reduce((s, p) => s + p.amount, 0);
     return { paidRaw } as const;
-  }, [successfulPayments]);
+  }, [payments]);
 
   const [commissionPercent, setCommissionPercent] = useState<number>(20);
   useEffect(() => {
@@ -55,13 +53,8 @@ export default function DoctorPayoutsContent() {
 
   const earningsPaid = useMemo(() => {
     const factor = Math.max(0, Math.min(1, (100 - commissionPercent) / 100));
-    return successfulPayments.reduce((sum, p) => {
-      if (p.consultationFee && p.consultationFee > 0) {
-        return sum + Math.round(p.consultationFee - (p.commissionAmount || 0));
-      }
-      return sum + Math.round(p.amount * factor);
-    }, 0);
-  }, [successfulPayments, commissionPercent]);
+    return Math.round(totals.paidRaw * factor);
+  }, [totals, commissionPercent]);
 
   useEffect(() => {
     const loadPayoutStats = async () => {

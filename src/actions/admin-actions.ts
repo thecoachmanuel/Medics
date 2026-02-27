@@ -317,13 +317,6 @@ export async function reviewAccountAppeal(
   return { success: true };
 }
 
-export async function deleteDoctorCredential(id: string): Promise<{ success: boolean; error?: string }> {
-  const supabase = getServiceSupabase();
-  const { error } = await supabase.from("doctor_credentials").delete().eq("id", id);
-  if (error) return { success: false, error: "Failed to delete credential" };
-  return { success: true };
-}
-
 type UserRole = "doctor" | "patient";
 
 interface AdminCreateUserInput {

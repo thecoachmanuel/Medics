@@ -58,8 +58,6 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
         reference: p.reference || undefined,
         createdAt: p.created_at,
         updatedAt: p.updated_at,
-        consultationFee: p.consultation_fee,
-        commissionAmount: p.commission_amount,
       }));
       set({ payments, total: payments.length });
     } catch (error: any) {

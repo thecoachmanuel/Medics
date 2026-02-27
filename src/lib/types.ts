@@ -183,8 +183,6 @@ export interface Payment {
   reference?: string;
   createdAt: string;
   updatedAt: string;
-  consultationFee?: number;
-  commissionAmount?: number;
 }
 
 export interface PaymentFilters {

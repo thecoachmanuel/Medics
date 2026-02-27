@@ -54,21 +54,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Amount or currency mismatch' }, { status: 400 })
   }
 
-  // Calculate fee breakdown
-  const { data: billingData } = await supabase
-    .from('billing_settings')
-    .select('config')
-    .limit(1)
-    .maybeSingle();
-    
-  const platformPercent = Number(billingData?.config?.platformFeePercent || 0);
-  const commissionPercent = Number(billingData?.config?.adminCommissionPercent || 0);
-
-  // totalAmount = consultationFee * (1 + platformPercent/100)
-  const consultationFee = Number((nairaAmount / (1 + platformPercent / 100)).toFixed(2));
-  const platformFee = Number((nairaAmount - consultationFee).toFixed(2));
-  const commissionAmount = Number((consultationFee * commissionPercent / 100).toFixed(2));
-
   const paymentRow = {
     appointment_id: appointment.id,
     doctor_id: appointment.doctor_id,
@@ -79,11 +64,6 @@ export async function POST(request: Request) {
     provider: 'paystack',
     reference,
     raw,
-    consultation_fee: consultationFee,
-    platform_fee: platformFee,
-    commission_amount: commissionAmount,
-    platform_fee_percent: platformPercent,
-    commission_percent: commissionPercent,
   }
 
   const { data: existing } = await supabase
