@@ -149,16 +149,21 @@ const DoctorDashboardContent = () => {
   const formateDate = (dateString: string) => formatDateTimeNG(dateString, { hour12: true });
 
   const canJoinCall = (appointment: any) => {
-    const appointmentTime = new Date(appointment.slotStartIso);
+    const startTime = new Date(appointment.slotStartIso);
+    const endTime = appointment.slotEndIso
+      ? new Date(appointment.slotEndIso)
+      : new Date(startTime.getTime() + (appointment.duration || 30) * 60000);
+
     const now = new Date();
-    const diffMintues =
-      (appointmentTime.getTime() - now.getTime()) / (1000 * 60);
+    const windowStart = new Date(startTime.getTime() - 30 * 60000);
+    const windowEnd = new Date(endTime.getTime() + 30 * 60000);
 
     return (
-      diffMintues <= 15 && //not earliar than 15 min before start
-      diffMintues >= -120 && //not later than 2 hours after start
+      now >= windowStart &&
+      now <= windowEnd &&
       (appointment.status === "Scheduled" ||
-        appointment.status === "In Progress")
+        appointment.status === "In Progress") &&
+      appointment.paymentStatus === "success"
     );
   };
 
