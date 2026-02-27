@@ -197,6 +197,16 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
   fetchDashboard: async () => {
     set({ loading: true, error: null });
     try {
+      let adminCommissionPercent = 20;
+      try {
+        const r = await fetch('/api/admin/billing-settings', { cache: 'no-store' });
+        if (r.ok) {
+          const j = await r.json();
+          const v = Number(j?.config?.adminCommissionPercent || 20);
+          if (Number.isFinite(v)) adminCommissionPercent = Math.max(0, Math.min(100, v));
+        }
+      } catch {}
+      const commissionFactor = Math.max(0, Math.min(1, (100 - adminCommissionPercent) / 100));
       const { data: session } = await supabase.auth.getUser();
       const uid = session.user?.id;
       if (!uid) throw new Error('Not authenticated');
@@ -213,18 +223,18 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
 
       const { data: paidRows, error: payErr } = await supabase
         .from('payments')
-        .select('amount,created_at')
+        .select('amount,created_at,consultation_fee,commission_amount')
         .eq('doctor_id', uid)
         .eq('status', 'success');
       if (payErr) throw payErr;
 
       const { data: allPays } = await supabase
         .from('payments')
-        .select('appointment_id,status,amount')
+        .select('appointment_id,status,amount,consultation_fee,commission_amount')
         .eq('doctor_id', uid)
         .eq('status', 'success');
 
-      type PayRow = { appointment_id: string; status: string; amount: number };
+      type PayRow = { appointment_id: string; status: string; amount: number; consultation_fee?: number; commission_amount?: number };
       const payMap: Map<string, PayRow> = new Map(
         ((allPays as PayRow[]) || []).map((p) => [p.appointment_id, p])
       );
@@ -314,6 +324,8 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
           updatedAt: r.updated_at,
           paymentStatus: pay ? pay.status : undefined,
           paidAmount: pay ? pay.amount : undefined,
+          consultationFee: pay?.consultation_fee,
+          commissionAmount: pay?.commission_amount,
         };
       };
 
@@ -334,7 +346,9 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
         const createdAt = r.created_at as string | null;
         if (!createdAt) return;
         const year = new Date(createdAt).getFullYear();
-        const amount = r.amount || 0;
+        const amount = (r.consultation_fee && r.consultation_fee > 0) 
+          ? Math.round(r.consultation_fee - (r.commission_amount || 0))
+          : Math.round((r.amount || 0) * commissionFactor);
         if (year === thisYear) thisYearRevenue += amount;
         if (year === lastYear) lastYearRevenue += amount;
       });
@@ -454,6 +468,7 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
           totalRevenue: netThisYearRevenue,
           completedAppointments: thisYearCompletedCount,
           averageRating: Number(avgRating.toFixed(1)),
+          _adminCommissionPercent: adminCommissionPercent as unknown as any,
         },
         statsChange: {
           totalPatients: {

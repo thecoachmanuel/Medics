@@ -4,6 +4,7 @@ import Header from "@/components/landing/Header";
 import { supabase } from "@/lib/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 interface NotificationRow {
   id: string;
@@ -127,16 +128,7 @@ export default function Page() {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="font-semibold text-gray-900">{n.title}</div>
-                        <div className="text-xs text-gray-500">
-                          {new Date(n.created_at).toLocaleString("en-NG", {
-                            timeZone: "Africa/Lagos",
-                            year: "numeric",
-                            month: "short",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
+                        <div className="text-xs text-gray-500">{formatDateTimeNG(n.created_at)}</div>
                       </div>
                       <p className="text-sm text-gray-700 whitespace-pre-line">{n.message}</p>
                     </div>

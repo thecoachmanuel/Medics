@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/service";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 type ReminderWindow = "24h" | "1h" | "15m";
 
@@ -76,16 +77,7 @@ export async function GET(request: NextRequest) {
     const patientProfile = profileMap.get(appt.patient_id as string);
 
     const slotIso = appt.slot_start_iso as string;
-    const whenText = slotIso
-      ? new Date(slotIso).toLocaleString("en-NG", {
-          timeZone: "Africa/Lagos",
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "soon";
+    const whenText = slotIso ? formatDateTimeNG(slotIso) : "soon";
 
     const title = "Upcoming appointment";
     const message = `You have an appointment scheduled at ${whenText}.`;
@@ -287,16 +279,7 @@ async function updateExpiredAndMissedAppointments(supabase: ReturnType<typeof ge
         const patientId = row.patient_id as string | null;
         const slotIso = row.slot_start_iso as string | null;
 
-        const whenText = slotIso
-          ? new Date(slotIso).toLocaleString("en-NG", {
-              timeZone: "Africa/Lagos",
-              year: "numeric",
-              month: "short",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "the scheduled time";
+      const whenText = slotIso ? formatDateTimeNG(slotIso) : "the scheduled time";
 
         if (doctorId) {
           notifications.push({

@@ -17,6 +17,9 @@ import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import { uploadImage } from "@/lib/cloudinary";
+import { supabase } from "@/lib/supabase/client";
+import { Loader2, Trash2, Link as LinkIcon, FileText } from "lucide-react";
 
 const DoctorOnboardingForm = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -46,6 +49,12 @@ const DoctorOnboardingForm = () => {
 
   const [availableSpecializations, setAvailableSpecializations] = useState<string[]>(defaultSpecializations);
   const [availableCategories, setAvailableCategories] = useState<string[]>(healthcareCategoriesList);
+  
+  // Credentials state
+  const [credentialLink, setCredentialLink] = useState("");
+  const [credentialLabel, setCredentialLabel] = useState("");
+  const [uploadingCredential, setUploadingCredential] = useState(false);
+  const [savedCredentials, setSavedCredentials] = useState<{ id: string; url: string; label: string | null }[]>([]);
 
   const { updateProfile, user, loading } = userAuthStore();
   const router = useRouter();
@@ -62,8 +71,94 @@ const DoctorOnboardingForm = () => {
       } else if (user.type === "patient") {
         router.push("/patient/dashboard");
       }
+    } else {
+      // Load existing credentials
+      loadCredentials(user.id);
     }
   }, [user, router]);
+
+  const loadCredentials = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from("doctor_credentials")
+        .select("id, url, label")
+        .eq("doctor_id", userId)
+        .order("created_at", { ascending: false });
+      if (data) setSavedCredentials(data);
+    } catch (error) {
+      console.error("Failed to load credentials", error);
+    }
+  };
+
+  const handleCredentialFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    try {
+      setUploadingCredential(true);
+      const { url } = await uploadImage(file, "medimeet/credentials");
+      
+      const label = credentialLabel || file.name;
+      const { data, error } = await supabase
+        .from("doctor_credentials")
+        .insert({ doctor_id: user.id, url, label })
+        .select("id, url, label")
+        .single();
+        
+      if (error) throw error;
+      if (data) {
+        setSavedCredentials((prev) => [data, ...prev]);
+        setCredentialLabel("");
+        e.target.value = ""; 
+      }
+    } catch (error) {
+      console.error("Failed to upload credential", error);
+      alert("Failed to upload credential. Please try again.");
+    } finally {
+      setUploadingCredential(false);
+    }
+  };
+
+  const handleAddLink = async () => {
+    if (!credentialLink || !user?.id) return;
+    
+    try {
+      setUploadingCredential(true);
+      const label = credentialLabel || "External Link";
+      const { data, error } = await supabase
+        .from("doctor_credentials")
+        .insert({ doctor_id: user.id, url: credentialLink, label })
+        .select("id, url, label")
+        .single();
+        
+      if (error) throw error;
+      if (data) {
+        setSavedCredentials((prev) => [data, ...prev]);
+        setCredentialLink("");
+        setCredentialLabel("");
+      }
+    } catch (error) {
+      console.error("Failed to add link", error);
+    } finally {
+      setUploadingCredential(false);
+    }
+  };
+
+  const handleDeleteCredential = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("doctor_credentials")
+        .delete()
+        .eq("id", id);
+        
+      if (!error) {
+        setSavedCredentials((prev) => prev.filter((c) => c.id !== id));
+      }
+    } catch (error) {
+      console.error("Failed to delete credential", error);
+    }
+  };
+
 
   useEffect(() => {
     let isMounted = true;
@@ -283,6 +378,109 @@ const DoctorOnboardingForm = () => {
                   onChange={handleInputChnage}
                   required
                 />
+              </div>
+
+              <div className="space-y-6 pt-4 border-t">
+                <h3 className="text-lg font-medium text-gray-900">Credentials & Documents</h3>
+                <p className="text-sm text-gray-500">
+                  Upload your medical license, ID, or other credentials to help us verify your profile. 
+                  (PDF, JPG, PNG supported)
+                </p>
+
+                <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="credLabel">Document Label (Optional)</Label>
+                      <Input
+                        id="credLabel"
+                        placeholder="e.g. Medical License 2024"
+                        value={credentialLabel}
+                        onChange={(e) => setCredentialLabel(e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Upload File</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={handleCredentialFileUpload}
+                            disabled={uploadingCredential}
+                            className="cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Or Add Link</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="https://..."
+                            value={credentialLink}
+                            onChange={(e) => setCredentialLink(e.target.value)}
+                            disabled={uploadingCredential}
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            onClick={handleAddLink}
+                            disabled={!credentialLink || uploadingCredential}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {uploadingCredential && (
+                    <div className="flex items-center text-sm text-blue-600">
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading credential...
+                    </div>
+                  )}
+
+                  {savedCredentials.length > 0 && (
+                    <div className="space-y-2 mt-4">
+                      <Label>Uploaded Credentials</Label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {savedCredentials.map((cred) => (
+                          <div key={cred.id} className="flex items-center justify-between p-3 bg-white border rounded-md shadow-sm">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              {cred.url.endsWith('.pdf') ? (
+                                <FileText className="w-5 h-5 text-red-500 shrink-0" />
+                              ) : (
+                                <LinkIcon className="w-5 h-5 text-blue-500 shrink-0" />
+                              )}
+                              <div className="flex flex-col overflow-hidden">
+                                <span className="text-sm font-medium truncate">{cred.label || 'Document'}</span>
+                                <a 
+                                  href={cred.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline truncate"
+                                >
+                                  {cred.url}
+                                </a>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCredential(cred.id)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

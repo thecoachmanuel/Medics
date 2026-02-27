@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { formatTimeNG } from "@/lib/datetime";
 
 interface AdminNotificationItem {
   id: string;
@@ -106,7 +107,7 @@ export default function AdminNotificationsBell() {
                   <Link href={n.link} onClick={() => markRead(n.id)} className="block">
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium text-gray-900">{n.title}</div>
-                      <div className="text-[11px] text-gray-500">{new Date(n.created_at).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" })}</div>
+                      <div className="text-[11px] text-gray-500">{formatTimeNG(n.created_at)}</div>
                     </div>
                     <div className="text-xs text-gray-600 line-clamp-2">{n.message}</div>
                   </Link>
@@ -119,4 +120,3 @@ export default function AdminNotificationsBell() {
     </div>
   );
 }
-

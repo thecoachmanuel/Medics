@@ -1,0 +1,92 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServiceSupabase } from "@/lib/supabase/service";
+
+type BillingSettings = {
+  platformFeePercent: number; // charged on top of consultation fee to patient
+  adminCommissionPercent: number; // deducted from doctor earnings
+};
+
+type BillingRow = {
+  id: string;
+  config: BillingSettings | null;
+};
+
+const DEFAULTS: BillingSettings = {
+  platformFeePercent: 0,
+  adminCommissionPercent: 20,
+};
+
+export async function GET() {
+  const supabase = getServiceSupabase();
+  const { data, error } = await supabase
+    .from("billing_settings")
+    .select("id,config")
+    .limit(1)
+    .maybeSingle<BillingRow>();
+
+  if (error || !data?.config) {
+    return NextResponse.json({ config: DEFAULTS });
+  }
+  const cfg = data.config;
+  const platform = Number(cfg.platformFeePercent);
+  const commission = Number(cfg.adminCommissionPercent);
+  const sanitized: BillingSettings = {
+    platformFeePercent: Number.isFinite(platform) && platform >= 0 && platform <= 100 ? platform : DEFAULTS.platformFeePercent,
+    adminCommissionPercent: Number.isFinite(commission) && commission >= 0 && commission <= 100 ? commission : DEFAULTS.adminCommissionPercent,
+  };
+  return NextResponse.json({ config: sanitized });
+}
+
+export async function POST(req: NextRequest) {
+  const supabase = getServiceSupabase();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+  const b = body as any;
+  
+  let platform = Number(b.platformFeePercent);
+  if (Number.isNaN(platform)) platform = DEFAULTS.platformFeePercent;
+  platform = Math.max(0, Math.min(100, platform));
+
+  let commission = Number(b.adminCommissionPercent);
+  if (Number.isNaN(commission)) commission = DEFAULTS.adminCommissionPercent;
+  commission = Math.max(0, Math.min(100, commission));
+
+  const config: BillingSettings = { platformFeePercent: platform, adminCommissionPercent: commission };
+
+  const { data: existing, error: loadError } = await supabase
+    .from("billing_settings")
+    .select("id")
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+
+  if (loadError) {
+    return NextResponse.json({ error: "Unable to load billing settings" }, { status: 500 });
+  }
+
+  if (existing?.id) {
+    const { error: updateError } = await supabase
+      .from("billing_settings")
+      .update({ config })
+      .eq("id", existing.id);
+    if (updateError) {
+      return NextResponse.json({ error: "Unable to update billing settings" }, { status: 500 });
+    }
+  } else {
+    const { error: insertError } = await supabase
+      .from("billing_settings")
+      .insert({ config });
+    if (insertError) {
+      return NextResponse.json({ error: "Unable to save billing settings" }, { status: 500 });
+    }
+  }
+
+  return NextResponse.json({ success: true, config });
+}
+

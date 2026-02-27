@@ -7,6 +7,9 @@ type StatSummary = {
   totalDoctors: number;
   totalAppointments: number;
   totalRevenue: number;
+  totalCommission: number;
+  totalPlatformFees: number;
+  totalEarnings: number;
 };
 
 type MonthlyRevenuePoint = {
@@ -44,7 +47,7 @@ const statusColors: Record<string, string> = {
 const AdminDashboardContent = ({ stats, monthlyRevenue, appointmentStatus, userGrowth }: AdminDashboardContentProps) => {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Total Patients</CardTitle>
@@ -74,11 +77,41 @@ const AdminDashboardContent = ({ stats, monthlyRevenue, appointmentStatus, userG
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Revenue (NGN)</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Total Volume</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-gray-900">{stats.totalRevenue.toLocaleString("en-NG")}</p>
-            <p className="text-xs text-gray-500 mt-1">From completed payments</p>
+            <p className="text-2xl font-bold text-gray-900">₦{stats.totalRevenue.toLocaleString("en-NG")}</p>
+            <p className="text-xs text-gray-500 mt-1">Total transaction volume</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Commission Earned</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-green-600">₦{stats.totalCommission.toLocaleString("en-NG")}</p>
+            <p className="text-xs text-gray-500 mt-1">From doctor earnings</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Platform Fees</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-blue-600">₦{stats.totalPlatformFees.toLocaleString("en-NG")}</p>
+            <p className="text-xs text-gray-500 mt-1">From patient bookings</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Total Earnings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-indigo-600">₦{stats.totalEarnings.toLocaleString("en-NG")}</p>
+            <p className="text-xs text-gray-500 mt-1">Commission + Platform Fees</p>
           </CardContent>
         </Card>
       </div>

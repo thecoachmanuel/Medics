@@ -29,12 +29,14 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { getStatusColor } from "@/lib/constant";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 const DoctorDashboardContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isAuthenticated } = userAuthStore();
   const { dashboard: dashboardData, fetchDashboard, loading } = useDoctorStore();
+  const [commissionPercent, setCommissionPercent] = useState<number | null>(null);
 
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [completingAppointmentId, setCompletingAppointmentId] = useState<
@@ -98,6 +100,11 @@ const DoctorDashboardContent = () => {
   }, [user, fetchDashboard]);
 
   useEffect(() => {
+    const v = (dashboardData as any)?.stats?._adminCommissionPercent;
+    if (typeof v === 'number') setCommissionPercent(v);
+  }, [dashboardData]);
+
+  useEffect(() => {
     const completedCallId = searchParams.get("completedCall");
     if (completedCallId) {
       setCompletingAppointmentId(completedCallId);
@@ -139,14 +146,7 @@ const DoctorDashboardContent = () => {
     window.history.replaceState({}, "", url.pathname);
   };
 
-  const formateDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-NG", {
-      timeZone: "Africa/Lagos",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
+  const formateDate = (dateString: string) => formatDateTimeNG(dateString, { hour12: true });
 
   const canJoinCall = (appointment: any) => {
     const appointmentTime = new Date(appointment.slotStartIso);
@@ -260,7 +260,7 @@ const DoctorDashboardContent = () => {
         dashboardData?.statsChange?.todayAppointments?.positive || false,
     },
     {
-      title: "Total Revenue",
+      title: "Your Earnings",
       value: `₦${
         dashboardData?.stats?.totalRevenue?.toLocaleString() || "0"
       }`,
@@ -385,7 +385,7 @@ const DoctorDashboardContent = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  gap-6 mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  gap-6 mb-1">
             {statsCards.map((stat, index) => (
               <Card key={index} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
@@ -398,6 +398,9 @@ const DoctorDashboardContent = () => {
                       <p className="text-3xl font-bold text-gray-900">
                         {stat.value}
                       </p>
+                      {stat.title === 'Your Earnings' && typeof commissionPercent === 'number' && (
+                        <p className="text-xs text-gray-500 mt-1">after {commissionPercent}% platform commission</p>
+                      )}
                       <div className="flex items-center mt-2">
                         <TrendingUp
                           className={`w-3 h-3 mr-1 ${

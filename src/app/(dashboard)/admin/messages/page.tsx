@@ -2,6 +2,7 @@ import { getServiceSupabase } from "@/lib/supabase/service";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 interface ContactMessageRow {
   id: string;
@@ -48,16 +49,7 @@ export default async function AdminMessagesPage() {
                 <div key={m.id} className="border rounded-lg p-3 bg-white">
                   <div className="flex items-center justify-between mb-1">
                     <div className="font-semibold text-gray-900">{m.full_name}</div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(m.created_at).toLocaleString("en-NG", {
-                        timeZone: "Africa/Lagos",
-                        year: "numeric",
-                        month: "short",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
+                    <div className="text-xs text-gray-500">{formatDateTimeNG(m.created_at)}</div>
                   </div>
                   <div className="text-xs text-blue-700 mb-1">{m.email}</div>
                   {m.subject && (

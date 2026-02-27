@@ -22,7 +22,7 @@ export default async function AdminDashboardPage() {
     supabase.from("appointments").select("id", { count: "exact", head: true }),
     supabase
       .from("payments")
-      .select("amount,created_at,status")
+      .select("amount,created_at,status,consultation_fee,platform_fee,commission_amount")
       .eq("status", "success")
       .gte("created_at", sixMonthsAgo.toISOString()),
   ]);
@@ -30,9 +30,23 @@ export default async function AdminDashboardPage() {
   const totalPatients = patientsResult.count || 0;
   const totalDoctors = doctorsResult.count || 0;
   const totalAppointments = appointmentsResult.count || 0;
-  const paymentRows = (revenueResult.data || []) as { amount: number; created_at: string; status: string }[];
+  const paymentRows = (revenueResult.data || []) as { 
+    amount: number; 
+    created_at: string; 
+    status: string;
+    consultation_fee?: number;
+    platform_fee?: number;
+    commission_amount?: number;
+  }[];
 
   const totalRevenue = paymentRows.reduce((sum, row) => sum + (row.amount || 0), 0);
+  const totalCommission = paymentRows.reduce((sum, row) => {
+    // Use stored commission if available, otherwise estimate 20% for old records
+    const commission = row.commission_amount ?? (row.amount || 0) * 0.2;
+    return sum + commission;
+  }, 0);
+  const totalPlatformFees = paymentRows.reduce((sum, row) => sum + (row.platform_fee || 0), 0);
+  const totalEarnings = totalCommission + totalPlatformFees;
 
   const monthlyMap = new Map<string, number>();
   for (let i = 0; i < 6; i += 1) {
@@ -93,7 +107,15 @@ export default async function AdminDashboardPage() {
         <AdminRefreshToggle storageKey="admin_auto_refresh:/admin" />
       </div>
       <AdminDashboardContent
-        stats={{ totalPatients, totalDoctors, totalAppointments, totalRevenue }}
+        stats={{
+          totalPatients,
+          totalDoctors,
+          totalAppointments,
+          totalRevenue,
+          totalCommission,
+          totalPlatformFees,
+          totalEarnings,
+        }}
         monthlyRevenue={monthlyRevenue}
         appointmentStatus={appointmentStatus}
         userGrowth={userGrowth}

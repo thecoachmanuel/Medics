@@ -6,6 +6,7 @@ import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { updatePayoutStatus } from "@/actions/admin-actions";
 import ToastNotice from "@/components/admin/ToastNotice";
 import { redirect } from "next/navigation";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 interface PayoutRow {
   id: string;
@@ -231,16 +232,7 @@ export default async function AdminPaymentsPage(props: { searchParams?: Promise<
                             {p.status}
                           </span>
                         </td>
-                        <td className="px-3 py-2 text-xs text-gray-500">
-                          {new Date(p.created_at).toLocaleString("en-NG", {
-                            timeZone: "Africa/Lagos",
-                            year: "numeric",
-                            month: "short",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-500">{formatDateTimeNG(p.created_at)}</td>
                         <td className="px-3 py-2 text-xs text-gray-700 max-w-xs truncate">
                           {p.note || "-"}
                         </td>

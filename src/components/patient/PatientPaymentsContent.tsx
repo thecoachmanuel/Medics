@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Calendar, Download, Search, SlidersHorizontal } from "lucide-react";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 const statusColor = (s: PaymentStatus) =>
   s === "success"
@@ -129,16 +130,7 @@ export default function PatientPaymentsContent() {
                           </div>
                           <div>
                             <div className="font-medium">{currency(p.amount, p.currency)}</div>
-                            <div className="text-xs text-gray-500">
-                              {new Date(p.createdAt).toLocaleString("en-NG", {
-                                timeZone: "Africa/Lagos",
-                                year: "numeric",
-                                month: "short",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </div>
+                            <div className="text-xs text-gray-500">{formatDateTimeNG(p.createdAt)}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">

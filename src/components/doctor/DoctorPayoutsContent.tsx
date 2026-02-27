@@ -7,6 +7,8 @@ import { Badge } from "../ui/badge";
 import { supabase } from "@/lib/supabase/client";
 import { usePaymentStore } from "@/store/paymentStore";
 import { PaymentFilters } from "@/lib/types";
+import { formatDateTimeNG } from "@/lib/datetime";
+import { fetchBillingSettings } from "@/lib/settings";
 
 const currency = (n: number, cur: string) =>
   new Intl.NumberFormat("en-NG", { style: "currency", currency: cur || "NGN" }).format(n);
@@ -39,10 +41,27 @@ export default function DoctorPayoutsContent() {
     fetchPayments("doctor", filters);
   }, [fetchPayments, filters]);
 
+  const successfulPayments = useMemo(() => payments.filter((p) => p.status === "success"), [payments]);
+
   const totals = useMemo(() => {
-    const paid = payments.filter((p) => p.status === "success").reduce((s, p) => s + p.amount, 0);
-    return { paid };
-  }, [payments]);
+    const paidRaw = successfulPayments.reduce((s, p) => s + p.amount, 0);
+    return { paidRaw } as const;
+  }, [successfulPayments]);
+
+  const [commissionPercent, setCommissionPercent] = useState<number>(20);
+  useEffect(() => {
+    fetchBillingSettings().then((cfg) => setCommissionPercent(cfg.adminCommissionPercent)).catch(() => undefined);
+  }, []);
+
+  const earningsPaid = useMemo(() => {
+    const factor = Math.max(0, Math.min(1, (100 - commissionPercent) / 100));
+    return successfulPayments.reduce((sum, p) => {
+      if (p.consultationFee && p.consultationFee > 0) {
+        return sum + Math.round(p.consultationFee - (p.commissionAmount || 0));
+      }
+      return sum + Math.round(p.amount * factor);
+    }, 0);
+  }, [successfulPayments, commissionPercent]);
 
   useEffect(() => {
     const loadPayoutStats = async () => {
@@ -128,10 +147,10 @@ export default function DoctorPayoutsContent() {
   }, []);
 
   const availableForPayout = useMemo(() => {
-    const available = totals.paid - payoutRequestedTotal;
+    const available = earningsPaid - payoutRequestedTotal;
     if (!Number.isFinite(available)) return 0;
     return available > 0 ? available : 0;
-  }, [totals.paid, payoutRequestedTotal]);
+  }, [earningsPaid, payoutRequestedTotal]);
 
   const submitPayoutRequest = async () => {
     setPayoutMessage(null);
@@ -234,6 +253,7 @@ export default function DoctorPayoutsContent() {
               <div className="space-y-1"><label className="text-sm text-gray-600">Amount (NGN)</label><input type="number" min={0} className="w-full border rounded px-3 py-2" value={payoutAmount} onChange={(e) => setPayoutAmount(e.target.value)} /></div>
               <div className="space-y-1"><label className="text-sm text-gray-600">Notes for admin</label><textarea className="w-full border rounded px-3 py-2 min-h-[72px]" value={payoutNote} onChange={(e) => setPayoutNote(e.target.value)} placeholder="Include account or payout details if needed." /></div>
               <div className="text-xs text-gray-600">Available for payout: <span className="font-semibold">{currency(availableForPayout, "NGN")}</span></div>
+              <div className="text-xs text-gray-500">Calculated from your earnings after {commissionPercent}% commission.</div>
               {payoutMessage && <p className="text-xs text-gray-600">{payoutMessage}</p>}
               <Button type="button" className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" onClick={submitPayoutRequest} disabled={payoutSubmitting}>{payoutSubmitting ? "Submitting request..." : "Submit payout request"}</Button>
             </CardContent>
@@ -265,7 +285,7 @@ export default function DoctorPayoutsContent() {
                           <div className="font-medium">{currency(r.amount, "NGN")}</div>
                           <span className="text-xs capitalize text-gray-600">{r.status}</span>
                         </div>
-                        <div className="text-xs text-gray-500">{new Date(r.created_at).toLocaleString("en-NG", { timeZone: "Africa/Lagos", year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</div>
+                        <div className="text-xs text-gray-500">{formatDateTimeNG(r.created_at)}</div>
                         {r.note ? (<div className="text-xs text-gray-600 mt-1">{r.note}</div>) : null}
                       </div>
                     ))}
@@ -285,7 +305,7 @@ export default function DoctorPayoutsContent() {
                   <CardContent className="text-sm text-gray-700 space-y-2">
                     <div className="flex items-center justify-between"><span className="text-gray-600">Amount</span><span className="font-semibold">{currency(lastPayout.amount, "NGN")}</span></div>
                     <div className="flex items-center justify-between"><span className="text-gray-600">Status</span><span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">{lastPayout.status}</span></div>
-                    <div className="flex items-center justify-between"><span className="text-gray-600">Requested</span><span className="text-xs text-gray-600">{new Date(lastPayout.created_at).toLocaleString("en-NG", { timeZone: "Africa/Lagos", year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div>
+                    <div className="flex items-center justify-between"><span className="text-gray-600">Requested</span><span className="text-xs text-gray-600">{formatDateTimeNG(lastPayout.created_at)}</span></div>
                   </CardContent>
                 </Card>
               )}

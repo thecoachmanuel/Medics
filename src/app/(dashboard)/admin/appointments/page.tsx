@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { adminCreateAppointment, adminUpdateAppointmentStatus, adminRescheduleAppointment } from "@/actions/admin-actions";
+import { formatDateNG, formatTimeNG } from "@/lib/datetime";
 
 interface AppointmentRow {
   id: string;
@@ -271,18 +272,8 @@ export default async function AdminAppointmentsPage(
                 </thead>
                 <tbody>
                   {filteredRows.map((r) => {
-                    const dateLabel = r.slot_start_iso
-                      ? new Date(r.slot_start_iso).toLocaleDateString("en-NG", {
-                          timeZone: "Africa/Lagos",
-                        })
-                      : r.date || "-";
-                    const timeLabel = r.slot_start_iso
-                      ? new Date(r.slot_start_iso).toLocaleTimeString("en-NG", {
-                          timeZone: "Africa/Lagos",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "-";
+                    const dateLabel = r.slot_start_iso ? formatDateNG(r.slot_start_iso) : r.date || "-";
+                    const timeLabel = r.slot_start_iso ? formatTimeNG(r.slot_start_iso) : "-";
                     const statusValue = r.status || "Unknown";
                     const statusColor =
                       statusValue === "Completed"

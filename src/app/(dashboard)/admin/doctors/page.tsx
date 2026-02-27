@@ -6,6 +6,7 @@ import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { updateDoctorAdminStatus, DoctorAdminAction } from "@/actions/admin-actions";
 import Link from "next/link";
+import { formatDateNG } from "@/lib/datetime";
 
 interface DoctorRow {
   id: string;
@@ -206,11 +207,7 @@ export default async function AdminDoctorsPage(props: {
                         </td>
                         <td className="px-3 py-2 text-gray-700">{d.email}</td>
                         <td className="px-3 py-2 text-gray-700">{d.specialization || "-"}</td>
-                        <td className="px-3 py-2 text-xs text-gray-500">
-                          {new Date(d.created_at).toLocaleDateString("en-NG", {
-                            timeZone: "Africa/Lagos",
-                          })}
-                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-500">{formatDateNG(d.created_at)}</td>
                         <td className="px-3 py-2">
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClass}`}

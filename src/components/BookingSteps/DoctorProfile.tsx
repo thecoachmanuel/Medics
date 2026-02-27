@@ -93,18 +93,12 @@ const DoctorProfile = ({ doctor }: DoctorPrfileInterface) => {
             <p className="text-sm text-gray-600">{doctor.about}</p>
           </div>
 
-          {doctor.hospitalInfo && (
+          {doctor.hospitalInfo?.city && (
             <div className="bf-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Hospital/Clinic
-              </h3>
-              <div className="text-sm text-gray-600">
-                <p className="font-medium">{doctor.hospitalInfo.name}</p>
-                <p>{doctor.hospitalInfo.address}</p>
-                <div className="flex items-center space-x-1 mt-1">
-                  <MapPin className="w-3 h-3" />
-                  <span>{doctor.hospitalInfo.city}</span>
-                </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Location</h3>
+              <div className="text-sm text-gray-600 flex items-center space-x-1">
+                <MapPin className="w-3 h-3" />
+                <span>{doctor.hospitalInfo.city}</span>
               </div>
             </div>
           )}

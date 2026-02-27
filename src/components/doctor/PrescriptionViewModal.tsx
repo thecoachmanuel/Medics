@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Check, Copy, FileText, X } from "lucide-react";
 import { Button } from "../ui/button";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 interface PrescriptionViewModalProps {
   appointment: Appointment;
@@ -20,14 +21,7 @@ const PrescriptionViewModal = ({
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
 
-  const formateDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-NG", {
-      timeZone: "Africa/Lagos",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  const formateDate = (dateString: string) => formatDateTimeNG(dateString, { year: "numeric", month: "short", day: "numeric" });
 
   const copyToClipboard = async (text: string | undefined) => {
     try {

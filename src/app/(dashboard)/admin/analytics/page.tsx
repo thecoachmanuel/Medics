@@ -2,6 +2,7 @@ import { getServiceSupabase } from "@/lib/supabase/service";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 interface RatingRow {
   doctor_id: string;
@@ -118,16 +119,7 @@ export default async function AdminAnalyticsPage() {
                     <div className="text-sm font-semibold text-gray-900">
                       {doctorMap.get(r.doctor_id) || "Doctor"}
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(r.created_at).toLocaleString("en-NG", {
-                        timeZone: "Africa/Lagos",
-                        year: "numeric",
-                        month: "short",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
+                    <div className="text-xs text-gray-500">{formatDateTimeNG(r.created_at)}</div>
                   </div>
                   <div className="flex items-center justify-between mb-1">
                     <div className="text-xs text-gray-500">

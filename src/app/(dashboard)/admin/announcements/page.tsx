@@ -6,6 +6,7 @@ import { createAnnouncement } from "@/actions/admin-actions";
 import { supabase } from "@/lib/supabase/client";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 type Audience = "all" | "doctors" | "patients" | "user";
 
@@ -163,16 +164,7 @@ export default function AdminAnnouncementsPage() {
                 <div key={a.id} className="border rounded-lg p-3 bg-white">
                   <div className="flex items-center justify-between mb-1">
                     <div className="font-semibold text-gray-900">{a.title}</div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(a.created_at).toLocaleString("en-NG", {
-                        timeZone: "Africa/Lagos",
-                        year: "numeric",
-                        month: "short",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
+                    <div className="text-xs text-gray-500">{formatDateTimeNG(a.created_at)}</div>
                   </div>
                   <div className="text-xs text-gray-500 mb-1">Audience: {audienceLabel(a.audience)}</div>
                   <p className="text-sm text-gray-700 whitespace-pre-line">{a.message}</p>

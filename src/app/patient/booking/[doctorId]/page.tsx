@@ -183,7 +183,15 @@ const page = () => {
       }
 
       const consultationFees = getConsultationPrice();
-      const platformFees = Math.round(consultationFees * 0.1);
+      let platformPercent = 0;
+      try {
+        const res = await fetch('/api/admin/billing-settings', { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          platformPercent = Math.max(0, Math.min(100, Number(json?.config?.platformFeePercent || 0)));
+        }
+      } catch {}
+      const platformFees = Math.round((consultationFees * platformPercent) / 100);
       const totalAmount = consultationFees + platformFees;
 
       const appointment=await bookAppointment({

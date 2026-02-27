@@ -8,6 +8,8 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Calendar, Download, Search, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { formatDateTimeNG } from "@/lib/datetime";
+import { fetchBillingSettings } from "@/lib/settings";
 
 const statusColor = (s: PaymentStatus) =>
   s === "success"
@@ -53,6 +55,16 @@ export default function DoctorPaymentsContent() {
     const pending = payments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
     return { paid, pending };
   }, [payments]);
+
+  const [commissionPercent, setCommissionPercent] = useState<number>(20);
+  useEffect(() => {
+    fetchBillingSettings().then((cfg) => setCommissionPercent(cfg.adminCommissionPercent)).catch(() => undefined);
+  }, []);
+
+  const netEarningsPaid = useMemo(() => {
+    const factor = Math.max(0, Math.min(1, (100 - commissionPercent) / 100));
+    return Math.round(totals.paid * factor);
+  }, [totals.paid, commissionPercent]);
 
   useEffect(() => {
     const loadPayoutStats = async () => {
@@ -154,10 +166,10 @@ export default function DoctorPaymentsContent() {
   }, []);
 
   const availableForPayout = useMemo(() => {
-    const available = totals.paid - payoutRequestedTotal;
+    const available = netEarningsPaid - payoutRequestedTotal;
     if (!Number.isFinite(available)) return 0;
     return available > 0 ? available : 0;
-  }, [totals.paid, payoutRequestedTotal]);
+  }, [netEarningsPaid, payoutRequestedTotal]);
 
   const exportCSV = () => {
     const header = ["Date", "Reference", "Amount", "Currency", "Status"].join(",");
@@ -360,16 +372,7 @@ export default function DoctorPaymentsContent() {
                           </div>
                           <div>
                             <div className="font-medium">{currency(p.amount, p.currency)}</div>
-                            <div className="text-xs text-gray-500">
-                              {new Date(p.createdAt).toLocaleString("en-NG", {
-                                timeZone: "Africa/Lagos",
-                                year: "numeric",
-                                month: "short",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </div>
+                            <div className="text-xs text-gray-500">{formatDateTimeNG(p.createdAt)}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -411,14 +414,7 @@ export default function DoctorPaymentsContent() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Requested</span>
-                      <span className="text-xs text-gray-600">{new Date(lastPayout.created_at).toLocaleString("en-NG", {
-                        timeZone: "Africa/Lagos",
-                        year: "numeric",
-                        month: "short",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}</span>
+                      <span className="text-xs text-gray-600">{formatDateTimeNG(lastPayout.created_at)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -479,6 +475,11 @@ export default function DoctorPaymentsContent() {
                     <span className="text-gray-600">Paid total</span>
                     <span className="font-semibold">{currency(totals.paid, "NGN")}</span>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Net earnings</span>
+                    <span className="font-semibold">{currency(netEarningsPaid, "NGN")}</span>
+                  </div>
+                  <div className="text-xs text-gray-500">Commission applied: {commissionPercent}%</div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Pending total</span>
                     <span className="font-semibold">{currency(totals.pending, "NGN")}</span>

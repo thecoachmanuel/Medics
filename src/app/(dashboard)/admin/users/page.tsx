@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { updateUserBlockStatus, adminCreateUser, adminDeleteUser, adminUpdateUser } from "@/actions/admin-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { redirect } from "next/navigation";
+import { formatDateNG } from "@/lib/datetime";
 
 interface UserRow {
   id: string;
@@ -359,11 +360,7 @@ export default async function AdminUsersPage(props: {
                         <td className="px-3 py-2 text-gray-700">{effectiveAge ?? "-"}</td>
                         <td className="px-3 py-2 text-gray-700">{p.blood_group || "-"}</td>
                         <td className="px-3 py-2 text-gray-700">{p.phone || "-"}</td>
-                        <td className="px-3 py-2 text-xs text-gray-500">
-                          {new Date(p.created_at).toLocaleDateString("en-NG", {
-                            timeZone: "Africa/Lagos",
-                          })}
-                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-500">{formatDateNG(p.created_at)}</td>
                         <td className="px-3 py-2">
                           {p.type === "doctor" || p.type === "patient" ? (
                             <span

@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { getStatusColor } from "@/lib/constant";
+import { formatDateTimeNG } from "@/lib/datetime";
 import PrescriptionViewModal from "../doctor/PrescriptionViewModal";
 import { Textarea } from "../ui/textarea";
 
@@ -49,17 +50,13 @@ const PatientDashboardContent = () => {
     }
   }, [user, fetchAppointments]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-NG", {
-      timeZone: "Africa/Lagos",
+  const formatDate = (dateString: string) =>
+    formatDateTimeNG(dateString, {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
     });
-  };
 
   const isToday = (dateString: string) => {
     const today = new Date();
@@ -169,10 +166,7 @@ const PatientDashboardContent = () => {
                 <p className="text-gray-600">
                   {appointment.doctorId?.specialization}
                 </p>
-                <div className="flex items-center justify-center md:justify-start space-x-1 text-sm text-gray-500 mt-1">
-                  <MapPin className="w-3 h-3" />
-                  <span>{appointment.doctorId?.hospitalInfo?.name}</span>
-                </div>
+                
               </div>
 
               <div className="mt-2 md:mt-0 text-center md:text-right">

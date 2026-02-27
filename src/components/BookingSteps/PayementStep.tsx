@@ -78,7 +78,8 @@ const PayementStep = ({
   const { user } = userAuthStore();
   const [error, setError] = useState<string>("");
   const [isPaymentLoading, setIsPaymentLoading] = useState<boolean>(false);
-  const platformFees = Math.round(consultationFee * 0.1);
+  const [platformPercent, setPlatformPercent] = useState<number>(0);
+  const platformFees = Math.round((consultationFee * platformPercent) / 100);
   const totalAmount = consultationFee + platformFees;
   const [shouldAutoOpen,setShouldAutoOpen] = useState(true)
   const modelCloseCountRef = useRef<number>(0)
@@ -92,6 +93,22 @@ const PayementStep = ({
       paystackLoadPromiseRef.current = ensurePaystackScript();
     }
   }, [appointmentId, patientName]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadBilling = async () => {
+      try {
+        const res = await fetch('/api/admin/billing-settings', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!mounted) return;
+        const p = Math.max(0, Math.min(100, Number(json?.config?.platformFeePercent || 0)));
+        setPlatformPercent(p);
+      } catch {}
+    };
+    loadBilling();
+    return () => { mounted = false };
+  }, []);
 
   useEffect(() => {
     if(appointmentId && patientName && paymentStatus === 'idle' && !isPaymentLoading && shouldAutoOpen){
