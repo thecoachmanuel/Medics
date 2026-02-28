@@ -20,7 +20,7 @@ export default function DoctorPayoutsContent() {
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutNote, setPayoutNote] = useState("");
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
-  const [payoutMessage, setPayoutMessage] = useState<string | null>(null);
+  const [payoutMessage, setPayoutMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [payoutRequestedTotal, setPayoutRequestedTotal] = useState(0);
   const [lastPayout, setLastPayout] = useState<{
     id: string;
@@ -32,7 +32,8 @@ export default function DoctorPayoutsContent() {
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [bankSaving, setBankSaving] = useState(false);
-  const [bankMessage, setBankMessage] = useState<string | null>(null);
+  const [bankMessage, setBankMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isEditingBank, setIsEditingBank] = useState(true);
   const [payoutList, setPayoutList] = useState<Array<{ id: string; amount: number; status: string; created_at: string; note: string | null }>>([]);
   const [payoutListLoading, setPayoutListLoading] = useState(false);
   const [payoutListFilter, setPayoutListFilter] = useState<string>("");
@@ -140,6 +141,7 @@ export default function DoctorPayoutsContent() {
           setBankName(String((data as any).bank_name || ""));
           setAccountName(String((data as any).account_name || ""));
           setAccountNumber(String((data as any).account_number || ""));
+          setIsEditingBank(false);
         }
       } catch {}
     };
@@ -157,16 +159,16 @@ export default function DoctorPayoutsContent() {
   const submitPayoutRequest = async () => {
     setPayoutMessage(null);
     if (!bankName || !accountName || !accountNumber) {
-      setPayoutMessage("Add bank details before requesting a payout.");
+      setPayoutMessage({ type: "error", text: "Add bank details before requesting a payout." });
       return;
     }
     const amountValue = parseInt(payoutAmount, 10);
     if (Number.isNaN(amountValue) || amountValue <= 0) {
-      setPayoutMessage("Enter a valid payout amount.");
+      setPayoutMessage({ type: "error", text: "Enter a valid payout amount." });
       return;
     }
     if (amountValue > availableForPayout) {
-      setPayoutMessage(`You can request up to ${currency(availableForPayout, "NGN")} based on your available balance.`);
+      setPayoutMessage({ type: "error", text: `You can request up to ${currency(availableForPayout, "NGN")} based on your available balance.` });
       return;
     }
     setPayoutSubmitting(true);
@@ -180,7 +182,7 @@ export default function DoctorPayoutsContent() {
         .select("id")
         .single();
       if (error) throw error;
-      setPayoutMessage("Payout request submitted to admin.");
+      setPayoutMessage({ type: "success", text: "Payout request submitted successfully. Admin will review shortly." });
       setPayoutAmount("");
       setPayoutNote("");
       setPayoutRequestedTotal((current) => current + amountValue);
@@ -203,7 +205,7 @@ export default function DoctorPayoutsContent() {
         } catch {}
       }
     } catch (error: any) {
-      setPayoutMessage(error.message || "Unable to submit payout request.");
+      setPayoutMessage({ type: "error", text: error.message || "Unable to submit payout request." });
     } finally {
       setPayoutSubmitting(false);
     }
@@ -212,11 +214,11 @@ export default function DoctorPayoutsContent() {
   const saveBankDetails = async () => {
     setBankMessage(null);
     if (!bankName || !accountName || !accountNumber) {
-      setBankMessage("All bank fields are required.");
+      setBankMessage({ type: "error", text: "All bank fields are required." });
       return;
     }
     if (!/^\d{10,}$/.test(accountNumber)) {
-      setBankMessage("Enter a valid account number.");
+      setBankMessage({ type: "error", text: "Enter a valid account number." });
       return;
     }
     setBankSaving(true);
@@ -227,9 +229,10 @@ export default function DoctorPayoutsContent() {
       const payload = { doctor_id: uid, bank_name: bankName, account_name: accountName, account_number: accountNumber, updated_at: new Date().toISOString() };
       const { error } = await supabase.from("doctor_bank_accounts").upsert(payload, { onConflict: "doctor_id" });
       if (error) throw error;
-      setBankMessage("Bank details saved.");
+      setBankMessage({ type: "success", text: "Bank details saved successfully." });
+      setIsEditingBank(false);
     } catch (e: any) {
-      setBankMessage(e.message || "Unable to save bank details.");
+      setBankMessage({ type: "error", text: e.message || "Unable to save bank details." });
     } finally {
       setBankSaving(false);
     }
@@ -261,7 +264,11 @@ export default function DoctorPayoutsContent() {
                 )}
               </div>
               <div className="text-xs text-gray-500">Calculated from your earnings after {commissionPercent}% commission.</div>
-              {payoutMessage && <p className="text-xs text-gray-600">{payoutMessage}</p>}
+              {payoutMessage && (
+                <div className={`p-3 rounded-md text-sm ${payoutMessage.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                  {payoutMessage.text}
+                </div>
+              )}
               <Button type="button" className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" onClick={submitPayoutRequest} disabled={payoutSubmitting}>{payoutSubmitting ? "Submitting request..." : "Submit payout request"}</Button>
             </CardContent>
           </Card>
@@ -321,11 +328,88 @@ export default function DoctorPayoutsContent() {
                   <CardTitle>Bank Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="space-y-1"><label className="text-sm text-gray-600">Bank name</label><input className="w-full border rounded px-3 py-2" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. Access Bank" /></div>
-                  <div className="space-y-1"><label className="text-sm text-gray-600">Account name</label><input className="w-full border rounded px-3 py-2" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="e.g. John Doe" /></div>
-                  <div className="space-y-1"><label className="text-sm text-gray-600">Account number</label><input className="w-full border rounded px-3 py-2" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="e.g. 0123456789" /></div>
-                  {bankMessage && <p className="text-xs text-gray-600">{bankMessage}</p>}
-                  <Button type="button" className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" onClick={saveBankDetails} disabled={bankSaving}>{bankSaving ? "Saving..." : "Save bank details"}</Button>
+                  {!isEditingBank ? (
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500 block text-xs uppercase tracking-wide">Bank Name</span>
+                            <span className="font-medium text-gray-900">{bankName}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500 block text-xs uppercase tracking-wide">Account Name</span>
+                            <span className="font-medium text-gray-900">{accountName}</span>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-gray-500 block text-xs uppercase tracking-wide">Account Number</span>
+                            <span className="font-mono font-medium text-gray-900 text-lg tracking-wider">{accountNumber}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {bankMessage && (
+                        <div className={`p-3 rounded-md text-sm ${bankMessage.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                          {bankMessage.text}
+                        </div>
+                      )}
+
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
+                        onClick={() => {
+                          setBankMessage(null);
+                          setIsEditingBank(true);
+                        }}
+                      >
+                        Edit Details
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="space-y-1">
+                        <label className="text-sm text-gray-600">Bank name</label>
+                        <input className="w-full border rounded px-3 py-2" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. Access Bank" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-sm text-gray-600">Account name</label>
+                        <input className="w-full border rounded px-3 py-2" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="e.g. John Doe" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-sm text-gray-600">Account number</label>
+                        <input className="w-full border rounded px-3 py-2" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="e.g. 0123456789" />
+                      </div>
+                      
+                      {bankMessage && (
+                        <div className={`p-3 rounded-md text-sm ${bankMessage.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                          {bankMessage.text}
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        {bankName && accountName && accountNumber && (
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            className="flex-1"
+                            onClick={() => {
+                              setBankMessage(null);
+                              setIsEditingBank(false);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                        <Button 
+                          type="button" 
+                          className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" 
+                          onClick={saveBankDetails} 
+                          disabled={bankSaving}
+                        >
+                          {bankSaving ? "Saving..." : "Save Details"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
