@@ -65,8 +65,13 @@ export default function DoctorPaymentsContent() {
   }, [payments]);
 
   const [commissionPercent, setCommissionPercent] = useState<number>(20);
+  const [maxWithdrawalPercent, setMaxWithdrawalPercent] = useState<number>(85);
+
   useEffect(() => {
-    fetchBillingSettings().then((cfg) => setCommissionPercent(cfg.adminCommissionPercent)).catch(() => undefined);
+    fetchBillingSettings().then((cfg) => {
+      setCommissionPercent(cfg.adminCommissionPercent);
+      setMaxWithdrawalPercent(cfg.maxWithdrawalPercent);
+    }).catch(() => undefined);
   }, []);
 
   const netEarningsPaid = useMemo(() => {

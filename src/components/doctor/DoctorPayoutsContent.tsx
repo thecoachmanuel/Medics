@@ -49,8 +49,13 @@ export default function DoctorPayoutsContent() {
   }, [payments]);
 
   const [commissionPercent, setCommissionPercent] = useState<number>(20);
+  const [maxWithdrawalPercent, setMaxWithdrawalPercent] = useState<number>(85);
+
   useEffect(() => {
-    fetchBillingSettings().then((cfg) => setCommissionPercent(cfg.adminCommissionPercent)).catch(() => undefined);
+    fetchBillingSettings().then((cfg) => {
+      setCommissionPercent(cfg.adminCommissionPercent);
+      setMaxWithdrawalPercent(cfg.maxWithdrawalPercent);
+    }).catch(() => undefined);
   }, []);
 
   const earningsPaid = useMemo(() => {
@@ -144,8 +149,10 @@ export default function DoctorPayoutsContent() {
   const availableForPayout = useMemo(() => {
     const available = earningsPaid - payoutRequestedTotal;
     if (!Number.isFinite(available)) return 0;
-    return available > 0 ? available : 0;
-  }, [earningsPaid, payoutRequestedTotal]);
+    const netAvailable = available > 0 ? available : 0;
+    if (maxWithdrawalPercent >= 100) return netAvailable;
+    return Math.floor(netAvailable * (maxWithdrawalPercent / 100));
+  }, [earningsPaid, payoutRequestedTotal, maxWithdrawalPercent]);
 
   const submitPayoutRequest = async () => {
     setPayoutMessage(null);
@@ -249,7 +256,9 @@ export default function DoctorPayoutsContent() {
               <div className="space-y-1"><label className="text-sm text-gray-600">Notes for admin</label><textarea className="w-full border rounded px-3 py-2 min-h-[72px]" value={payoutNote} onChange={(e) => setPayoutNote(e.target.value)} placeholder="Include account or payout details if needed." /></div>
               <div className="text-xs text-gray-600">
                 Available for payout: <span className="font-semibold">{currency(availableForPayout, "NGN")}</span>
-                {maxWithdrawalPercent < 100 && <span className="ml-1 text-gray-500">(Max {maxWithdrawalPercent}% of balance)</span>}
+                {maxWithdrawalPercent < 100 && (
+                  <span className="ml-1 text-gray-500">(Max {maxWithdrawalPercent}% of balance)</span>
+                )}
               </div>
               <div className="text-xs text-gray-500">Calculated from your earnings after {commissionPercent}% commission.</div>
               {payoutMessage && <p className="text-xs text-gray-600">{payoutMessage}</p>}

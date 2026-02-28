@@ -1,9 +1,10 @@
 export type BillingSettings = {
   platformFeePercent: number;
   adminCommissionPercent: number;
+  maxWithdrawalPercent: number;
 };
 
-const DEFAULTS: BillingSettings = { platformFeePercent: 0, adminCommissionPercent: 20 };
+const DEFAULTS: BillingSettings = { platformFeePercent: 0, adminCommissionPercent: 20, maxWithdrawalPercent: 85 };
 
 export async function fetchBillingSettings(): Promise<BillingSettings> {
   try {

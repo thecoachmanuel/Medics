@@ -32,9 +32,11 @@ export async function GET() {
   const cfg = data.config;
   const platform = Number(cfg.platformFeePercent);
   const commission = Number(cfg.adminCommissionPercent);
+  const withdrawal = Number(cfg.maxWithdrawalPercent);
   const sanitized: BillingSettings = {
     platformFeePercent: Number.isFinite(platform) && platform >= 0 && platform <= 100 ? platform : DEFAULTS.platformFeePercent,
     adminCommissionPercent: Number.isFinite(commission) && commission >= 0 && commission <= 100 ? commission : DEFAULTS.adminCommissionPercent,
+    maxWithdrawalPercent: Number.isFinite(withdrawal) && withdrawal >= 0 && withdrawal <= 100 ? withdrawal : DEFAULTS.maxWithdrawalPercent,
   };
   return NextResponse.json({ config: sanitized });
 }
