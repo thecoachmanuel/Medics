@@ -191,10 +191,22 @@ export default function AdminSettingsPage() {
         body: JSON.stringify(billingSettings),
       });
       if (!res.ok) {
-        setBillingError('Unable to save billing settings.');
+        const json = await res.json().catch(() => ({}));
+        setBillingError(json.error || 'Unable to save billing settings.');
         return;
       }
       setBillingSaved(true);
+      // reload to confirm
+      const reload = await fetch('/api/admin/billing-settings', { cache: 'no-store' });
+      if (reload.ok) {
+        const json = await reload.json();
+        const cfg = (json?.config as any) || {};
+        setBillingSettings({
+          platformFeePercent: Number(cfg.platformFeePercent || 0),
+          adminCommissionPercent: Number(cfg.adminCommissionPercent || 20),
+          maxWithdrawalPercent: Number(cfg.maxWithdrawalPercent || 85),
+        });
+      }
     } catch {
       setBillingError('Unable to save billing settings.');
     } finally {
@@ -1185,7 +1197,33 @@ export default function AdminSettingsPage() {
 
       <Card>
         <CardHeader className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-gray-700">Newsletter subscribers</CardTitle>
+          <div className="flex items-center gap-4">
+            <CardTitle className="text-sm font-medium text-gray-700">Newsletter subscribers</CardTitle>
+            {subscribers.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const header = "email,created_at\n";
+                  const rows = subscribers
+                    .map((s) => `${s.email},${new Date(s.created_at).toISOString()}`)
+                    .join("\n");
+                  const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "newsletter_subscribers.csv";
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Export CSV
+              </Button>
+            )}
+          </div>
           <button onClick={() => setSubscribersOpen((v) => !v)} className="text-gray-500 hover:text-gray-700">
             {subscribersOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
@@ -1223,30 +1261,6 @@ export default function AdminSettingsPage() {
                   ))}
                 </tbody>
               </table>
-              <div className="flex justify-end mt-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const header = "email,created_at\n";
-                    const rows = subscribers
-                      .map((s) => `${s.email},${new Date(s.created_at).toISOString()}`)
-                      .join("\n");
-                    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "newsletter_subscribers.csv";
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                  }}
-                >
-                  Export CSV
-                </Button>
-              </div>
             </div>
           )}
         </CardContent>

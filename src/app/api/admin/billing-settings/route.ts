@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle<{ id: string }>();
 
   if (loadError) {
+    console.error("Error loading billing settings:", loadError);
     return NextResponse.json({ error: "Unable to load billing settings" }, { status: 500 });
   }
 
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
       .update({ config })
       .eq("id", existing.id);
     if (updateError) {
+      console.error("Error updating billing settings:", updateError);
       return NextResponse.json({ error: "Unable to update billing settings" }, { status: 500 });
     }
   } else {
@@ -86,6 +88,7 @@ export async function POST(req: NextRequest) {
       .from("billing_settings")
       .insert({ config });
     if (insertError) {
+      console.error("Error inserting billing settings:", insertError);
       return NextResponse.json({ error: "Unable to save billing settings" }, { status: 500 });
     }
   }
