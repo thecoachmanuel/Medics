@@ -1,104 +1,122 @@
 import React from "react";
-import { CheckCircle2, Circle, Calendar, MapPin, Globe, Users, TrendingUp, Building2, ShieldCheck, Zap } from "lucide-react";
+import { CheckCircle2, Circle, Calendar, MapPin, Globe, Users, TrendingUp, Building2, ShieldCheck, Zap, Server } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Header from "@/components/landing/Header";
 
-// Roadmap Data
+// Helper to format date ranges
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const getRoadmapDates = () => {
+  // Use a fixed start date or today
+  const today = new Date(); // Or strictly today: new Date()
+  
+  // Week 1-2 (14 days)
+  const week1Start = new Date(today);
+  const week1End = new Date(today);
+  week1End.setDate(today.getDate() + 13);
+
+  // Week 3 (7 days)
+  const week3Start = new Date(week1End);
+  week3Start.setDate(week3Start.getDate() + 1);
+  const week3End = new Date(week3Start);
+  week3End.setDate(week3End.getDate() + 6);
+
+  // Week 4 (7 days)
+  const week4Start = new Date(week3End);
+  week4Start.setDate(week4Start.getDate() + 1);
+  const week4End = new Date(week4Start);
+  week4End.setDate(week4End.getDate() + 6);
+
+  // Week 5 (7 days)
+  const week5Start = new Date(week4End);
+  week5Start.setDate(week5Start.getDate() + 1);
+  const week5End = new Date(week5Start);
+  week5End.setDate(week5End.getDate() + 6);
+
+  // Week 6+ (Ongoing)
+  const week6Start = new Date(week5End);
+  week6Start.setDate(week6Start.getDate() + 1);
+
+  return {
+    week1: `${formatDate(week1Start)} - ${formatDate(week1End)}`,
+    week3: `${formatDate(week3Start)} - ${formatDate(week3End)}`,
+    week4: `${formatDate(week4Start)} - ${formatDate(week4End)}`,
+    week5: `${formatDate(week5Start)} - ${formatDate(week5End)}`,
+    week6: `${formatDate(week6Start)} Onwards`,
+  };
+};
+
+const dates = getRoadmapDates();
+
 const roadmapData = [
   {
-    week: "Week 1",
-    dateRange: "Feb 28 - Mar 6, 2026",
-    title: "Foundation & Compliance",
-    description: "Establishing the legal and technical bedrock for MedicsOnline.",
-    icon: Building2,
+    week: "Weeks 1-2",
+    dateRange: dates.week1,
+    title: "Digital Foundation & Infrastructure",
+    description: "Establishing the secure technical bedrock for MedicsOnline.",
+    icon: Server,
     status: "in-progress",
     items: [
-      { text: "Purchase Domain & Secure Hosting", completed: true },
-      { text: "Implement SSL & Security Protocols", completed: true },
-      { text: "Legal Incorporation (CAC Registration)", completed: false },
-      { text: "Setup Corporate Banking & Payment Gateways", completed: false },
-    ],
-  },
-  {
-    week: "Week 2",
-    dateRange: "Mar 7 - Mar 13, 2026",
-    title: "Platform Polish & QA",
-    description: "Ensuring a bug-free, secure, and seamless user experience.",
-    icon: ShieldCheck,
-    status: "upcoming",
-    items: [
-      { text: "Finalize Core Features (Video, Payments)", completed: false },
-      { text: "Security Audit & Penetration Testing", completed: false },
-      { text: "Internal Beta Testing (Closed Group)", completed: false },
-      { text: "UI/UX Refinements & Bug Fixes", completed: false },
+      { text: "Purchase Domain & Secure High-Performance Hosting", completed: true },
+      { text: "Implement SSL Certificates & Security Protocols", completed: true },
+      { text: "Setup Corporate Emails & Internal Communication", completed: false },
+      { text: "Deploy Landing Page & Coming Soon Teaser", completed: false },
     ],
   },
   {
     week: "Week 3",
-    dateRange: "Mar 14 - Mar 20, 2026",
-    title: "Physical Infrastructure",
-    description: "Setting up the physical headquarters for operations.",
+    dateRange: dates.week3,
+    title: "Physical Operations Setup (Lagos)",
+    description: "Establishing our physical footprint in Lagos.",
     icon: MapPin,
     status: "upcoming",
     items: [
-      { text: "Secure Office Space (Lagos/Abuja)", completed: false },
+      { text: "Secure Office Space in Lagos (Ikeja/VI/Lekki)", completed: false },
       { text: "Procure Office Furniture & Equipment", completed: false },
-      { text: "Install High-Speed Enterprise Internet", completed: false },
-      { text: "Recruit Operations & Support Team", completed: false },
+      { text: "Setup High-Speed Internet & Power Backup", completed: false },
+      { text: "Lagos State Business Permit Registration", completed: false },
     ],
   },
   {
     week: "Week 4",
-    dateRange: "Mar 21 - Mar 27, 2026",
-    title: "Pre-Launch Marketing",
-    description: "Building anticipation and gathering early adopters.",
+    dateRange: dates.week4,
+    title: "Marketing Blitz (Physical & Online)",
+    description: "Aggressive brand awareness campaign across channels.",
     icon: Globe,
     status: "upcoming",
     items: [
-      { text: "Launch Social Media Teasers & Branding", completed: false },
-      { text: "Strategic Partnerships (Hospitals, Pharmacies)", completed: false },
-      { text: "Content Marketing (Health Blogs, Tips)", completed: false },
-      { text: "Early Access Sign-up Campaign", completed: false },
+      { text: "Launch Targeted Social Media Ads (Meta, LinkedIn)", completed: false },
+      { text: "Distribute Physical Flyers in Key Lagos Areas", completed: false },
+      { text: "Content Marketing (Health Blogs, SEO Optimization)", completed: false },
+      { text: "Partner with Local Lagos Pharmacies & Clinics", completed: false },
     ],
   },
   {
     week: "Week 5",
-    dateRange: "Mar 28 - Apr 3, 2026",
-    title: "Soft Launch",
+    dateRange: dates.week5,
+    title: "Soft Launch & Onboarding",
     description: "Controlled release to test real-world performance.",
     icon: Users,
     status: "upcoming",
     items: [
-      { text: "Open Beta to First 100 Users", completed: false },
+      { text: "Open Beta to First 100 Lagos Users", completed: false },
       { text: "Onboard First 20 Verified Doctors", completed: false },
       { text: "Feedback Loop & Rapid Iteration", completed: false },
       { text: "Stress Test Support Channels", completed: false },
     ],
   },
   {
-    week: "Week 6",
-    dateRange: "Apr 4 - Apr 10, 2026",
-    title: "Grand Launch",
-    description: "Official public release and major marketing push.",
-    icon: Zap,
-    status: "upcoming",
-    items: [
-      { text: "Official Public Launch Event", completed: false },
-      { text: "Paid Advertising Blitz (Google, Socials)", completed: false },
-      { text: "Press Release & Media Coverage", completed: false },
-      { text: "Community Health Outreach Program", completed: false },
-    ],
-  },
-  {
-    week: "Week 7+",
-    dateRange: "Apr 11, 2026 Onwards",
+    week: "Week 6+",
+    dateRange: dates.week6,
     title: "Growth & Scaling",
     description: "Expanding reach and enhancing platform capabilities.",
     icon: TrendingUp,
     status: "upcoming",
     items: [
-      { text: "Analyze Launch Metrics & KPIs", completed: false },
+      { text: "Official Public Launch Event", completed: false },
       { text: "Scale Server Infrastructure", completed: false },
       { text: "Expand Doctor Network Nationwide", completed: false },
       { text: "Introduce Corporate & Premium Plans", completed: false },
@@ -111,8 +129,8 @@ export default function RoadmapPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto mb-12 text-center">
+      <main className="container mx-auto px-4 py-24">
+        <div className="max-w-4xl mx-auto mb-16 text-center">
           <Badge className="mb-4 bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200 px-3 py-1 text-sm font-medium">
             Strategic Roadmap 2026
           </Badge>

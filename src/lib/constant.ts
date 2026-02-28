@@ -212,6 +212,7 @@ export const faqs = [
       title: "Company",
       links: [
         { text: "About Us", href: "/about" },
+        { text: "Roadmap", href: "/roadmap" },
         { text: "Support Center", href: "/support" },
         { text: "Contact Us", href: "/contact" }
       ]
