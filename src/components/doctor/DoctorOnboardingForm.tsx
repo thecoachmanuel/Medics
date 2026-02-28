@@ -17,6 +17,9 @@ import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import { uploadImage } from "@/lib/cloudinary";
+import { supabase } from "@/lib/supabase/client";
+import { FileIcon, LinkIcon, Loader2, Trash2, X } from "lucide-react";
 
 const DoctorOnboardingForm = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -43,6 +46,11 @@ const DoctorOnboardingForm = () => {
     ],
     slotDurationMinutes: 30,
   });
+
+  const [credentials, setCredentials] = useState<{ url: string; label: string }[]>([]);
+  const [newCredentialLink, setNewCredentialLink] = useState("");
+  const [newCredentialLabel, setNewCredentialLabel] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   const [availableSpecializations, setAvailableSpecializations] = useState<string[]>(defaultSpecializations);
   const [availableCategories, setAvailableCategories] = useState<string[]>(healthcareCategoriesList);
@@ -128,11 +136,47 @@ const DoctorOnboardingForm = () => {
     }));
   };
 
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      const result = await uploadImage(file, "medimeet/credentials");
+      setCredentials((prev) => [
+        ...prev,
+        { url: result.url, label: file.name },
+      ]);
+    } catch (error) {
+      console.error("Upload failed", error);
+      alert("Failed to upload file");
+    } finally {
+      setIsUploading(false);
+      e.target.value = ""; // Reset input
+    }
+  };
+
+  const handleAddLink = () => {
+    if (!newCredentialLink) return;
+    setCredentials((prev) => [
+      ...prev,
+      { url: newCredentialLink, label: newCredentialLabel || "External Link" },
+    ]);
+    setNewCredentialLink("");
+    setNewCredentialLabel("");
+  };
+
+  const removeCredential = (index: number) => {
+    setCredentials((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (): Promise<void> => {
     try {
       if (formData.categories.length === 0) {
         return;
       }
+      
+      // Save profile data
       await updateProfile({
         specialization: formData.specialization,
         category: formData.categories,
@@ -150,13 +194,35 @@ const DoctorOnboardingForm = () => {
         slotDurationMinutes: formData.slotDurationMinutes,
         isVerified: false,
       });
+
+      // Save credentials
+      if (credentials.length > 0) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        if (token) {
+          await Promise.all(
+            credentials.map((cred) =>
+              fetch("/api/doctor/credentials", {
+                method: "POST",
+                headers: { 
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(cred),
+              })
+            )
+          );
+        }
+      }
+
       router.push("/doctor/dashboard");
     } catch (error) {
       console.error("Profile update failed", error);
     }
   };
   const handleNext = (): void => {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -561,6 +627,120 @@ const DoctorOnboardingForm = () => {
               </div>
             </div>
           )}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold mb-4">
+                Credentials & Verification
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Please upload your medical license, ID, and other relevant documents
+                to help us verify your profile.
+              </p>
+
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
+                  <Input
+                    type="file"
+                    id="credential-upload"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    disabled={isUploading}
+                  />
+                  <Label
+                    htmlFor="credential-upload"
+                    className="cursor-pointer flex flex-col items-center justify-center gap-2"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                    ) : (
+                      <FileIcon className="h-8 w-8 text-gray-400" />
+                    )}
+                    <span className="text-sm font-medium text-gray-700">
+                      {isUploading
+                        ? "Uploading..."
+                        : "Click to upload document (PDF, JPG, PNG)"}
+                    </span>
+                  </Label>
+                </div>
+
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="link-label">Link Label (Optional)</Label>
+                    <Input
+                      id="link-label"
+                      placeholder="e.g. LinkedIn Profile, Online Portfolio"
+                      value={newCredentialLabel}
+                      onChange={(e) => setNewCredentialLabel(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-[2] space-y-2">
+                    <Label htmlFor="link-url">Or add a link</Label>
+                    <Input
+                      id="link-url"
+                      placeholder="https://"
+                      value={newCredentialLink}
+                      onChange={(e) => setNewCredentialLink(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleAddLink}
+                    disabled={!newCredentialLink}
+                  >
+                    Add Link
+                  </Button>
+                </div>
+
+                {credentials.length > 0 && (
+                  <div className="mt-6 space-y-2">
+                    <h3 className="text-sm font-medium text-gray-700">
+                      Attached Credentials
+                    </h3>
+                    <div className="space-y-2">
+                      {credentials.map((cred, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-md border"
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            {cred.url.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                              <FileIcon className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                            ) : (
+                              <LinkIcon className="h-5 w-5 text-green-500 flex-shrink-0" />
+                            )}
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-medium truncate">
+                                {cred.label}
+                              </span>
+                              <a
+                                href={cred.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:underline truncate"
+                              >
+                                {cred.url}
+                              </a>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeCredential(index)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <div className="flex justify-between pt-8">
             <Button
               type="button"
@@ -571,7 +751,7 @@ const DoctorOnboardingForm = () => {
               Previous
             </Button>
 
-            {currentStep < 3 ? (
+            {currentStep < 4 ? (
               <Button
                 type="button"
                 onClick={handleNext}

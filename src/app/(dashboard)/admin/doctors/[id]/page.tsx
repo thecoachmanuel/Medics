@@ -211,6 +211,19 @@ export default async function AdminDoctorDetailPage(props: {
 
   const events = (eventsData || []) as NotificationRow[];
 
+  const { data: credentialsData } = await supabase
+    .from("doctor_credentials")
+    .select("id,url,label,created_at")
+    .eq("doctor_id", profile.id)
+    .order("created_at", { ascending: false });
+
+  const credentials = (credentialsData || []) as {
+    id: string;
+    url: string;
+    label: string | null;
+    created_at: string;
+  }[];
+
   const isVerified = !!profile.is_verified;
   const isSuspended = !!profile.is_suspended;
    const isDeclined = !!profile.is_declined;
@@ -318,6 +331,45 @@ export default async function AdminDoctorDetailPage(props: {
               {formatDateTimeNG(profile.updated_at)}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">
+            Credentials & Documents
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {credentials.length === 0 ? (
+            <p className="text-sm text-gray-500">No credentials uploaded.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {credentials.map((cred) => (
+                <div
+                  key={cred.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  <div className="flex flex-col overflow-hidden mr-3">
+                    <span className="font-medium text-gray-900 truncate" title={cred.label || "Document"}>
+                      {cred.label || "Document"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {formatDateTimeNG(cred.created_at)}
+                    </span>
+                  </div>
+                  <a
+                    href={cred.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    View
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

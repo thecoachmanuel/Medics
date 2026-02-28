@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/service";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const supabase = getServiceSupabase();
+    
+    // Get token from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ credentials: [] });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    
     const {
       data: { user },
       error: authError,
-    } = await (supabase as any).auth.getUser();
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user?.id) return NextResponse.json({ credentials: [] });
     const { data, error } = await supabase
       .from("doctor_credentials")
@@ -24,10 +33,19 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const supabase = getServiceSupabase();
+    
+    // Get token from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: "Missing authorization header" }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+
     const {
       data: { user },
       error: authError,
-    } = await (supabase as any).auth.getUser();
+    } = await supabase.auth.getUser(token);
+    
     if (authError || !user?.id) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const body = (await req.json().catch(() => ({}))) as { url?: string; label?: string };
