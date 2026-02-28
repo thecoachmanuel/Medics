@@ -183,6 +183,7 @@ export interface Payment {
   reference?: string;
   createdAt: string;
   updatedAt: string;
+  appointmentStatus?: string;
 }
 
 export interface PaymentFilters {

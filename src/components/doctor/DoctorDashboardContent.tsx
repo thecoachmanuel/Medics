@@ -8,6 +8,7 @@ import { Appointment, useAppointmentStore } from "@/store/appointmentStore";
 import {
   Activity,
   Calendar,
+  CheckCircle,
   ChevronRight,
   Clock,
   DollarSign,
@@ -18,6 +19,7 @@ import {
   TrendingUp,
   Users,
   Video,
+  XCircle,
   Sun,
   SunMedium,
   Moon,
@@ -271,7 +273,18 @@ const DoctorDashboardContent = () => {
       positive: dashboardData?.statsChange?.totalRevenue?.positive || false,
     },
     {
-      title: "Completed",
+            title: "Pending Balance",
+            value: `₦${
+              dashboardData?.stats?.pendingBalance?.toLocaleString() || "0"
+            }`,
+            icon: Clock,
+            color: "text-amber-600",
+            bgColor: "bg-amber-50",
+            change: "0%",
+            positive: false,
+          },
+          {
+            title: "Completed",
       value: dashboardData?.stats?.completedAppointments?.toString() || "0",
       icon: Activity,
       color: "text-orange-600",

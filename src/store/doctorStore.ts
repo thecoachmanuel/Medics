@@ -200,12 +200,16 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       let adminCommissionPercent = 20;
+      let maxWithdrawalPercent = 85;
       try {
         const r = await fetch('/api/admin/billing-settings', { cache: 'no-store' });
         if (r.ok) {
           const j = await r.json();
           const v = Number(j?.config?.adminCommissionPercent || 20);
           if (Number.isFinite(v)) adminCommissionPercent = Math.max(0, Math.min(100, v));
+          
+          const w = Number(j?.config?.maxWithdrawalPercent || 85);
+          if (Number.isFinite(w)) maxWithdrawalPercent = Math.max(0, Math.min(100, w));
         }
       } catch {}
       const commissionFactor = Math.max(0, Math.min(1, (100 - adminCommissionPercent) / 100));
@@ -223,20 +227,13 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
         .eq('doctor_id', uid);
       if (allErr) throw allErr;
 
-      const { data: paidRows, error: payErr } = await supabase
-        .from('payments')
-        .select('amount,created_at')
-        .eq('doctor_id', uid)
-        .eq('status', 'success');
-      if (payErr) throw payErr;
-
       const { data: allPays } = await supabase
         .from('payments')
-        .select('appointment_id,status,amount')
+        .select('appointment_id,status,amount,created_at')
         .eq('doctor_id', uid)
         .eq('status', 'success');
 
-      type PayRow = { appointment_id: string; status: string; amount: number };
+      type PayRow = { appointment_id: string; status: string; amount: number; created_at: string };
       const payMap: Map<string, PayRow> = new Map(
         ((allPays as PayRow[]) || []).map((p) => [p.appointment_id, p])
       );
@@ -342,17 +339,28 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
 
       let thisYearRevenue = 0;
       let lastYearRevenue = 0;
-      ((paidRows || []) as any[]).forEach((r: any) => {
-        const createdAt = r.created_at as string | null;
-        if (!createdAt) return;
+      let lifetimeEarnings = 0;
+      let lifetimePending = 0;
+
+      paidAppointments.forEach((r: any) => {
+        const pay = payMap.get(r.id);
+        if (!pay) return;
+        const amount = Math.round((pay.amount || 0) * commissionFactor);
+        const createdAt = pay.created_at;
         const year = new Date(createdAt).getFullYear();
-        const amount = Math.round((r.amount || 0) * commissionFactor);
-        if (year === thisYear) thisYearRevenue += amount;
-        if (year === lastYear) lastYearRevenue += amount;
+
+        if (r.status === 'Completed') {
+          lifetimeEarnings += amount;
+          if (year === thisYear) thisYearRevenue += amount;
+          if (year === lastYear) lastYearRevenue += amount;
+        } else {
+          lifetimePending += amount;
+        }
       });
 
-      // deduct non-rejected payout requests from current year revenue
+      // deduct non-rejected payout requests from available balance
       let thisYearPayouts = 0;
+      let lifetimePayouts = 0;
       {
         const { data: payoutRows } = await supabase
           .from('doctor_payout_requests')
@@ -364,10 +372,14 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
           if (!createdAt) return;
           const year = new Date(createdAt).getFullYear();
           const amount = Number(r.amount || 0);
+          lifetimePayouts += amount;
           if (year === thisYear) thisYearPayouts += amount;
         });
       }
+      
       const netThisYearRevenue = Math.max(0, thisYearRevenue - thisYearPayouts);
+      const availableBalance = Math.max(0, lifetimeEarnings - lifetimePayouts);
+      const pendingBalance = lifetimePending;
 
       const thisYearPatientIds = new Set<string>();
       const lastYearPatientIds = new Set<string>();
@@ -467,6 +479,9 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
           completedAppointments: thisYearCompletedCount,
           averageRating: Number(avgRating.toFixed(1)),
           _adminCommissionPercent: adminCommissionPercent as unknown as any,
+          _maxWithdrawalPercent: maxWithdrawalPercent,
+          availableBalance,
+          pendingBalance,
         },
         statsChange: {
           totalPatients: {

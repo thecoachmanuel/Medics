@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/service";
 type BillingSettings = {
   platformFeePercent: number; // charged on top of consultation fee to patient
   adminCommissionPercent: number; // deducted from doctor earnings
+  maxWithdrawalPercent: number; // max percentage of available balance that can be withdrawn
 };
 
 type BillingRow = {
@@ -14,6 +15,7 @@ type BillingRow = {
 const DEFAULTS: BillingSettings = {
   platformFeePercent: 0,
   adminCommissionPercent: 20,
+  maxWithdrawalPercent: 85,
 };
 
 export async function GET() {
@@ -51,8 +53,13 @@ export async function POST(req: NextRequest) {
   const b = body as Partial<BillingSettings>;
   const platform = Math.max(0, Math.min(100, Number(b.platformFeePercent ?? DEFAULTS.platformFeePercent)));
   const commission = Math.max(0, Math.min(100, Number(b.adminCommissionPercent ?? DEFAULTS.adminCommissionPercent)));
+  const withdrawal = Math.max(0, Math.min(100, Number(b.maxWithdrawalPercent ?? DEFAULTS.maxWithdrawalPercent)));
 
-  const config: BillingSettings = { platformFeePercent: platform, adminCommissionPercent: commission };
+  const config: BillingSettings = { 
+    platformFeePercent: platform, 
+    adminCommissionPercent: commission,
+    maxWithdrawalPercent: withdrawal 
+  };
 
   const { data: existing, error: loadError } = await supabase
     .from("billing_settings")

@@ -13,7 +13,12 @@ export async function fetchBillingSettings(): Promise<BillingSettings> {
     const cfg = json?.config || DEFAULTS;
     const platform = Math.max(0, Math.min(100, Number(cfg.platformFeePercent || 0)));
     const commission = Math.max(0, Math.min(100, Number(cfg.adminCommissionPercent || 0)));
-    return { platformFeePercent: platform, adminCommissionPercent: commission };
+    const withdrawal = Math.max(0, Math.min(100, Number(cfg.maxWithdrawalPercent || 85)));
+    return { 
+      platformFeePercent: platform, 
+      adminCommissionPercent: commission,
+      maxWithdrawalPercent: withdrawal
+    };
   } catch {
     return DEFAULTS;
   }

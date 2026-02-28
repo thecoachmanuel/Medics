@@ -51,8 +51,16 @@ export default function DoctorPaymentsContent() {
   }, [fetchPayments, filters]);
 
   const totals = useMemo(() => {
-    const paid = payments.filter((p) => p.status === "success").reduce((s, p) => s + p.amount, 0);
-    const pending = payments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
+    const paid = payments
+      .filter((p) => p.status === "success" && p.appointmentStatus === "Completed")
+      .reduce((s, p) => s + p.amount, 0);
+    const pending = payments
+      .filter(
+        (p) =>
+          p.status === "pending" ||
+          (p.status === "success" && p.appointmentStatus !== "Completed")
+      )
+      .reduce((s, p) => s + p.amount, 0);
     return { paid, pending };
   }, [payments]);
 
@@ -168,8 +176,10 @@ export default function DoctorPaymentsContent() {
   const availableForPayout = useMemo(() => {
     const available = netEarningsPaid - payoutRequestedTotal;
     if (!Number.isFinite(available)) return 0;
-    return available > 0 ? available : 0;
-  }, [netEarningsPaid, payoutRequestedTotal]);
+    const netAvailable = available > 0 ? available : 0;
+    if (maxWithdrawalPercent >= 100) return netAvailable;
+    return Math.floor(netAvailable * (maxWithdrawalPercent / 100));
+  }, [netEarningsPaid, payoutRequestedTotal, maxWithdrawalPercent]);
 
   const exportCSV = () => {
     const header = ["Date", "Reference", "Amount", "Currency", "Status"].join(",");
@@ -490,7 +500,10 @@ export default function DoctorPaymentsContent() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Available for payout</span>
-                    <span className="font-semibold">{currency(availableForPayout, "NGN")}</span>
+                    <div className="text-right">
+                      <span className="font-semibold block">{currency(availableForPayout, "NGN")}</span>
+                      {maxWithdrawalPercent < 100 && <span className="text-xs text-gray-500 block">(Max {maxWithdrawalPercent}%)</span>}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

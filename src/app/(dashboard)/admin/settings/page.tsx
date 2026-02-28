@@ -172,6 +172,7 @@ export default function AdminSettingsPage() {
         setBillingSettings({
           platformFeePercent: Number(cfg.platformFeePercent || 0),
           adminCommissionPercent: Number(cfg.adminCommissionPercent || 20),
+          maxWithdrawalPercent: Number(cfg.maxWithdrawalPercent || 85),
         });
       } catch {}
     };
@@ -369,6 +370,18 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setBillingSettings((prev) => ({ ...prev, adminCommissionPercent: Math.max(0, Math.min(100, Number(e.target.value || 0))) }))}
               />
               <p className="text-xs text-gray-500 mt-1">Deducted from doctor earnings. Default 20%.</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600">Doctor's Max Withdrawal (%)</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                value={billingSettings.maxWithdrawalPercent}
+                onChange={(e) => setBillingSettings((prev) => ({ ...prev, maxWithdrawalPercent: Math.max(0, Math.min(100, Number(e.target.value || 0))) }))}
+              />
+              <p className="text-xs text-gray-500 mt-1">Percentage of available balance a doctor can withdraw. Default 85%.</p>
             </div>
           </div>
           {billingError && <div className="text-xs text-red-600">{billingError}</div>}
