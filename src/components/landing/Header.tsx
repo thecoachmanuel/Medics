@@ -35,6 +35,17 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const brandName = siteName && siteName.trim().length > 0 ? siteName : "MedicsOnline";
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = () => {
+      const match = document.cookie.match(new RegExp('(^| )medics_admin=([^;]+)'));
+      if (match && match[2] === '1') {
+        setIsAdmin(true);
+      }
+    };
+    checkAdmin();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -320,7 +331,16 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
           </div>
         ) : (
           <div className="flex items-center space-x-3">
-            {!isAuthenticated ? (
+            {isAdmin ? (
+              <Link href="/admin/dashboard">
+                <Button
+                  variant="ghost"
+                  className="text-blue-900 font-medium hover:text-blue-700"
+                >
+                  Admin Dashboard
+                </Button>
+              </Link>
+            ) : !isAuthenticated ? (
               <>
                 <Link href="/login/patient">
                   <Button

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { healthcareCategories } from '@/lib/constant'
 import { useRouter } from 'next/navigation';
 import { userAuthStore } from '@/store/authStore';
+import EditableElement from './EditableElement';
 
 interface LandingHeroProps {
   title?: string;
@@ -12,6 +13,8 @@ interface LandingHeroProps {
   description?: string;
   primaryCtaLabel?: string;
   secondaryCtaLabel?: string;
+  isEditable?: boolean;
+  onUpdate?: (key: string, value: string) => void;
 }
 
 const LandingHero: React.FC<LandingHeroProps> = ({
@@ -20,6 +23,8 @@ const LandingHero: React.FC<LandingHeroProps> = ({
   description,
   primaryCtaLabel,
   secondaryCtaLabel,
+  isEditable = false,
+  onUpdate,
 }) => {
  const {isAuthenticated} = userAuthStore();
    const router = useRouter();
@@ -54,13 +59,28 @@ const LandingHero: React.FC<LandingHeroProps> = ({
 
         <div className='container mx-auto text-center'>
             <h1 className='text-5xl md:text-6xl font-bold text-blue-900 leading-tight mb-6'>
-                {headingLine} <br/>
+                <EditableElement
+                   tag="span"
+                   html={headingLine}
+                   isEditable={isEditable}
+                   onChange={(val: string) => onUpdate?.('heroTitle', val)}
+                /> <br/>
                 <span className='text-blue-600'>
-                    {headingHighlight}
+                    <EditableElement
+                       tag="span"
+                       html={headingHighlight}
+                       isEditable={isEditable}
+                       onChange={(val: string) => onUpdate?.('heroHighlight', val)}
+                    />
                 </span>
             </h1>
             <p className='text-xl text-gray-600 mb-8 max-w-2xl mx-auto'>
-                {heroDescription}
+                <EditableElement
+                   tag="span"
+                   html={heroDescription}
+                   isEditable={isEditable}
+                   onChange={(val: string) => onUpdate?.('heroDescription', val)}
+                />
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center mb-12'>
                      <Button onClick={handleBookConsultation} size='lg' className='bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-full px-8 py-3 text-lg'> 

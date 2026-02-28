@@ -3,6 +3,7 @@ import FAQSection from "@/components/landing/FAQSection";
 import Footer from "@/components/landing/Footer";
 import Header from "@/components/landing/Header";
 import LandingHero from "@/components/landing/LandingHero";
+import EditableElement from "@/components/landing/EditableElement";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import { CalendarCheck, ShieldCheck, Smartphone, Stethoscope, Video } from "lucide-react";
 import { userAuthStore } from "@/store/authStore";
@@ -59,6 +60,43 @@ export default function Home() {
   const { user } = userAuthStore();
   const router = useRouter();
   const [content, setContent] = useState<HomepageContent | null>(null);
+  const [isEditable, setIsEditable] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+       const isAdmin = document.cookie.includes('medics_admin=1');
+       const isInline = document.cookie.includes('admin_inline_edit=true');
+       if (isAdmin && isInline) {
+         setIsEditable(true);
+       }
+    }
+  }, []);
+
+  const updateContent = (key: string, value: any) => {
+    if (!content) return;
+    setContent(prev => prev ? ({ ...prev, [key]: value }) : null);
+    setHasChanges(true);
+  };
+
+  const saveChanges = async () => {
+     if (!content) return;
+     try {
+       const res = await fetch('/api/admin/homepage', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(content)
+       });
+       if(res.ok) {
+         setHasChanges(false);
+         alert('Homepage content updated successfully!');
+       } else {
+         alert('Failed to save changes.');
+       }
+     } catch (e) {
+       alert('Error saving changes.');
+     }
+  };
 
   useEffect(() => {
     if (user?.type === "doctor") {
@@ -147,16 +185,28 @@ export default function Home() {
            description={content?.heroDescription}
            primaryCtaLabel={content?.heroPrimaryCtaLabel}
            secondaryCtaLabel={content?.heroSecondaryCtaLabel}
+           isEditable={isEditable}
+           onUpdate={updateContent}
          />
 
          <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-blue-50">
            <div className="max-w-7xl mx-auto">
              <div className="max-w-3xl mx-auto text-center mb-12">
                <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-4">
-                 {howTitle}
+                 <EditableElement
+                    tag="span"
+                    html={howTitle}
+                    isEditable={isEditable}
+                    onChange={(val: string) => updateContent('howTitle', val)}
+                 />
                </h2>
                <p className="text-lg md:text-xl text-gray-600">
-                 {howSubtitle}
+                 <EditableElement
+                    tag="span"
+                    html={howSubtitle}
+                    isEditable={isEditable}
+                    onChange={(val: string) => updateContent('howSubtitle', val)}
+                 />
                </p>
              </div>
 
@@ -250,6 +300,18 @@ export default function Home() {
           footerLogoUrl={content?.footerLogoUrl}
         />
       </main>
+      
+      {isEditable && hasChanges && (
+        <div className="fixed bottom-8 right-8 z-50">
+          <button 
+            onClick={saveChanges}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center space-x-2 animate-bounce transition-all transform hover:scale-105"
+          >
+            <span className="text-xl">💾</span>
+            <span>Save Changes</span>
+          </button>
+        </div>
+      )}
      </div>
   );
 }

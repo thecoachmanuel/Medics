@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Stethoscope, ChevronDown, ChevronRight } from "lucide-react";
 import { healthcareCategoriesList, specializations as defaultSpecializations } from "@/lib/constant";
 
@@ -153,6 +155,22 @@ export default function AdminSettingsPage() {
   const [billingSaving, setBillingSaving] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [billingSaved, setBillingSaved] = useState(false);
+
+  const [inlineEditing, setInlineEditing] = useState(false);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+       const match = document.cookie.match(new RegExp('(^| )admin_inline_edit=([^;]+)'));
+       if (match && match[2] === 'true') {
+         setInlineEditing(true);
+       }
+    }
+  }, []);
+
+  const toggleInlineEditing = (checked: boolean) => {
+    setInlineEditing(checked);
+    document.cookie = `admin_inline_edit=${checked}; path=/; max-age=31536000; SameSite=Lax`;
+  };
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem("admin_auto_refresh") : null;
@@ -348,6 +366,35 @@ export default function AdminSettingsPage() {
         <h2 className="text-2xl font-semibold text-gray-900">Settings</h2>
         <p className="text-sm text-gray-600">Control how the admin dashboard behaves.</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">General Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="inline-editing" 
+              checked={inlineEditing}
+              onCheckedChange={(checked) => toggleInlineEditing(checked as boolean)}
+            />
+            <Label htmlFor="inline-editing" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Enable Homepage Inline Editing
+            </Label>
+          </div>
+          <p className="text-xs text-gray-500 ml-6">
+            When enabled, you can edit text directly on the homepage while logged in as an admin.
+          </p>
+          <div className="flex items-center space-x-2 mt-4">
+             <Checkbox 
+                id="auto-refresh"
+                checked={autoRefresh}
+                onCheckedChange={(checked) => setAutoRefresh(checked as boolean)}
+             />
+             <Label htmlFor="auto-refresh" className="text-sm font-medium leading-none">Auto-refresh dashboard data</Label>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex items-center justify-between">
