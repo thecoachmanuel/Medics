@@ -149,7 +149,7 @@ export default function AdminSettingsPage() {
   const [taxonomiesError, setTaxonomiesError] = useState<string | null>(null);
   const [taxonomiesSaved, setTaxonomiesSaved] = useState(false);
   const [billingOpen, setBillingOpen] = useState(true);
-  const [billingSettings, setBillingSettings] = useState<{ platformFeePercent: number; adminCommissionPercent: number }>({ platformFeePercent: 0, adminCommissionPercent: 20 });
+  const [billingSettings, setBillingSettings] = useState<{ platformFeePercent: number; adminCommissionPercent: number; maxWithdrawalPercent: number }>({ platformFeePercent: 0, adminCommissionPercent: 20, maxWithdrawalPercent: 85 });
   const [billingSaving, setBillingSaving] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [billingSaved, setBillingSaved] = useState(false);
