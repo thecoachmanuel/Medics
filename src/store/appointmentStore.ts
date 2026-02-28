@@ -391,6 +391,10 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
   updateAppointmentStatus: async (appointmentId, status) => {
      set({ loading: true, error: null });
     try {
+      if (!appointmentId) {
+        throw new Error("Appointment ID is required to update status");
+      }
+      
       const { data, error } = await supabase
         .from('appointments')
         .update({ status })
