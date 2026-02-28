@@ -345,15 +345,27 @@ const DoctorListPage = () => {
 
                     <div className="flex items-center justify-center space-x-1 mb-3">
                       <div className="flex">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className="w-4 h-4 fill-orange-400 text-orange-400"
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const rating = doctor.averageRating || 0;
+                          const filled = star <= Math.round(rating);
+                          return (
+                            <Star
+                              key={star}
+                              className={`w-4 h-4 ${
+                                filled
+                                  ? "fill-orange-400 text-orange-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          );
+                        })}
                       </div>
-                      <span className="font-bold">5.0</span>
-                      <span className="text-gray-500 text-xs">(620)</span>
+                      <span className="font-bold">
+                        {(doctor.averageRating || 0).toFixed(1)}
+                      </span>
+                      <span className="text-gray-500 text-xs">
+                        ({doctor.totalReviews || 0})
+                      </span>
                     </div>
                   </div>
 

@@ -98,6 +98,8 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
         isSuspended: !!d.is_suspended,
         createdAt: new Date(d.created_at),
         updatedAt: new Date(d.updated_at),
+        averageRating: d.average_rating,
+        totalReviews: d.total_reviews,
       }));
       set({
         doctors,

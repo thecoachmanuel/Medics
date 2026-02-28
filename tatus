@@ -1,0 +1,12 @@
+[33mcommit 04a5ea3633efb12b9a1e89e5ab684b2016e10ff5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Your Name <you@example.com>
+Date:   Sat Feb 28 09:03:06 2026 +0100
+
+    update
+
+ src/app/(dashboard)/admin/doctors/[id]/page.tsx    |  52 [32m++++++[m
+ src/app/api/doctor/credentials/route.ts            |  24 [32m++[m[31m-[m
+ src/components/doctor/DoctorOnboardingForm.tsx     | 184 [32m++++++++++++++++++++[m[31m-[m
+ .../20240328120000_create_doctor_credentials.sql   |  19 [32m+++[m
+ .../20260228120000_create_doctor_credentials.sql   |  52 [32m++++++[m
+ 5 files changed, 326 insertions(+), 5 deletions(-)
