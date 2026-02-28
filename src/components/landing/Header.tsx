@@ -332,7 +332,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
         ) : (
           <div className="flex items-center space-x-3">
             {isAdmin ? (
-              <Link href="/admin/dashboard">
+              <Link href="/admin">
                 <Button
                   variant="ghost"
                   className="text-blue-900 font-medium hover:text-blue-700"
