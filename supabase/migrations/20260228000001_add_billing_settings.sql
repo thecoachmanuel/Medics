@@ -7,17 +7,19 @@ create table if not exists public.billing_settings (
 );
 
 -- Add trigger for updated_at
-do $$
+do $block$
 begin
   if not exists (
     select 1 from pg_trigger where tgname = 'trg_billing_settings_updated_at'
   ) then
-    create trigger trg_billing_settings_updated_at
-    before update on public.billing_settings
-    for each row execute function public.set_updated_at();
+    execute $$
+      create trigger trg_billing_settings_updated_at
+      before update on public.billing_settings
+      for each row execute function public.set_updated_at()
+    $$;
   end if;
 end
-$$ language plpgsql;
+$block$ language plpgsql;
 
 -- Enable RLS
 alter table public.billing_settings enable row level security;

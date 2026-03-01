@@ -15,7 +15,7 @@ create index if not exists doctor_payout_requests_created_at_idx on public.docto
 alter table public.doctor_payout_requests enable row level security;
 
 -- Policies: doctors can insert/select their own requests; admins use service role
-do $$
+do $block$
 begin
   if not exists (
     select 1 from pg_policies where schemaname = 'public' and tablename = 'doctor_payout_requests' and policyname = 'doctor_payout_insert_own'
@@ -41,5 +41,5 @@ begin
       using (auth.uid() = doctor_id)
     $$;
   end if;
-end$$ language plpgsql;
+end$block$;
 

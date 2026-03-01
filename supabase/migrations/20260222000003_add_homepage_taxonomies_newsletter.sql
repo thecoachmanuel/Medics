@@ -44,25 +44,29 @@ end;
 $$;
 
 -- Attach updated_at triggers to homepage_content and doctor_taxonomies if missing
-do $$
+do $block$
 begin
   if not exists (
     select 1 from pg_trigger where tgname = 'trg_homepage_content_updated_at'
   ) then
-    create trigger trg_homepage_content_updated_at
-    before update on public.homepage_content
-    for each row execute function public.set_updated_at();
+    execute $$
+      create trigger trg_homepage_content_updated_at
+      before update on public.homepage_content
+      for each row execute function public.set_updated_at()
+    $$;
   end if;
 
   if not exists (
     select 1 from pg_trigger where tgname = 'trg_doctor_taxonomies_updated_at'
   ) then
-    create trigger trg_doctor_taxonomies_updated_at
-    before update on public.doctor_taxonomies
-    for each row execute function public.set_updated_at();
+    execute $$
+      create trigger trg_doctor_taxonomies_updated_at
+      before update on public.doctor_taxonomies
+      for each row execute function public.set_updated_at()
+    $$;
   end if;
 end
-$$ language plpgsql;
+$block$ language plpgsql;
 
 -- Row Level Security posture
 alter table public.homepage_content enable row level security;
@@ -70,7 +74,7 @@ alter table public.doctor_taxonomies enable row level security;
 alter table public.newsletter_subscribers enable row level security;
 
 -- Allow public read of homepage content (marketing site needs to fetch it)
-do $$
+do $block$
 begin
   if not exists (
     select 1 from pg_policies
@@ -78,13 +82,15 @@ begin
       and tablename = 'homepage_content'
       and policyname = 'homepage_content_read_public'
   ) then
-    execute 'create policy "homepage_content_read_public" '
-         || 'on public.homepage_content '
-         || 'for select '
-         || 'to public '
-         || 'using (true)';
+    execute $$
+      create policy "homepage_content_read_public"
+      on public.homepage_content
+      for select
+      to public
+      using (true)
+    $$;
   end if;
 end
-$$ language plpgsql;
+$block$ language plpgsql;
 
 -- No public policies for doctor_taxonomies and newsletter_subscribers; service role will access them.

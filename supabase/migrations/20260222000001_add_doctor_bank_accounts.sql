@@ -11,7 +11,7 @@ create table if not exists public.doctor_bank_accounts (
 create index if not exists doctor_bank_accounts_doctor_id_idx on public.doctor_bank_accounts(doctor_id);
 alter table public.doctor_bank_accounts enable row level security;
 
-do $$
+do $block$
 begin
   if not exists (
     select 1 from pg_policies where schemaname = 'public' and tablename = 'doctor_bank_accounts' and policyname = 'doctor_bank_select_own'
@@ -43,5 +43,5 @@ begin
       with check (auth.uid() = doctor_id)
     $$;
   end if;
-end$$ language plpgsql;
+end$block$;
 
