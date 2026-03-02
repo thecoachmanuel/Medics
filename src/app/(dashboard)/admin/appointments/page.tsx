@@ -5,6 +5,8 @@ import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { adminCreateAppointment, adminUpdateAppointmentStatus, adminRescheduleAppointment } from "@/actions/admin-actions";
 import { formatDateNG, formatTimeNG } from "@/lib/datetime";
 
+export const dynamic = 'force-dynamic';
+
 interface AppointmentRow {
   id: string;
   doctor_id: string;

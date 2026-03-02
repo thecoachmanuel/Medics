@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { updateDoctorAdminStatus, DoctorAdminAction } from "@/actions/admin-actions";
 import { formatDateTimeNG } from "@/lib/datetime";
 
+export const dynamic = 'force-dynamic';
+
 interface DoctorProfileRow {
   id: string;
   name: string | null;

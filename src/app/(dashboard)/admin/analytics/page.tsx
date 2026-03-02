@@ -4,6 +4,8 @@ import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { formatDateTimeNG } from "@/lib/datetime";
 
+export const dynamic = 'force-dynamic';
+
 interface RatingRow {
   doctor_id: string;
   patient_id: string | null;

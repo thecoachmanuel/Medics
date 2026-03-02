@@ -3,6 +3,8 @@ import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { getServiceSupabase } from "@/lib/supabase/service";
 
+export const dynamic = 'force-dynamic';
+
 const formatMonth = (date: Date): string => {
   return date.toLocaleDateString("en-NG", {
     timeZone: "Africa/Lagos",

@@ -8,6 +8,8 @@ import { updateDoctorAdminStatus, DoctorAdminAction } from "@/actions/admin-acti
 import Link from "next/link";
 import { formatDateNG } from "@/lib/datetime";
 
+export const dynamic = 'force-dynamic';
+
 interface DoctorRow {
   id: string;
   name: string | null;

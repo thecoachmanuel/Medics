@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { redirect } from "next/navigation";
 import { formatDateNG } from "@/lib/datetime";
 
+export const dynamic = 'force-dynamic';
+
 interface UserRow {
   id: string;
   name: string | null;

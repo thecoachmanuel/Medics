@@ -8,6 +8,8 @@ import ToastNotice from "@/components/admin/ToastNotice";
 import { redirect } from "next/navigation";
 import { formatDateTimeNG } from "@/lib/datetime";
 
+export const dynamic = 'force-dynamic';
+
 interface PayoutRow {
   id: string;
   doctor_id: string;
