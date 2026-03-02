@@ -14,6 +14,7 @@ interface ConsultationStepInterface {
   doctorFees: number;
   onBack: () => void;
   onContinue: () => void;
+  isLoading?: boolean;
 }
 const ConsultationStep = ({
   consultationType,
@@ -23,6 +24,7 @@ const ConsultationStep = ({
   doctorFees,
   onBack,
   onContinue,
+  isLoading = false,
 }: ConsultationStepInterface) => {
   const getConsultationPrice = (selectedType = consultationType) => {
     const typePrice =
@@ -127,15 +129,15 @@ const ConsultationStep = ({
       </div>
 
       <div className="flex justify-between gap-2">
-        <Button variant="outline" onClick={onBack} className="PX-8 PY-3">
+        <Button variant="outline" onClick={onBack} className="PX-8 PY-3" disabled={isLoading}>
           Back
         </Button>
         <Button
           onClick={onContinue}
-          disabled={!symptoms.trim()}
+          disabled={!symptoms.trim() || isLoading}
           className="px-7 py-3 bg-blue-600 hover:bg-blue-700"
         >
-          Continue to Payment
+          {isLoading ? "Processing..." : "Continue to Payment"}
         </Button>
       </div>
     </div>

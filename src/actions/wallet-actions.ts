@@ -111,7 +111,6 @@ export async function payWithWallet(appointmentId: string, userId: string, amoun
     if (!data) return { success: false, error: "Insufficient balance or invalid appointment" };
 
     revalidatePath('/patient/payments');
-    revalidatePath(`/patient/booking/${appointmentId}`); // This might need adjustment based on actual route
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

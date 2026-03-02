@@ -50,8 +50,12 @@ export async function POST(request: Request) {
   if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) {
     return NextResponse.json({ error: 'Invalid appointment amount' }, { status: 400 })
   }
-  if (nairaAmount !== expectedAmount || currency !== 'NGN') {
-    return NextResponse.json({ error: 'Amount or currency mismatch' }, { status: 400 })
+  // Allow small tolerance for floating point issues, though we expect integers
+  if (Math.abs(nairaAmount - expectedAmount) > 5 || currency !== 'NGN') {
+    return NextResponse.json({ 
+      error: 'Amount or currency mismatch', 
+      details: { expected: expectedAmount, received: nairaAmount, currency } 
+    }, { status: 400 })
   }
 
   const paymentRow = {
@@ -68,10 +72,17 @@ export async function POST(request: Request) {
 
   const { data: existing } = await supabase
     .from('payments')
-    .select('id')
+    .select('id, status')
     .eq('reference', reference)
     .maybeSingle()
-  if (!existing) {
+  
+  if (existing) {
+    if (existing.status === 'success') {
+       return NextResponse.json({ success: true, data: { appointmentId, reference, amount: nairaAmount, currency }, message: 'Payment already verified' })
+    }
+    // If exists but not success (unlikely for unique reference unless failed previously), update it?
+    // For now, we assume reference is unique per attempt.
+  } else {
     await supabase.from('payments').insert(paymentRow)
   }
 

@@ -14,6 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import CalendarStep from "@/components/BookingSteps/CalendarStep";
 import ConsultationStep from "@/components/BookingSteps/ConsultationStep";
 import PayementStep from "@/components/BookingSteps/PayementStep";
+import { toast } from "sonner";
 
 const page = () => {
   const params = useParams();
@@ -162,7 +163,7 @@ const page = () => {
   const handleBooking = async () => {
     if (!selectedDate || !selectedSlot || !symptoms.trim()) {
       alert("please complete all required fields");
-      return;
+      return false;
     }
 
     setIsPaymentProcessing(true);
@@ -179,7 +180,7 @@ const page = () => {
       if (slotStart.getTime() <= now.getTime()) {
         alert("Please select a future time slot");
         setIsPaymentProcessing(false);
-        return;
+        return false;
       }
 
       const consultationFees = getConsultationPrice();
@@ -210,13 +211,16 @@ const page = () => {
       //store appointemnt Id and patinet name for paymnet 
       if(appointment && appointment?._id) {
         setCreatedAppointmentId(appointment._id);
-      }else{
-            await new Promise((resolve) => setTimeout(resolve, 3000));
-            router.push("/patient/dashboard");
+        setIsPaymentProcessing(false);
+        return true;
       }
+      setIsPaymentProcessing(false);
+      return false;
     } catch (error: any) {
       console.error(error);
+      toast.error(error?.message || "Failed to create appointment");
       setIsPaymentProcessing(false);
+      return false;
     }
   };
 
@@ -355,7 +359,13 @@ const page = () => {
                        symptoms={symptoms}
                        doctorFees={currentDoctor?.fees}
                        onBack={() => setCurrentStep(1)}
-                       onContinue={() => setCurrentStep(3)}
+                       isLoading={isPaymentProcessing}
+                       onContinue={async () => {
+                         const success = await handleBooking();
+                         if (success) {
+                           setCurrentStep(3);
+                         }
+                       }}
                       />
                     </motion.div>
                   )}
@@ -376,7 +386,7 @@ const page = () => {
                       consultationFee={getConsultationPrice()}
                       isProcessing={isPaymentProcessing}
                             onBack={() => setCurrentStep(2)}
-                            onConfirm={handleBooking}
+                            onConfirm={() => router.push("/patient/dashboard")}
                             onPaymentSuccess={handlePaymentSuccess}
                             loading={loading}
                             appointmentId={createdAppointmentId || undefined}

@@ -8,6 +8,7 @@ import { Button } from "../ui/button";
 import { useWalletStore } from "@/store/walletStore";
 import { payWithWallet } from "@/actions/wallet-actions";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
 declare global {
   interface Window {
@@ -120,32 +121,37 @@ const PayementStep = ({
   }, []);
 
   const handleWalletPayment = async () => {
-    if (!appointmentId || !user?.id) return;
+    if (!appointmentId || !user?.id) {
+      toast.error("Missing appointment details. Please go back and try again.");
+      return;
+    }
     
     if (balance < totalAmount) {
-      setError("Insufficient wallet balance. Please fund your wallet or use Paystack.");
+      const msg = "Insufficient wallet balance. Please fund your wallet or use Paystack.";
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
     setIsPaymentLoading(true);
     setError("");
     setPaymentStatus("processing");
+    const toastId = toast.loading("Processing wallet payment...");
 
     try {
       const res = await payWithWallet(appointmentId, user.id, totalAmount);
       if (res.success) {
+        toast.success("Payment successful!", { id: toastId });
         setPaymentStatus('success');
         setPaymentDetails({ amount: totalAmount, currency: 'NGN' });
-        if (onPaymentSuccess) {
-          onPaymentSuccess({ amount: totalAmount, currency: 'NGN', method: 'wallet' });
-        } else {
-          onConfirm();
-        }
+        // We do not auto-redirect anymore to allow user to see the success message
       } else {
         throw new Error(res.error || "Wallet payment failed");
       }
     } catch (err: any) {
-      setError(err?.message || 'Wallet payment failed');
+      const errMsg = err?.message || 'Wallet payment failed';
+      setError(errMsg);
+      toast.error(errMsg, { id: toastId });
       setPaymentStatus('failed');
     } finally {
       setIsPaymentLoading(false);
@@ -154,7 +160,7 @@ const PayementStep = ({
 
   const handlePaystackPayment = async () => {
     if (!appointmentId || !patientName) {
-      onConfirm();
+      toast.error("Missing appointment details. Please go back and try again.");
       return;
     }
 
@@ -162,6 +168,7 @@ const PayementStep = ({
       setIsPaymentLoading(true);
       setError("");
       setPaymentStatus("processing");
+      const toastId = toast.loading("Initializing Paystack...");
 
       if (!paystackLoadPromiseRef.current) {
         paystackLoadPromiseRef.current = ensurePaystackScript();
@@ -178,6 +185,9 @@ const PayementStep = ({
       if (!email) throw new Error('Missing user email for payment');
 
       const paystack = new window.PaystackPop();
+      
+      toast.dismiss(toastId); // Dismiss initialization toast
+
       paystack.newTransaction({
         key: publicKey,
         email,
@@ -190,6 +200,7 @@ const PayementStep = ({
           patientName,
         },
         onSuccess: async (transaction: any) => {
+          const verifyToastId = toast.loading("Verifying payment...");
           try {
             const res = await fetch('/api/paystack/verify', {
               method: 'POST',
@@ -198,6 +209,7 @@ const PayementStep = ({
             });
             const data = await res.json();
             if (res.ok && data?.success) {
+              toast.success("Payment verified successfully!", { id: verifyToastId });
               setPaymentStatus('success');
               if (data?.data && typeof data.data.amount === 'number') {
                 setPaymentDetails({
@@ -205,21 +217,20 @@ const PayementStep = ({
                   currency: data.data.currency || 'NGN',
                 });
               }
-              if (onPaymentSuccess) {
-                onPaymentSuccess(data?.data);
-              } else {
-                onConfirm();
-              }
+              // We do not auto-redirect anymore
             } else {
               throw new Error(data?.error || 'Payment verification failed');
             }
           } catch (err: any) {
-            setError(err?.message || 'Payment failed');
+            const errMsg = err?.message || 'Payment failed';
+            setError(errMsg);
+            toast.error(errMsg, { id: verifyToastId });
             setPaymentStatus('failed');
             setPaymentDetails(null);
           }
         },
         onCancel: () => {
+          toast.info("Payment cancelled");
           setPaymentStatus('idle');
           setError('');
           setIsPaymentLoading(false);
@@ -227,9 +238,23 @@ const PayementStep = ({
       });
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Payment initialization failed");
+      const errMsg = err.message || "Payment initialization failed";
+      setError(errMsg);
+      toast.error(errMsg);
       setPaymentStatus('failed');
       setIsPaymentLoading(false);
+    }
+  };
+
+  const handleSuccessClick = () => {
+    if (onPaymentSuccess) {
+      onPaymentSuccess({ 
+        amount: paymentDetails?.amount || totalAmount, 
+        currency: paymentDetails?.currency || 'NGN',
+        appointmentId,
+      });
+    } else {
+      onConfirm();
     }
   };
 
@@ -326,7 +351,7 @@ const PayementStep = ({
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
                 <p className="text-gray-500 mb-6">Your appointment has been confirmed.</p>
-                <Button onClick={onConfirm} className="w-full max-w-sm">
+                <Button onClick={handleSuccessClick} className="w-full max-w-sm">
                   View Appointment Details
                 </Button>
               </motion.div>
