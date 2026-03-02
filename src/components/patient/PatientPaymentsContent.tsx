@@ -8,6 +8,9 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Calendar, Download, Search, SlidersHorizontal } from "lucide-react";
 import { formatDateTimeNG } from "@/lib/datetime";
+import WalletCard from "./WalletCard";
+import { useWalletStore } from "@/store/walletStore";
+import { userAuthStore } from "@/store/authStore";
 
 const statusColor = (s: PaymentStatus) =>
   s === "success"
@@ -23,11 +26,20 @@ const currency = (n: number, cur: string) =>
 
 export default function PatientPaymentsContent() {
   const { payments, fetchPayments, loading } = usePaymentStore();
+  const { fetchWallet, fetchTransactions } = useWalletStore();
+  const { user } = userAuthStore();
   const [filters, setFilters] = useState<PaymentFilters>({ sortBy: "created_at", sortOrder: "desc" });
 
   useEffect(() => {
     fetchPayments("patient", filters);
   }, [fetchPayments, filters]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchWallet(user.id);
+      fetchTransactions(user.id);
+    }
+  }, [user, fetchWallet, fetchTransactions]);
 
   const totalPaid = useMemo(
     () => payments.filter((p) => p.status === "success").reduce((s, p) => s + p.amount, 0),
@@ -66,12 +78,17 @@ export default function PatientPaymentsContent() {
             </div>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4" /> Filters
-              </CardTitle>
-            </CardHeader>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1">
+              <WalletCard />
+            </div>
+            <div className="md:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <SlidersHorizontal className="w-4 h-4" /> Filters
+                  </CardTitle>
+                </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <select
                 value={(filters.status as string) || ""}
@@ -108,62 +125,54 @@ export default function PatientPaymentsContent() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Payment History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="space-y-2">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="h-14 bg-gray-100 rounded animate-pulse" />
-                    ))}
-                  </div>
-                ) : payments.length ? (
-                  <div className="divide-y">
-                    {payments.map((p) => (
-                      <div key={p.id} className="py-3 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="p-2 bg-blue-50 rounded">
-                            <Calendar className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <div className="font-medium">{currency(p.amount, p.currency)}</div>
-                            <div className="text-xs text-gray-500">{formatDateTimeNG(p.createdAt)}</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-xs text-gray-500">{p.reference || "N/A"}</div>
-                          <Badge className={statusColor(p.status)}>{p.status}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500">No payments found</div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Total records</span>
-                  <span className="font-semibold">{payments.length}</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="p-8 text-center text-gray-500">Loading...</div>
+              ) : payments.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">No payments found</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-gray-500">
+                        <th className="py-2">Date</th>
+                        <th className="py-2">Reference</th>
+                        <th className="py-2">Amount</th>
+                        <th className="py-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payments.map((p) => (
+                        <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
+                          <td className="py-3">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              {formatDateTimeNG(p.createdAt)}
+                            </div>
+                          </td>
+                          <td className="py-3 font-mono text-xs">{p.reference || "-"}</td>
+                          <td className="py-3 font-medium">{currency(p.amount, p.currency)}</td>
+                          <td className="py-3">
+                            <Badge className={statusColor(p.status)} variant="secondary">
+                              {p.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Total paid</span>
-                  <span className="font-semibold">{currency(totalPaid, "NGN")}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </>
+    </div>
+  </div>
+</>
   );
 }

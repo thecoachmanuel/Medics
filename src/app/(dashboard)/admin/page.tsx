@@ -11,21 +11,39 @@ const formatMonth = (date: Date): string => {
 };
 
 export default async function AdminDashboardPage() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-2xl mx-auto">
+          <h2 className="text-red-800 text-lg font-semibold mb-2">Configuration Error</h2>
+          <p className="text-red-600 mb-4">
+            The Admin Dashboard requires the <code>SUPABASE_SERVICE_ROLE_KEY</code> environment variable to function.
+          </p>
+          <p className="text-sm text-red-500">
+            Please add this key to your <code>.env.local</code> file. You can find it in your Supabase Project Settings &gt; API.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const supabase = getServiceSupabase();
 
-  const now = new Date();
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  try {
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const [patientsResult, doctorsResult, appointmentsResult, revenueResult] = await Promise.all([
-    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "patient"),
-    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "doctor"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }),
-    supabase
-      .from("payments")
-      .select("amount,created_at,status")
-      .eq("status", "success")
-      .gte("created_at", sixMonthsAgo.toISOString()),
-  ]);
+    const [patientsResult, doctorsResult, appointmentsResult, revenueResult] = await Promise.all([
+      supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "patient"),
+      supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "doctor"),
+      supabase.from("appointments").select("id", { count: "exact", head: true }),
+      supabase
+        .from("payments")
+        .select("amount,created_at,status")
+        .eq("status", "success")
+        .gte("created_at", sixMonthsAgo.toISOString()),
+    ]);
 
   const totalPatients = patientsResult.count || 0;
   const totalDoctors = doctorsResult.count || 0;
@@ -100,4 +118,21 @@ export default async function AdminDashboardPage() {
       />
     </>
   );
+  } catch (error: any) {
+    console.error("Admin Dashboard Error:", error);
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-2xl mx-auto text-center">
+          <h2 className="text-red-800 text-lg font-semibold mb-2">Dashboard Error</h2>
+          <p className="text-red-600 mb-4">{error.message || "An unexpected error occurred while loading the dashboard."}</p>
+          <a 
+            href="/admin"
+            className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors inline-block"
+          >
+            Retry
+          </a>
+        </div>
+      </div>
+    );
+  }
 }

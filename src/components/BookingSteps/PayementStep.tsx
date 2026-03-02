@@ -2,9 +2,12 @@ import { userAuthStore } from "@/store/authStore";
 import React, { useEffect, useRef, useState } from "react";
 import { Separator } from "../ui/separator";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle, CreditCard, Loader2, Shield, XCircle } from "lucide-react";
+import { CheckCircle, CreditCard, Loader2, Shield, XCircle, Wallet } from "lucide-react";
 import { Progress } from "../ui/progress";
 import { Button } from "../ui/button";
+import { useWalletStore } from "@/store/walletStore";
+import { payWithWallet } from "@/actions/wallet-actions";
+import { Card, CardContent } from "@/components/ui/card";
 
 declare global {
   interface Window {
@@ -57,6 +60,7 @@ interface PaymentStepInterface {
   appointmentId?: string;
   patientName?: string;
 }
+
 const PayementStep = ({
   selectedDate,
   selectedSlot,
@@ -76,17 +80,22 @@ const PayementStep = ({
     "idle" | "processing" | "success" | "failed"
   >("idle");
   const { user } = userAuthStore();
+  const { balance, fetchWallet } = useWalletStore();
   const [error, setError] = useState<string>("");
   const [isPaymentLoading, setIsPaymentLoading] = useState<boolean>(false);
   const [platformPercent, setPlatformPercent] = useState<number>(0);
   const platformFees = Math.round((consultationFee * platformPercent) / 100);
   const totalAmount = consultationFee + platformFees;
-  const [shouldAutoOpen,setShouldAutoOpen] = useState(true)
-  const modelCloseCountRef = useRef<number>(0)
-  const paystackLoadPromiseRef = useRef<Promise<void> | null>(null)
+  const paystackLoadPromiseRef = useRef<Promise<void> | null>(null);
   const [paymentDetails, setPaymentDetails] = useState<{ amount: number; currency: string } | null>(null);
 
-  //Load Paystack inline script and auto-trigger payment
+  useEffect(() => {
+    if (user?.id) {
+      fetchWallet(user.id);
+    }
+  }, [user, fetchWallet]);
+
+  // Load Paystack inline script
   useEffect(() => {
     if (!appointmentId || !patientName) return;
     if (!paystackLoadPromiseRef.current) {
@@ -110,19 +119,40 @@ const PayementStep = ({
     return () => { mounted = false };
   }, []);
 
-  useEffect(() => {
-    if(appointmentId && patientName && paymentStatus === 'idle' && !isPaymentLoading && shouldAutoOpen){
-      const timer =setTimeout(() => {
-        handlePayment();
-      },500);
-      return () => clearTimeout(timer)
+  const handleWalletPayment = async () => {
+    if (!appointmentId || !user?.id) return;
+    
+    if (balance < totalAmount) {
+      setError("Insufficient wallet balance. Please fund your wallet or use Paystack.");
+      return;
     }
-  },[appointmentId,patientName,paymentStatus,isPaymentLoading,shouldAutoOpen])
 
-  
+    setIsPaymentLoading(true);
+    setError("");
+    setPaymentStatus("processing");
 
+    try {
+      const res = await payWithWallet(appointmentId, user.id, totalAmount);
+      if (res.success) {
+        setPaymentStatus('success');
+        setPaymentDetails({ amount: totalAmount, currency: 'NGN' });
+        if (onPaymentSuccess) {
+          onPaymentSuccess({ amount: totalAmount, currency: 'NGN', method: 'wallet' });
+        } else {
+          onConfirm();
+        }
+      } else {
+        throw new Error(res.error || "Wallet payment failed");
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Wallet payment failed');
+      setPaymentStatus('failed');
+    } finally {
+      setIsPaymentLoading(false);
+    }
+  };
 
-  const handlePayment = async () => {
+  const handlePaystackPayment = async () => {
     if (!appointmentId || !patientName) {
       onConfirm();
       return;
@@ -192,212 +222,181 @@ const PayementStep = ({
         onCancel: () => {
           setPaymentStatus('idle');
           setError('');
-          modelCloseCountRef.current += 1;
-          if (modelCloseCountRef.current === 1) {
-            setTimeout(() => handlePayment(), 1000);
-          } else {
-            setShouldAutoOpen(false);
-          }
+          setIsPaymentLoading(false);
         },
       });
-    } catch (error: any) {
-      console.error("payment error", error);
-      setError(error.message || "paymnet failed");
-      setPaymentStatus("failed");
-    } finally {
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Payment initialization failed");
+      setPaymentStatus('failed');
       setIsPaymentLoading(false);
     }
   };
 
-  const handlePaynow = () => {
-    if (appointmentId && patientName) {
-      modelCloseCountRef.current =0;
-      handlePayment();
-    } else {
-      onConfirm();
-    }
-  };
-
   return (
-    <div className="space-y-8">
-      <div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-6">
-          Payment & Confimation
-        </h3>
-        <div className="bg-gray-50 rounded-lg p-6 mb-8">
-          <h4 className="font-semibold text-gray-900 mb-4">Booking Summary</h4>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Date & Time</span>
-              <span className="font-medium">
-                {selectedDate?.toLocaleDateString("en-NG", {
-                  timeZone: "Africa/Lagos",
-                  year: "numeric",
-                  month: "short",
-                  day: "2-digit",
-                })} at {selectedSlot}
-              </span>
+    <div className="w-full max-w-3xl mx-auto space-y-6">
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Payment</h2>
+              <p className="text-gray-500">Complete your appointment booking</p>
             </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-600">Consultation Type</span>
-              <span className="font-medium">{consultationType}</span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-600">Doctor</span>
-              <span className="font-medium">{doctorName}</span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-600">Duration</span>
-              <span className="font-medium">{slotDuration} minutes</span>
-            </div>
-
-            <Separator />
-
-            <div className="flex justify-between">
-              <span className="text-gray-600">Consultation Fee</span>
-              <span className="font-medium">₦{consultationFee}</span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-600">Platform Fee</span>
-              <span className="font-medium">₦{platformFees}</span>
-            </div>
-
-            <Separator />
-
-            <div className="flex justify-between text-lg">
-              <span className="font-semibold">Total Amount</span>
-              <span className="font-bold text-green-600">₦{totalAmount}</span>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">Total Amount</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {new Intl.NumberFormat("en-NG", {
+                  style: "currency",
+                  currency: "NGN",
+                }).format(totalAmount)}
+              </p>
             </div>
           </div>
-        </div>
 
-        <AnimatePresence mode="wait">
-          {paymentStatus === "processing" && (
-            <motion.div
-              key="processing"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="text-center py-12"
-            >
-              <Loader2 className="w-12 h-12 mx-auto mb-4 text-blue-600 animate-spin" />
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                Processing Payment...
-              </h4>
-              <p className="text-gray-600 mb-4">
-                Please complete the payment in the Paystack window
-              </p>
-              <Progress value={50} className="w-full" />
-            </motion.div>
-          )}
+          <Separator className="my-6" />
 
-          {paymentStatus === "success" && (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="text-center py-12"
-            >
-              <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
-              <h4 className="text-lg font-semibold text-green-800 mb-2">
-                Payment Successfully!
-              </h4>
-              <p className="text-gray-600 mb-4">
-                Your appointment has been confirmed
-              </p>
-              <div className="mt-4 space-y-1 text-sm text-gray-700">
-                <p>
-                  Patient: <span className="font-medium">{patientName}</span>
-                </p>
-                <p>
-                  Age: <span className="font-medium">{user?.age ?? 'N/A'}</span>
-                </p>
-                <p>
-                  Amount Paid: <span className="font-semibold text-green-700">₦{paymentDetails?.amount ?? totalAmount}</span>
-                </p>
+          <div className="bg-gray-50 rounded-lg p-6 mb-8">
+            <h4 className="font-semibold text-gray-900 mb-4">Booking Summary</h4>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Date & Time</span>
+                <span className="font-medium">
+                  {selectedDate?.toLocaleDateString("en-NG", {
+                    timeZone: "Africa/Lagos",
+                    year: "numeric",
+                    month: "short",
+                    day: "2-digit",
+                  })} at {selectedSlot}
+                </span>
               </div>
-            </motion.div>
-          )}
 
-          {paymentStatus === "failed" && (
-            <motion.div
-              key="failed"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="text-center py-12"
-            >
-              <XCircle className="w-16 h-16 mx-auto mb-4 text-red-600" />
-              <h4 className="text-lg font-semibold text-red-800 mb-2">
-                Payment failed!
-              </h4>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <Button
-                onClick={() => {
-                  setPaymentStatus("idle");
-                  setError("");
-                }}
-                variant="outline"
-                className="text-red-600 border-red-600 hover:bg-red-50"
-              >
-                Try Again
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Consultation Type</span>
+                <span className="font-medium">{consultationType}</span>
+              </div>
 
-        <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg mb-8">
-          <Shield className="w-6 h-6 text-green-600" />
-          <div>
-            <p className="font-medium text-green-800">Secure Payment</p>
-            <p>Your payment is protected by 256-bit SSL encryption</p>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Doctor</span>
+                <span className="font-medium">{doctorName}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">Consultation Fee</span>
+                <span className="font-medium">
+                  {new Intl.NumberFormat("en-NG", {
+                    style: "currency",
+                    currency: "NGN",
+                  }).format(consultationFee)}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">Platform Fee</span>
+                <span className="font-medium">
+                  {new Intl.NumberFormat("en-NG", {
+                    style: "currency",
+                    currency: "NGN",
+                  }).format(platformFees)}
+                </span>
+              </div>
+
+              <Separator className="my-2" />
+
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total</span>
+                <span className="text-blue-600">
+                  {new Intl.NumberFormat("en-NG", {
+                    style: "currency",
+                    currency: "NGN",
+                  }).format(totalAmount)}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {paymentStatus === "idle" && (
-        <div className="flex justify-between gap-2">
-          <Button variant="outline" onClick={onBack} className="px-8 py-3">
-            Back
-          </Button>
-          <Button
-            onClick={handlePaynow}
-            disabled={loading || isPaymentLoading}
-            className="px-8 py-3 bg-green-600 hover:bg-green-700 text-lg font-semibold"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                <span className="text-sm md:text-lg">
-                  Creating Appointment...
-                </span>
-              </>
-            ) : isPaymentLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                <span className="text-sm md:text-lg">Processing...</span>
-              </>
-            ) : appointmentId && patientName ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                <span className="text-sm md:text-lg">
-                  Opening Payment...
-                </span>
-              </>
+          <AnimatePresence mode="wait">
+            {paymentStatus === "success" ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-8 text-center"
+              >
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
+                <p className="text-gray-500 mb-6">Your appointment has been confirmed.</p>
+                <Button onClick={onConfirm} className="w-full max-w-sm">
+                  View Appointment Details
+                </Button>
+              </motion.div>
             ) : (
-              <>
-                <CreditCard className="w-5 h-5 mr-2 " />
-                <span className="text-sm md:text-lg">Pay ₦{totalAmount} & Book</span>
-              </>
+              <div className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3">
+                  <Shield className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-900">Secure Payment</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Choose your preferred payment method.
+                    </p>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 p-4 rounded-lg flex items-start gap-3">
+                    <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-red-900">Payment Failed</h4>
+                      <p className="text-sm text-red-700 mt-1">{error}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-auto py-6 flex flex-col items-center gap-2 hover:bg-blue-50 border-2 hover:border-blue-200"
+                    onClick={handleWalletPayment}
+                    disabled={isPaymentLoading}
+                  >
+                    <Wallet className="w-8 h-8 text-blue-600" />
+                    <span className="font-semibold text-gray-900">Pay with Wallet</span>
+                    <span className="text-xs text-gray-500">
+                      Balance: {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(balance)}
+                    </span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-auto py-6 flex flex-col items-center gap-2 hover:bg-blue-50 border-2 hover:border-blue-200"
+                    onClick={handlePaystackPayment}
+                    disabled={isPaymentLoading}
+                  >
+                    <CreditCard className="w-8 h-8 text-blue-600" />
+                    <span className="font-semibold text-gray-900">Pay with Card</span>
+                    <span className="text-xs text-gray-500">Secured by Paystack</span>
+                  </Button>
+                </div>
+                
+                {isPaymentLoading && (
+                  <div className="text-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600" />
+                    <p className="text-sm text-gray-500 mt-2">Processing payment...</p>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-4">
+                  <Button variant="ghost" onClick={onBack} disabled={isPaymentLoading}>
+                    Back
+                  </Button>
+                </div>
+              </div>
             )}
-          </Button>
-        </div>
-      )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
     </div>
   );
 };

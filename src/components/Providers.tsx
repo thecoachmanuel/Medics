@@ -1,8 +1,7 @@
 'use client'
 import { userAuthStore } from "@/store/authStore";
 import { useEffect } from "react";
-
-
+import { Toaster } from "sonner";
 
 export function Providers({children} : {children:React.ReactNode}) {
     const {fetchProfile} =  userAuthStore();
@@ -10,5 +9,10 @@ export function Providers({children} : {children:React.ReactNode}) {
         fetchProfile();
     },[fetchProfile]);
 
-    return <>{children}</>
+    return (
+        <>
+            {children}
+            <Toaster position="top-center" richColors />
+        </>
+    )
 }
