@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { getStatusColor } from "@/lib/constant";
 import { formatDateTimeNG } from "@/lib/datetime";
+import { WalletCard } from "./WalletCard";
 import PrescriptionViewModal from "../doctor/PrescriptionViewModal";
 import { Textarea } from "../ui/textarea";
 
@@ -387,6 +388,10 @@ const PatientDashboardContent = () => {
               </Button>
             </Link>
           </div>
+          </div>
+
+          <div className="mb-8">
+            <WalletCard />
           </div>
 
           <Tabs

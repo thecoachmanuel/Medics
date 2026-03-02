@@ -8,7 +8,7 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Calendar, Download, Search, SlidersHorizontal } from "lucide-react";
 import { formatDateTimeNG } from "@/lib/datetime";
-import WalletCard from "./WalletCard";
+import { WalletCard } from "./WalletCard";
 import { useWalletStore } from "@/store/walletStore";
 import { userAuthStore } from "@/store/authStore";
 

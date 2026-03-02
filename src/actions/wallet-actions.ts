@@ -42,11 +42,49 @@ export async function getWalletTransactions(userId: string) {
 
 export async function fundWallet(userId: string, amount: number, reference: string) {
   const supabase = getServiceSupabase();
+  const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
+
+  if (!PAYSTACK_SECRET) {
+    return { success: false, error: "Payment configuration error" };
+  }
   
   try {
+    // Verify transaction with Paystack
+    const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
+      cache: 'no-store'
+    });
+
+    if (!verifyRes.ok) {
+      return { success: false, error: "Payment verification failed" };
+    }
+
+    const verifyData = await verifyRes.json();
+    
+    if (verifyData.data.status !== 'success') {
+      return { success: false, error: `Payment status: ${verifyData.data.status}` };
+    }
+
+    // Verify amount (Paystack returns amount in kobo)
+    const verifiedAmount = verifyData.data.amount / 100;
+    if (verifiedAmount < amount) {
+       return { success: false, error: "Payment amount mismatch" };
+    }
+
+    // Check if transaction already processed (idempotency)
+    const { data: existingTx } = await supabase
+      .from('wallet_transactions')
+      .select('id')
+      .eq('reference', reference)
+      .single();
+
+    if (existingTx) {
+       return { success: true, message: "Transaction already processed" };
+    }
+
     const { error } = await supabase.rpc('fund_wallet', {
       p_user_id: userId,
-      p_amount: amount,
+      p_amount: verifiedAmount, // Use verified amount
       p_reference: reference
     });
 
