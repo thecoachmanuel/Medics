@@ -53,6 +53,8 @@ type DoctorFinancialRow = {
 type FinanceKpis = {
   completed: { today: number; week: number; month: number };
   pending: { today: number; week: number; month: number };
+  total_commission_completed: number;
+  total_commission_pending: number;
 };
 
 type WalletRow = {
@@ -118,7 +120,12 @@ export default async function AdminFinancePage(props: { searchParams?: Promise<S
 
   const payments = (paymentsResult.data || []) as PaymentRow[];
   const doctorFinancials = (doctorsResult.data || []) as DoctorFinancialRow[];
-  const kpis = (kpisData || { completed: { today: 0, week: 0, month: 0 }, pending: { today: 0, week: 0, month: 0 } }) as FinanceKpis;
+  const kpis = (kpisData || {
+    completed: { today: 0, week: 0, month: 0 },
+    pending: { today: 0, week: 0, month: 0 },
+    total_commission_completed: 0,
+    total_commission_pending: 0,
+  }) as FinanceKpis;
   const totalWalletBalance = Number(totalWalletBalanceRes.data || 0);
   const wallets = (walletRowsRes.data || []) as WalletRow[];
   const fundings = (walletFundingRes.data || []) as WalletFundingRow[];
@@ -189,12 +196,27 @@ export default async function AdminFinancePage(props: { searchParams?: Promise<S
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Commission Completed</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">Commission by Status</CardTitle>
           </CardHeader>
-          <CardContent className="flex gap-6 text-sm text-gray-700">
+          <CardContent className="space-y-4">
+            <div>
+              <div className="text-xs text-gray-500">Completed Meetings</div>
+              <div className="text-lg font-bold text-green-600">NGN {Number(kpis.total_commission_completed || 0).toLocaleString("en-NG")}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Scheduled/Ongoing</div>
+              <div className="text-lg font-bold text-orange-600">NGN {Number(kpis.total_commission_pending || 0).toLocaleString("en-NG")}</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-700">Commission History (Completed)</CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-4 text-sm text-gray-700">
             <div>
               <div className="text-xs text-gray-500">Today</div>
               <div className="font-semibold">{Number(kpis.completed.today || 0).toLocaleString("en-NG")}</div>
@@ -211,9 +233,9 @@ export default async function AdminFinancePage(props: { searchParams?: Promise<S
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Commission Pending</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">Commission History (Pending)</CardTitle>
           </CardHeader>
-          <CardContent className="flex gap-6 text-sm text-gray-700">
+          <CardContent className="flex gap-4 text-sm text-gray-700">
             <div>
               <div className="text-xs text-gray-500">Today</div>
               <div className="font-semibold">{Number(kpis.pending.today || 0).toLocaleString("en-NG")}</div>
