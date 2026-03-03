@@ -36,33 +36,25 @@ export default async function AdminDashboardPage() {
     const now = new Date();
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [patientsResult, doctorsResult, appointmentsResult, revenueResult, allTimeRevenueResult] = await Promise.all([
+    const [patientsResult, doctorsResult, appointmentsResult, revenueResult] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "patient"),
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("type", "doctor"),
       supabase.from("appointments").select("id", { count: "exact", head: true }),
       supabase
         .from("payments")
-        .select("amount,created_at,status")
+        .select("amount,created_at,status,admin_commission_amount,doctor_net_amount")
         .eq("status", "success")
         .gte("created_at", sixMonthsAgo.toISOString()),
-      supabase.rpc("admin_finance_kpis").maybeSingle(),
     ]);
 
   const totalPatients = patientsResult.count || 0;
   const totalDoctors = doctorsResult.count || 0;
   const totalAppointments = appointmentsResult.count || 0;
-  const paymentRows = (revenueResult.data || []) as { amount: number; created_at: string; status: string }[];
+  const paymentRows = (revenueResult.data || []) as { amount: number; created_at: string; status: string; admin_commission_amount?: number | null; doctor_net_amount?: number | null }[];
 
-  const kpis = (allTimeRevenueResult.data || {}) as { 
-    total_commission_paid?: number; 
-    total_commission_pending?: number; 
-    total_revenue?: number; 
-    total_doctor_net?: number; 
-  };
-
-  const totalRevenue = kpis.total_revenue || 0;
-  const totalAdminCommission = kpis.total_commission_paid || 0;
-  const totalDoctorNet = kpis.total_doctor_net || 0;
+  const totalRevenue = paymentRows.reduce((sum, row) => sum + (row.amount || 0), 0);
+  const totalAdminCommission = paymentRows.reduce((sum, row) => sum + (row.admin_commission_amount || 0), 0);
+  const totalDoctorNet = paymentRows.reduce((sum, row) => sum + (row.doctor_net_amount || 0), 0);
 
   const monthlyMap = new Map<string, number>();
   for (let i = 0; i < 6; i += 1) {

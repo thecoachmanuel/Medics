@@ -55,6 +55,28 @@ type FinanceKpis = {
   pending: { today: number; week: number; month: number };
 };
 
+type WalletRow = {
+  wallet_id: string;
+  user_id: string;
+  patient_name: string;
+  patient_email: string;
+  balance: number;
+  currency: string;
+  last_updated: string;
+};
+
+type WalletFundingRow = {
+  transaction_id: string;
+  wallet_id: string;
+  user_id: string;
+  patient_name: string;
+  patient_email: string;
+  amount: number;
+  reference: string;
+  status: string;
+  created_at: string;
+};
+
 export default async function AdminFinancePage(props: { searchParams?: Promise<SearchParams> }) {
   const sp = (await props.searchParams) || ({} as SearchParams);
   const supabase = getServiceSupabase();
@@ -63,7 +85,7 @@ export default async function AdminFinancePage(props: { searchParams?: Promise<S
   const status = sp.status || "all";
   const provider = sp.provider || "all";
 
-  const [{ data: kpisData }, paymentsResult, doctorsResult] = await Promise.all([
+  const [{ data: kpisData }, paymentsResult, doctorsResult, totalWalletBalanceRes, walletRowsRes, walletFundingRes] = await Promise.all([
     supabase.rpc("admin_finance_kpis").maybeSingle<FinanceKpis>(),
     (async () => {
       let query = supabase
@@ -89,11 +111,17 @@ export default async function AdminFinancePage(props: { searchParams?: Promise<S
       return query;
     })(),
     supabase.rpc("admin_doctor_financials", { p_query: q || null, p_limit: 200, p_offset: 0 }).returns<DoctorFinancialRow[]>(),
+    supabase.rpc("admin_total_wallet_balance"),
+    supabase.rpc("admin_patient_wallets", { p_query: q || null, p_limit: 100, p_offset: 0 }).returns<WalletRow[]>(),
+    supabase.rpc("admin_wallet_funding_history", { p_query: q || null, p_limit: 100, p_offset: 0 }).returns<WalletFundingRow[]>(),
   ]);
 
   const payments = (paymentsResult.data || []) as PaymentRow[];
   const doctorFinancials = (doctorsResult.data || []) as DoctorFinancialRow[];
   const kpis = (kpisData || { completed: { today: 0, week: 0, month: 0 }, pending: { today: 0, week: 0, month: 0 } }) as FinanceKpis;
+  const totalWalletBalance = Number(totalWalletBalanceRes.data || 0);
+  const wallets = (walletRowsRes.data || []) as WalletRow[];
+  const fundings = (walletFundingRes.data || []) as WalletFundingRow[];
 
   const totals = payments.reduce(
     (acc, row) => {
@@ -324,6 +352,83 @@ export default async function AdminFinancePage(props: { searchParams?: Promise<S
                       <td className="px-3 py-2 text-gray-900">{Number(d.payouts_paid || 0).toLocaleString("en-NG")}</td>
                       <td className="px-3 py-2 text-gray-900">{Number(d.available_balance || 0).toLocaleString("en-NG")}</td>
                       <td className="px-3 py-2 text-gray-900">{Number(d.withdrawable_balance || 0).toLocaleString("en-NG")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">Patient Wallets</CardTitle>
+          <div className="text-xs text-gray-500">
+            Total Balance: <span className="font-semibold text-gray-900">NGN {totalWalletBalance.toLocaleString("en-NG")}</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {wallets.length === 0 ? (
+            <p className="text-sm text-gray-500">No patient wallets found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Patient</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Balance</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {wallets.map((w) => (
+                    <tr key={w.wallet_id} className="border-b last:border-0">
+                      <td className="px-3 py-2">
+                        <div className="font-medium text-gray-900">{w.patient_name || "Patient"}</div>
+                        <div className="text-xs text-gray-500">{w.patient_email}</div>
+                      </td>
+                      <td className="px-3 py-2 text-gray-900">{Number(w.balance || 0).toLocaleString("en-NG")}</td>
+                      <td className="px-3 py-2 text-xs text-gray-500">{formatDateTimeNG(w.last_updated)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">Recent Wallet Funding</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {fundings.length === 0 ? (
+            <p className="text-sm text-gray-500">No funding transactions found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Date</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Patient</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Amount</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Reference</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fundings.map((f) => (
+                    <tr key={f.transaction_id} className="border-b last:border-0">
+                      <td className="px-3 py-2 text-xs text-gray-500">{formatDateTimeNG(f.created_at)}</td>
+                      <td className="px-3 py-2">
+                        <div className="font-medium text-gray-900">{f.patient_name || "Patient"}</div>
+                        <div className="text-xs text-gray-500">{f.patient_email}</div>
+                      </td>
+                      <td className="px-3 py-2 text-green-600 font-medium">+{Number(f.amount || 0).toLocaleString("en-NG")}</td>
+                      <td className="px-3 py-2 text-xs font-mono text-gray-500">{f.reference}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700 capitalize">{f.status}</td>
                     </tr>
                   ))}
                 </tbody>
