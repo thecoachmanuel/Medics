@@ -134,7 +134,7 @@ const defaultTaxonomiesConfig: DoctorTaxonomiesConfig = {
 };
 
 export default function AdminSettingsPage() {
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const [brandingOpen, setBrandingOpen] = useState(true);
   const [realtimeOpen, setRealtimeOpen] = useState(true);
   const [taxonomiesOpen, setTaxonomiesOpen] = useState(true);
@@ -174,8 +174,8 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem("admin_auto_refresh") : null;
-    if (stored === "off") {
-      setAutoRefresh(false);
+    if (stored === "on") {
+      setAutoRefresh(true);
     }
   }, []);
 
