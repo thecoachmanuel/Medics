@@ -255,14 +255,14 @@ export default async function AdminDoctorDetailPage(props: {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} storageKey={`admin_auto_refresh:/admin/doctors/${profile.id}`} defaultEnabled={true} />
+      <AdminAutoRefresh storageKey={`admin_auto_refresh:/admin/doctors/${profile.id}`} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Doctor details</h2>
           <p className="text-sm text-gray-600">Review performance, revenue, and status history for this doctor.</p>
         </div>
         <div className="flex items-center gap-3">
-          <AdminRefreshToggle storageKey={`admin_auto_refresh:/admin/doctors/${profile.id}`} />
+          <AdminRefreshToggle storageKey={`admin_auto_refresh:/admin/doctors/${profile.id}`} defaultValue="off" />
           <Link href="/admin/doctors" className="text-sm text-blue-600 hover:underline">
             Back to doctors
           </Link>

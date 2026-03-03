@@ -187,13 +187,13 @@ export default async function AdminUsersPage(props: {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin/users" defaultEnabled={true} />
+      <AdminAutoRefresh storageKey="admin_auto_refresh:/admin/users" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Users</h2>
           <p className="text-sm text-gray-600">View all registered users on MedicsOnline and filter by role.</p>
         </div>
-        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/users" />
+        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/users" defaultValue="off" />
       </div>
 
       <Card>

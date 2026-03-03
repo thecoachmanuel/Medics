@@ -40,6 +40,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [router]);
 
   useEffect(() => {
+    items.forEach((item) => {
+      router.prefetch(item.href);
+    });
+  }, [router]);
+
+  useEffect(() => {
     let mounted = true;
     const loadBrand = async () => {
       try {
@@ -55,6 +61,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     let active = true;
+    let intervalId: number | null = null;
+
+    const parse = (v: string | null): { enabled: boolean; ms: number } => {
+      if (!v || v === "off") return { enabled: false, ms: 60000 };
+      if (v.startsWith("on:")) {
+        const ms = parseInt(v.slice(3), 10);
+        return { enabled: true, ms: Number.isFinite(ms) && ms > 0 ? ms : 60000 };
+      }
+      return { enabled: false, ms: 60000 };
+    };
+
     const loadPending = async () => {
       try {
         const res = await fetch('/api/admin/payouts/summary', { cache: 'no-store' });
@@ -63,9 +80,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (active) setPendingPayouts(Math.max(0, Number(json?.pendingCount || 0)));
       } catch {}
     };
-    loadPending();
-    const id = setInterval(loadPending, 60000);
-    return () => { active = false; clearInterval(id); };
+
+    const start = () => {
+      loadPending();
+      try {
+        const conf = parse(window.localStorage.getItem("admin_auto_refresh:/admin/layout"));
+        if (!conf.enabled) return;
+        intervalId = window.setInterval(loadPending, conf.ms) as unknown as number;
+      } catch {}
+    };
+
+    const stop = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const reconfigure = () => {
+      stop();
+      start();
+    };
+
+    start();
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "admin_auto_refresh:/admin/layout") reconfigure();
+    };
+    const onCustom = () => reconfigure();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("admin:autoRefresh:changed", onCustom as any);
+
+    return () => {
+      active = false;
+      stop();
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("admin:autoRefresh:changed", onCustom as any);
+    };
   }, []);
 
   return (
@@ -108,7 +159,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {items.map((item) => {
             const active = pathname === item.href;
             return (
-              <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
+              <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} prefetch>
                 <div
                   className={`flex items-center gap-3 rounded-md px-3 py-2 cursor-pointer hover:bg-accent/50 ${
                     active ? "bg-accent/70" : ""
@@ -137,14 +188,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-2">
             <AdminNotificationsBell />
             {pendingPayouts > 0 && (
-              <Link href="/admin/payments" className="hidden sm:inline-flex">
+              <Link href="/admin/payments" className="hidden sm:inline-flex" prefetch>
                 <span className="inline-flex items-center rounded-full bg-yellow-100 text-yellow-800 text-xs px-3 py-1">
                   Pending payouts: {pendingPayouts}
                 </span>
               </Link>
             )}
             {pendingPayouts > 0 && (
-              <Link href="/admin/payments" className="sm:hidden">
+              <Link href="/admin/payments" className="sm:hidden" prefetch>
                 <Button variant="outline" size="sm">
                   <CreditCard className="h-4 w-4 mr-2" /> {pendingPayouts}
                 </Button>

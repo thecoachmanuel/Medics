@@ -8,7 +8,7 @@ interface AdminAutoRefreshProps {
   defaultEnabled?: boolean;
 }
 
-export function AdminAutoRefresh({ intervalMs = 20000, storageKey = "admin_auto_refresh", defaultEnabled = true }: AdminAutoRefreshProps) {
+export function AdminAutoRefresh({ intervalMs = 20000, storageKey = "admin_auto_refresh", defaultEnabled = false }: AdminAutoRefreshProps) {
   const router = useRouter();
   const intervalRef = useRef<number | null>(null);
 
@@ -52,12 +52,6 @@ export function AdminAutoRefresh({ intervalMs = 20000, storageKey = "admin_auto_
       }
     };
 
-    // initialize: set default on:300 if no key and default enabled with small interval
-    const existing = window.localStorage.getItem(storageKey);
-    if (!existing && defaultEnabled) {
-      const def = `on:${intervalMs}`;
-      window.localStorage.setItem(storageKey, def);
-    }
     start();
 
     const onStorage = (e: StorageEvent) => {

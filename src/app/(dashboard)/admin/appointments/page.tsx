@@ -143,13 +143,13 @@ export default async function AdminAppointmentsPage(
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin/appointments" defaultEnabled={true} />
+      <AdminAutoRefresh storageKey="admin_auto_refresh:/admin/appointments" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Appointments</h2>
           <p className="text-sm text-gray-600">Monitor all appointments between patients and doctors.</p>
         </div>
-        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/appointments" />
+        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/appointments" defaultValue="off" />
       </div>
 
       <Card>

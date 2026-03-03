@@ -75,13 +75,13 @@ export default function AdminAnnouncementsPage() {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin/announcements" defaultEnabled={true} />
+      <AdminAutoRefresh storageKey="admin_auto_refresh:/admin/announcements" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Announcements</h2>
           <p className="text-sm text-gray-600">Send broadcast messages to doctors, patients, or specific users. They appear inside the in-app notifications for recipients.</p>
         </div>
-        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/announcements" />
+        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/announcements" defaultValue="off" />
       </div>
 
       <Card>

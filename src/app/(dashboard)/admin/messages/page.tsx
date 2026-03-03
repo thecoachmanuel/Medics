@@ -27,13 +27,13 @@ export default async function AdminMessagesPage() {
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin/messages" defaultEnabled={true} />
+      <AdminAutoRefresh storageKey="admin_auto_refresh:/admin/messages" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Contact Messages</h2>
           <p className="text-sm text-gray-600">Messages submitted from the public contact form on MedicsOnline.</p>
         </div>
-        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/messages" />
+        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/messages" defaultValue="off" />
       </div>
 
       <Card>

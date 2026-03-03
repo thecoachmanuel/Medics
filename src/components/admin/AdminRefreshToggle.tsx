@@ -4,25 +4,25 @@ import { useEffect, useState } from "react";
 interface Props {
   storageKey: string;
   options?: Array<{ label: string; value: number | "off" }>;
-  defaultValue?: number;
+  defaultValue?: number | "off";
 }
 
-export default function AdminRefreshToggle({ storageKey, options, defaultValue = 300 }: Props) {
+export default function AdminRefreshToggle({ storageKey, options, defaultValue = "off" }: Props) {
   const opts = options || [
     { label: "Off", value: "off" },
-    { label: "300ms", value: 300 },
-    { label: "1s", value: 1000 },
-    { label: "5s", value: 5000 },
-    { label: "20s", value: 20000 },
+    { label: "30s", value: 30000 },
+    { label: "1m", value: 60000 },
+    { label: "5m", value: 300000 },
   ];
-  const [value, setValue] = useState<string>("on:" + defaultValue);
+  const [value, setValue] = useState<string>(defaultValue === "off" ? "off" : `on:${defaultValue}`);
 
   useEffect(() => {
     try {
       const v = window.localStorage.getItem(storageKey);
       if (!v) {
-        window.localStorage.setItem(storageKey, `on:${defaultValue}`);
-        setValue(`on:${defaultValue}`);
+        const initial = defaultValue === "off" ? "off" : `on:${defaultValue}`;
+        window.localStorage.setItem(storageKey, initial);
+        setValue(initial);
       } else {
         setValue(v);
       }
@@ -56,4 +56,3 @@ export default function AdminRefreshToggle({ storageKey, options, defaultValue =
     </div>
   );
 }
-

@@ -130,14 +130,14 @@ export default async function AdminPaymentsPage(props: { searchParams?: Promise<
 
   return (
     <div className="space-y-4">
-      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin/payments" defaultEnabled={true} />
+      <AdminAutoRefresh storageKey="admin_auto_refresh:/admin/payments" />
       {notice ? <ToastNotice message={notice} /> : null}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Payments & Payouts</h2>
           <p className="text-sm text-gray-600">Review doctor payout requests and track outgoing payments.</p>
         </div>
-        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/payments" />
+        <AdminRefreshToggle storageKey="admin_auto_refresh:/admin/payments" defaultValue="off" />
       </div>
 
       <Card>

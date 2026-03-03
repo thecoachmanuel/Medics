@@ -108,7 +108,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <>
-      <AdminAutoRefresh intervalMs={300} storageKey="admin_auto_refresh:/admin" defaultEnabled={true} />
+      <AdminAutoRefresh storageKey="admin_auto_refresh:/admin" />
       <div className="flex justify-end px-4 sm:px-6 pb-2">
         <AdminRefreshToggle storageKey="admin_auto_refresh:/admin" />
       </div>
