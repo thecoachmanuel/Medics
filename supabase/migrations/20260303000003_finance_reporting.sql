@@ -266,18 +266,18 @@ as $$
   pay_sums as (
     select
       p.doctor_id,
-      count(*)::bigint filter (where p.status = 'success') as paid_appointments,
-      coalesce(sum(p.amount)::bigint filter (where p.status = 'success'), 0) as gross_amount,
-      coalesce(sum(p.admin_commission_amount)::bigint filter (where p.status = 'success'), 0) as admin_commission_amount,
-      coalesce(sum(p.doctor_net_amount)::bigint filter (where p.status = 'success'), 0) as doctor_net_amount
+      count(*) filter (where p.status = 'success') as paid_appointments,
+      coalesce(sum(p.amount) filter (where p.status = 'success'), 0) as gross_amount,
+      coalesce(sum(p.admin_commission_amount) filter (where p.status = 'success'), 0) as admin_commission_amount,
+      coalesce(sum(p.doctor_net_amount) filter (where p.status = 'success'), 0) as doctor_net_amount
     from public.payments p
     group by p.doctor_id
   ),
   payouts as (
     select
       r.doctor_id,
-      coalesce(sum(r.amount)::bigint filter (where r.status in ('pending','approved')), 0) as payouts_pending,
-      coalesce(sum(r.amount)::bigint filter (where r.status = 'paid'), 0) as payouts_paid
+      coalesce(sum(r.amount) filter (where r.status in ('pending','approved')), 0) as payouts_pending,
+      coalesce(sum(r.amount) filter (where r.status = 'paid'), 0) as payouts_paid
     from public.doctor_payout_requests r
     group by r.doctor_id
   ),
