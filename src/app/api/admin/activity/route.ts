@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/service";
+import { sendMail } from "@/lib/email/mailer";
 
 type ActivityType = "signup" | "payout_request" | "review";
 
@@ -36,7 +37,6 @@ export async function POST(req: NextRequest) {
 
   const supabase = getServiceSupabase();
   const adminEmail = process.env.NEXT_ADMIN_EMAIL || "";
-  const resendKey = process.env.RESEND_API_KEY || "";
 
   try {
     if (body.type === "signup") {
@@ -82,21 +82,13 @@ export async function POST(req: NextRequest) {
         message,
       });
 
-      if (adminEmail && resendKey) {
+      if (adminEmail) {
         const html = `<p>${message}</p>`;
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${resendKey}`,
-          },
-          body: JSON.stringify({
-            from: adminEmail,
-            to: [adminEmail],
-            subject: title,
-            html,
-          }),
-        }).catch(() => undefined);
+        await sendMail({
+          to: adminEmail,
+          subject: title,
+          html,
+        });
       }
 
       return NextResponse.json({ success: true });
@@ -160,21 +152,13 @@ export async function POST(req: NextRequest) {
         message,
       });
 
-      if (adminEmail && resendKey) {
+      if (adminEmail) {
         const html = `<p>${message}</p>`;
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${resendKey}`,
-          },
-          body: JSON.stringify({
-            from: adminEmail,
-            to: [adminEmail],
-            subject: title,
-            html,
-          }),
-        }).catch(() => undefined);
+        await sendMail({
+          to: adminEmail,
+          subject: title,
+          html,
+        });
       }
 
       return NextResponse.json({ success: true });
@@ -243,21 +227,13 @@ export async function POST(req: NextRequest) {
         message,
       });
 
-      if (adminEmail && resendKey) {
+      if (adminEmail) {
         const html = `<p>${message}</p>`;
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${resendKey}`,
-          },
-          body: JSON.stringify({
-            from: adminEmail,
-            to: [adminEmail],
-            subject: title,
-            html,
-          }),
-        }).catch(() => undefined);
+        await sendMail({
+          to: adminEmail,
+          subject: title,
+          html,
+        });
       }
 
       return NextResponse.json({ success: true });

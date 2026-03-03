@@ -11,6 +11,7 @@ type EmailBranding = {
 
 type SendMailInput = {
   to: string | string[]
+  bcc?: string | string[]
   subject: string
   html: string
 }
@@ -72,6 +73,7 @@ export async function sendMail(input: SendMailInput): Promise<{ success: true } 
     await transporter.sendMail({
       from: `${fromName} <${fromEmail}>`,
       to: Array.isArray(input.to) ? input.to.join(',') : input.to,
+      bcc: input.bcc ? (Array.isArray(input.bcc) ? input.bcc.join(',') : input.bcc) : undefined,
       replyTo,
       subject: input.subject,
       html,

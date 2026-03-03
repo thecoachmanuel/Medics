@@ -61,7 +61,8 @@ export async function POST(req: NextRequest) {
 
   for (const batch of chunks) {
     // best-effort parallel, but avoid large fan-out
-    await sendMail({ to: batch, subject, html })
+    // sending individually to ensure privacy (no one sees other recipients)
+    await Promise.all(batch.map((email) => sendMail({ to: email, subject, html })))
   }
 
   const count = unique.length

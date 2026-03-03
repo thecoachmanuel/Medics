@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { formatDateTimeNG } from "@/lib/datetime";
+import { sendMail } from "@/lib/email/mailer";
 
 type ReminderWindow = "24h" | "1h" | "15m";
 
@@ -116,21 +117,11 @@ export async function GET(request: NextRequest) {
 
       if (recipients.length > 0) {
         const promises = recipients.map(async (r) => {
-          const adminEmail = process.env.NEXT_ADMIN_EMAIL;
-          if (!adminEmail) return;
-          await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.RESEND_API_KEY ?? ""}`,
-            },
-            body: JSON.stringify({
-              from: adminEmail,
-              to: [r.email],
-              subject: "Upcoming MedicsOnline appointment",
-              html: `<p>Hi ${r.name || r.role},</p><p>You have an appointment scheduled at <strong>${whenText}</strong>.</p>`,
-            }),
-          }).catch(() => undefined);
+          await sendMail({
+            to: r.email,
+            subject: "Upcoming MedicsOnline appointment",
+            html: `<p>Hi ${r.name || r.role},</p><p>You have an appointment scheduled at <strong>${whenText}</strong>.</p>`,
+          });
         });
         await Promise.all(promises);
         emailSentCount += recipients.length;
