@@ -5,7 +5,8 @@ import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { adminUpdateUser } from "@/actions/admin-actions";
+import { adminUpdateUser, updateUserBlockStatus } from "@/actions/admin-actions";
+import AdminResetPassword from "@/components/admin/AdminResetPassword";
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,15 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
       blood_group: blood || undefined,
       type: type === "doctor" || type === "patient" ? (type as any) : undefined,
     });
+    redirect(`/admin/users/${id}`);
+  }
+
+  async function handleBlockToggle(formData: FormData) {
+    "use server";
+    const current = String(formData.get("current") || "active");
+    const action = current === "blocked" ? "unblock" : "block";
+    const role = (profile.type === "doctor" || profile.type === "patient") ? profile.type : "patient";
+    await updateUserBlockStatus(profile.id, role, action as any);
     redirect(`/admin/users/${id}`);
   }
 
@@ -121,7 +131,61 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
           </form>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700">Account controls</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form action={handleBlockToggle}>
+            <input type="hidden" name="current" value={profile.is_blocked ? "blocked" : "active"} />
+            <Button type="submit" size="sm" variant={profile.is_blocked ? "outline" : "default"}>
+              {profile.is_blocked ? "Unblock account" : "Block account"}
+            </Button>
+          </form>
+
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-2">Security</div>
+            <AdminResetPassword userId={profile.id} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <UserNotifications userId={profile.id} role={profile.type || "patient"} />
     </div>
   );
 }
 
+async function UserNotifications({ userId, role }: { userId: string; role: "doctor" | "patient" }) {
+  const supabase = getServiceSupabase();
+  const { data } = await supabase
+    .from("notifications")
+    .select("id,title,message,created_at")
+    .eq("user_id", userId)
+    .eq("role", role)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const rows = (data || []) as { id: string; title: string; message: string | null; created_at: string }[];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm font-medium text-gray-700">Recent notifications</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {rows.length === 0 ? (
+          <p className="text-sm text-gray-500">No notifications for this user.</p>
+        ) : (
+          <div className="space-y-3">
+            {rows.map((n) => (
+              <div key={n.id} className="border rounded p-3 bg-white">
+                <div className="text-sm font-semibold text-gray-900">{n.title}</div>
+                {n.message && <div className="text-sm text-gray-700 mt-1 whitespace-pre-line">{n.message}</div>}
+                <div className="text-xs text-gray-500 mt-1">{new Date(n.created_at).toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
