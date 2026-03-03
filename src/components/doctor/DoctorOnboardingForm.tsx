@@ -48,6 +48,7 @@ const DoctorOnboardingForm = () => {
   });
 
   const [credentials, setCredentials] = useState<{ url: string; label: string }[]>([]);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [newCredentialLink, setNewCredentialLink] = useState("");
   const [newCredentialLabel, setNewCredentialLabel] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -633,9 +634,25 @@ const DoctorOnboardingForm = () => {
                 Credentials & Verification
               </h2>
               <p className="text-gray-600 mb-4">
-                Please upload your medical license, ID, and other relevant documents
-                to help us verify your profile.
+                You are required to submit clear copies of the following documents: your MBBS Certificate, valid Medical License, any means of identification and recent passport photograph.
               </p>
+
+              <div className="space-y-3 border rounded-lg p-4">
+                <h3 className="text-base font-semibold text-gray-800">Terms and Conditions for Doctors</h3>
+                <div className="max-h-56 overflow-auto pr-2 text-sm text-gray-700 space-y-2">
+                  <p>1. You are required to submit clear copies of the following documents: your MBBS Certificate, valid Medical License, any means of identification and recent passport photograph.</p>
+                  <p>2. You must not disclose any personal or private information to patients, such as your personal phone number, home address, workplace address, social media accounts, or arrange physical meet-ups outside the platform.</p>
+                  <p>3. You are expected to maintain a high level of professionalism at all times. Unprofessional, inappropriate, or irrelevant discussions with patients during consultation are strictly prohibited.</p>
+                  <p>4. All consultations must be conducted strictly within the platform. Moving conversations outside the platform is not allowed.</p>
+                  <p>5. You must provide accurate medical advice within the scope of your qualification and license. Any form of misrepresentation will result in immediate suspension/termination.</p>
+                  <p>6. The platform reserves the right to suspend or terminate any doctor’s access if these terms are violated.</p>
+                  <p>9. Doctors are responsible for ensuring timely responses to patient consultations and maintaining good communication standards.</p>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <Checkbox id="accept-terms" checked={acceptedTerms} onCheckedChange={(checked) => setAcceptedTerms(Boolean(checked))} />
+                  <Label htmlFor="accept-terms" className="text-sm">I have read and agree to the Terms and Conditions for Doctors</Label>
+                </div>
+              </div>
 
               <div className="space-y-4">
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
@@ -763,7 +780,7 @@ const DoctorOnboardingForm = () => {
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || !acceptedTerms}
                 className="bg-green-600 hover:bg-green-700"
               >
                 {loading ? "Completing Setup..." : "Complete Profile"}
