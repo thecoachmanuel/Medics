@@ -2,6 +2,7 @@ import { getServiceSupabase } from "@/lib/supabase/service";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateUserBlockStatus, adminCreateUser, adminDeleteUser, adminUpdateUser } from "@/actions/admin-actions";
@@ -330,7 +331,6 @@ export default async function AdminUsersPage(props: {
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Phone</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Joined</th>
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Account</th>
-                    <th className="text-left px-3 py-2 font-medium text-gray-600">Edit</th>
                     <th className="px-3 py-2" />
                   </tr>
                 </thead>
@@ -351,7 +351,9 @@ export default async function AdminUsersPage(props: {
                               <AvatarImage src={p.profile_image ?? undefined} alt={p.name ?? undefined} />
                               <AvatarFallback>{(p.name || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
                             </Avatar>
-                            <span>{p.name || "Unnamed"}</span>
+                            <Link href={`/admin/users/${p.id}`} className="text-blue-600 hover:underline">
+                              {p.name || "Unnamed"}
+                            </Link>
                           </div>
                         </td>
                         <td className="px-3 py-2 text-gray-700">{p.email}</td>
@@ -373,30 +375,6 @@ export default async function AdminUsersPage(props: {
                           ) : (
                             <span className="text-xs text-gray-500">-</span>
                           )}
-                        </td>
-                        <td className="px-3 py-2">
-                          <form action={handleUpdate} className="flex flex-col gap-1">
-                            <input type="hidden" name="id" value={p.id} />
-                            <div className="flex gap-2">
-                              <input name="name" defaultValue={p.name || ''} placeholder="Name" className="w-28 border rounded px-2 py-1 text-xs" />
-                              <input name="phone" defaultValue={p.phone || ''} placeholder="Phone" className="w-28 border rounded px-2 py-1 text-xs" />
-                            </div>
-                            <div className="flex gap-2">
-                              <input name="gender" defaultValue={p.gender || ''} placeholder="Gender" className="w-24 border rounded px-2 py-1 text-xs" />
-                              <input name="blood_group" defaultValue={p.blood_group || ''} placeholder="Blood" className="w-20 border rounded px-2 py-1 text-xs" />
-                              <select name="type" defaultValue={p.type || ''} className="border rounded px-2 py-1 text-xs">
-                                <option value="">Role</option>
-                                <option value="patient">Patient</option>
-                                <option value="doctor">Doctor</option>
-                              </select>
-                              <input type="hidden" name="roleKeep" value={roleFilter} />
-                              <input type="hidden" name="qKeep" value={search} />
-                              <input type="hidden" name="pageKeep" value={String(page)} />
-                              <input type="hidden" name="perPageKeep" value={String(perPage)} />
-                              <input type="hidden" name="accountKeep" value={accountFilter} />
-                              <Button type="submit" size="sm" variant="outline">Save</Button>
-                            </div>
-                          </form>
                         </td>
                         <td className="px-3 py-2 text-right">
                           {p.type === "doctor" || p.type === "patient" ? (

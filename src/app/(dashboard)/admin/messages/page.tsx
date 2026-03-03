@@ -3,6 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import { formatDateTimeNG } from "@/lib/datetime";
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +26,15 @@ export default async function AdminMessagesPage() {
     .limit(100);
 
   const messages = (data || []) as ContactMessageRow[];
+
+  async function handleDelete(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "");
+    if (!id) return;
+    const sb = getServiceSupabase();
+    await sb.from("contact_messages").delete().eq("id", id);
+    redirect("/admin/messages");
+  }
 
   return (
     <div className="space-y-4">
@@ -51,7 +62,13 @@ export default async function AdminMessagesPage() {
                 <div key={m.id} className="border rounded-lg p-3 bg-white">
                   <div className="flex items-center justify-between mb-1">
                     <div className="font-semibold text-gray-900">{m.full_name}</div>
-                    <div className="text-xs text-gray-500">{formatDateTimeNG(m.created_at)}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs text-gray-500">{formatDateTimeNG(m.created_at)}</div>
+                      <form action={handleDelete}>
+                        <input type="hidden" name="id" value={m.id} />
+                        <Button type="submit" size="sm" variant="outline">Delete</Button>
+                      </form>
+                    </div>
                   </div>
                   <div className="text-xs text-blue-700 mb-1">{m.email}</div>
                   {m.subject && (
