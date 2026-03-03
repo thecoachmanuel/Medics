@@ -159,7 +159,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {items.map((item) => {
             const active = pathname === item.href;
             return (
-              <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} prefetch>
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMobileOpen(false);
+                  router.push(item.href);
+                }}
+                prefetch
+              >
                 <div
                   className={`flex items-center gap-3 rounded-md px-3 py-2 cursor-pointer hover:bg-accent/50 ${
                     active ? "bg-accent/70" : ""
