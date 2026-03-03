@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const currency = body?.data?.currency || 'NGN'
     const { data: existing } = await supabase.from('payments').select('*').eq('reference', ref).maybeSingle()
     if (existing) {
-      await supabase.from('payments').update({ status, raw: body }).eq('id', existing.id)
+      await supabase.from('payments').update({ status, raw: body, amount: nairaAmount }).eq('id', existing.id)
     }
   }
   return NextResponse.json({ ok: true })

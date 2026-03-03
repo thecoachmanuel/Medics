@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { BarChart3, Bell, ClipboardList, CreditCard, LayoutDashboard, LogOut, Mail, Settings, Stethoscope, Users2 } from "lucide-react";
+import { BarChart3, Bell, ClipboardList, CreditCard, LayoutDashboard, LogOut, Mail, Settings, Stethoscope, Users2, Megaphone, Landmark } from "lucide-react";
 import AdminNotificationsBell from "@/components/admin/AdminNotificationsBell";
 
 const items = [
@@ -13,7 +13,9 @@ const items = [
   { href: "/admin/doctors", icon: Stethoscope, label: "Doctors" },
   { href: "/admin/appointments", icon: ClipboardList, label: "Appointments" },
   { href: "/admin/payments", icon: CreditCard, label: "Payments" },
+  { href: "/admin/finance", icon: Landmark, label: "Finance" },
   { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
+  { href: "/admin/marketing", icon: Megaphone, label: "Email Marketing" },
   { href: "/admin/messages", icon: Mail, label: "Messages" },
   { href: "/admin/announcements", icon: Bell, label: "Announcements" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },

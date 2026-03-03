@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { create } from "zustand";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 const calculateAge = (dob: string | null): number | undefined => {
   if (!dob) return undefined;
@@ -63,10 +64,13 @@ interface AppointmentState {
   currentAppointment: Appointment | null;
   loading: boolean;
   error: string | null;
+  subscription: RealtimeChannel | null;
 
   //Actions
   clearError: () => void;
-  setCurrentAppointment: (appointment: Appointment) => void;
+  setCurrentAppointment: (appointment: Appointment | null) => void;
+  subscribeToAppointments: (userId: string, role: "doctor" | "patient") => void;
+  unsubscribeFromAppointments: () => void;
 
   //Api Actions
   fetchAppointments: (
@@ -96,18 +100,50 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
   currentAppointment: null,
   loading: false,
   error: null,
+  subscription: null,
 
   clearError: () => set({ error: null }),
 
   setCurrentAppointment: (appointment) =>
     set({ currentAppointment: appointment }),
 
+  unsubscribeFromAppointments: () => {
+    const { subscription } = get();
+    if (subscription) {
+      supabase.removeChannel(subscription);
+      set({ subscription: null });
+    }
+  },
+
+  subscribeToAppointments: (userId, role) => {
+    const { subscription, fetchAppointments } = get();
+    if (subscription) return;
+
+    const channel = supabase.channel(`appointments:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments',
+          filter: role === 'doctor' ? `doctor_id=eq.${userId}` : `patient_id=eq.${userId}`,
+        },
+        () => {
+           fetchAppointments(role);
+        }
+      )
+      .subscribe();
+    
+    set({ subscription: channel });
+  },
+
   fetchAppointments: async (role, tab = "", filters = {}) => {
     set({ loading: true, error: null });
     try {
-      const { data: session } = await supabase.auth.getUser();
-      const uid = session.user?.id;
-      if (!uid) throw new Error('Not authenticated');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) throw new Error('Not authenticated');
+      
+      const uid = session.user.id;
       let query = supabase.from('appointments').select('*');
       if (role === 'doctor') {
         query = query.eq('doctor_id', uid);

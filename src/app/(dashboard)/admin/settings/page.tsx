@@ -156,6 +156,28 @@ export default function AdminSettingsPage() {
   const [billingError, setBillingError] = useState<string | null>(null);
   const [billingSaved, setBillingSaved] = useState(false);
 
+  type BrandingConfig = {
+    fromName?: string | null;
+    fromEmail?: string | null;
+    replyToEmail?: string | null;
+    headerLogoUrl?: string | null;
+    footerText?: string | null;
+  };
+
+  type EmailTemplate = { slug: string; subject: string; html: string };
+
+  const [emailOpen, setEmailOpen] = useState(true);
+  const [templatesOpen, setTemplatesOpen] = useState(true);
+  const [emailBranding, setEmailBranding] = useState<BrandingConfig>({ fromName: "", fromEmail: "", replyToEmail: "", headerLogoUrl: null, footerText: "" });
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailSaved, setEmailSaved] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedSlug, setSelectedSlug] = useState<string>("payment_patient");
+  const [tplSaving, setTplSaving] = useState(false);
+  const [tplSaved, setTplSaved] = useState(false);
+  const [tplError, setTplError] = useState<string | null>(null);
+
   const [inlineEditing, setInlineEditing] = useState(false);
 
   useEffect(() => {
@@ -166,6 +188,87 @@ export default function AdminSettingsPage() {
        }
     }
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadEmailBranding = async () => {
+      try {
+        const res = await fetch('/api/admin/email/branding', { cache: 'no-store' });
+        if (!mounted || !res.ok) return;
+        const json = await res.json();
+        if (json && json.config) {
+          setEmailBranding({ ...emailBranding, ...json.config });
+        }
+      } catch {}
+    };
+    const loadTemplates = async () => {
+      try {
+        const res = await fetch('/api/admin/email/templates', { cache: 'no-store' });
+        if (!mounted || !res.ok) return;
+        const json = await res.json();
+        const list = Array.isArray(json?.templates) ? json.templates as EmailTemplate[] : [];
+        setTemplates(list);
+        if (list.length && !list.find(t => t.slug === selectedSlug)) {
+          setSelectedSlug(list[0].slug);
+        }
+      } catch {}
+    };
+    loadEmailBranding();
+    loadTemplates();
+    return () => { mounted = false };
+  }, []);
+
+  const handleSaveEmailBranding = async () => {
+    setEmailSaving(true);
+    setEmailSaved(false);
+    setEmailError(null);
+    try {
+      const res = await fetch('/api/admin/email/branding', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(emailBranding) });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setEmailError(json.error || 'Unable to save email branding');
+        return;
+      }
+      setEmailSaved(true);
+    } catch {
+      setEmailError('Unable to save email branding');
+    } finally {
+      setEmailSaving(false);
+    }
+  };
+
+  const currentTemplate = templates.find(t => t.slug === selectedSlug) || { slug: selectedSlug, subject: '', html: '' };
+  const setCurrentTemplate = (updater: Partial<EmailTemplate>) => {
+    setTemplates(prev => {
+      const idx = prev.findIndex(t => t.slug === selectedSlug);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...updater };
+        return next;
+      }
+      return [...prev, { slug: selectedSlug, subject: updater.subject ?? '', html: updater.html ?? '' }];
+    });
+  };
+
+  const handleSaveTemplate = async () => {
+    setTplSaving(true);
+    setTplSaved(false);
+    setTplError(null);
+    const tpl = templates.find(t => t.slug === selectedSlug) || currentTemplate;
+    try {
+      const res = await fetch('/api/admin/email/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: tpl.slug, subject: tpl.subject, html: tpl.html }) });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setTplError(json.error || 'Unable to save template');
+        return;
+      }
+      setTplSaved(true);
+    } catch {
+      setTplError('Unable to save template');
+    } finally {
+      setTplSaving(false);
+    }
+  };
 
   const toggleInlineEditing = (checked: boolean) => {
     setInlineEditing(checked);
@@ -368,32 +471,85 @@ export default function AdminSettingsPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-gray-700">General Settings</CardTitle>
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium text-gray-700">Email Settings</CardTitle>
+          <button onClick={() => setEmailOpen(v => !v)} className="text-gray-500 hover:text-gray-700">{emailOpen ? <ChevronDown className="h-4 w-4"/> : <ChevronRight className="h-4 w-4"/>}</button>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="inline-editing" 
-              checked={inlineEditing}
-              onCheckedChange={(checked) => toggleInlineEditing(checked as boolean)}
-            />
-            <Label htmlFor="inline-editing" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Enable Homepage Inline Editing
-            </Label>
+        {emailOpen && (
+        <CardContent className="space-y-4 text-sm text-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-gray-600">From name</label>
+              <input type="text" className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" value={emailBranding.fromName ?? ''} onChange={(e) => setEmailBranding(prev => ({ ...prev, fromName: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600">From email</label>
+              <input type="email" className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" value={emailBranding.fromEmail ?? ''} onChange={(e) => setEmailBranding(prev => ({ ...prev, fromEmail: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600">Reply-to email</label>
+              <input type="email" className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" value={emailBranding.replyToEmail ?? ''} onChange={(e) => setEmailBranding(prev => ({ ...prev, replyToEmail: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-600">Email header logo URL</label>
+              <input type="url" className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" value={emailBranding.headerLogoUrl ?? ''} onChange={(e) => setEmailBranding(prev => ({ ...prev, headerLogoUrl: e.target.value }))} />
+              <div className="mt-2">
+                {emailBranding.headerLogoUrl ? (
+                  <img src={emailBranding.headerLogoUrl || undefined} alt="Email header logo" className="h-10 w-auto rounded border" />
+                ) : (
+                  <div className="text-xs text-gray-500">No email header logo set</div>
+                )}
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 ml-6">
-            When enabled, you can edit text directly on the homepage while logged in as an admin.
-          </p>
-          <div className="flex items-center space-x-2 mt-4">
-             <Checkbox 
-                id="auto-refresh"
-                checked={autoRefresh}
-                onCheckedChange={(checked) => setAutoRefresh(checked as boolean)}
-             />
-             <Label htmlFor="auto-refresh" className="text-sm font-medium leading-none">Auto-refresh dashboard data</Label>
+          <div>
+            <label className="text-xs font-medium text-gray-600">Email footer note</label>
+            <textarea className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm min-h-[60px]" value={emailBranding.footerText ?? ''} onChange={(e) => setEmailBranding(prev => ({ ...prev, footerText: e.target.value }))} />
+          </div>
+          {emailError && <div className="text-xs text-red-600">{emailError}</div>}
+          {emailSaved && <div className="text-xs text-green-600">Saved.</div>}
+          <div className="flex justify-end">
+            <Button type="button" size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={handleSaveEmailBranding} disabled={emailSaving}>{emailSaving ? 'Saving…' : 'Save email settings'}</Button>
           </div>
         </CardContent>
+        )}
+      </Card>
+
+      <Card>
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium text-gray-700">Email Templates</CardTitle>
+          <button onClick={() => setTemplatesOpen(v => !v)} className="text-gray-500 hover:text-gray-700">{templatesOpen ? <ChevronDown className="h-4 w-4"/> : <ChevronRight className="h-4 w-4"/>}</button>
+        </CardHeader>
+        {templatesOpen && (
+        <CardContent className="space-y-4 text-sm text-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-gray-600">Select template</label>
+              <select className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" value={selectedSlug} onChange={(e) => setSelectedSlug(e.target.value)}>
+                <option value="payment_patient">Payment confirmation (Patient)</option>
+                <option value="payment_doctor">Appointment booked (Doctor)</option>
+                {templates.filter(t => t.slug !== 'payment_patient' && t.slug !== 'payment_doctor').map(t => (
+                  <option key={t.slug} value={t.slug}>{t.slug}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-xs font-medium text-gray-600">Subject</label>
+              <input type="text" className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" value={currentTemplate.subject} onChange={(e) => setCurrentTemplate({ subject: e.target.value })} />
+            </div>
+            <div className="space-y-2 md:col-span-3">
+              <label className="text-xs font-medium text-gray-600">HTML Body</label>
+              <textarea className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm min-h-[160px]" value={currentTemplate.html} onChange={(e) => setCurrentTemplate({ html: e.target.value })} />
+              <div className="text-xs text-gray-500">Available variables: &#123;&#123;doctorName&#125;&#125;, &#123;&#123;patientName&#125;&#125;, &#123;&#123;when&#125;&#125;, &#123;&#123;amount&#125;&#125;, &#123;&#123;currency&#125;&#125;</div>
+            </div>
+          </div>
+          {tplError && <div className="text-xs text-red-600">{tplError}</div>}
+          {tplSaved && <div className="text-xs text-green-600">Saved.</div>}
+          <div className="flex justify-end">
+            <Button type="button" size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={handleSaveTemplate} disabled={tplSaving}>{tplSaving ? 'Saving…' : 'Save template'}</Button>
+          </div>
+        </CardContent>
+        )}
       </Card>
 
       <Card>

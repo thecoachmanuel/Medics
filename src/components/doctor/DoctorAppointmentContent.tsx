@@ -16,14 +16,21 @@ import PrescriptionViewModal from "./PrescriptionViewModal";
 
 const DoctorAppointmentContent = () => {
   const { user } = userAuthStore();
-  const { appointments, fetchAppointments, loading ,updateAppointmentStatus} = useAppointmentStore();
+  const { appointments, fetchAppointments, loading ,updateAppointmentStatus, subscribeToAppointments, unsubscribeFromAppointments} = useAppointmentStore();
   const [activeTab, setActiveTab] = useState("upcoming");
 
   useEffect(() => {
     if (user?.type === "doctor") {
       fetchAppointments("doctor");
+      subscribeToAppointments(user.id, "doctor");
+      const onVis = () => { if(document.visibilityState === 'visible') fetchAppointments("doctor"); };
+      document.addEventListener("visibilitychange", onVis);
+      return () => {
+        unsubscribeFromAppointments();
+        document.removeEventListener("visibilitychange", onVis);
+      };
     }
-  }, [user, fetchAppointments]);
+  }, [user, fetchAppointments, subscribeToAppointments, unsubscribeFromAppointments]);
 
   const formatDate = (dateString: string) =>
     formatDateTimeNG(dateString, {

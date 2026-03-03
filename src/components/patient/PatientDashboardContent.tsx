@@ -20,7 +20,7 @@ import { Textarea } from "../ui/textarea";
 const PatientDashboardContent = () => {
   const { user, isAuthenticated } = userAuthStore();
   const router = useRouter();
-  const { appointments, fetchAppointments, loading, rateDoctor } = useAppointmentStore();
+  const { appointments, fetchAppointments, loading, rateDoctor, subscribeToAppointments, unsubscribeFromAppointments } = useAppointmentStore();
   const [activeTab, setActiveTab] = useState("upcoming");
 
   useEffect(() => {
@@ -48,8 +48,15 @@ const PatientDashboardContent = () => {
   useEffect(() => {
     if (user?.type === "patient") {
       fetchAppointments("patient");
+      subscribeToAppointments(user.id, "patient");
+      const onVis = () => { if(document.visibilityState === 'visible') fetchAppointments("patient"); };
+      document.addEventListener("visibilitychange", onVis);
+      return () => {
+        unsubscribeFromAppointments();
+        document.removeEventListener("visibilitychange", onVis);
+      };
     }
-  }, [user, fetchAppointments]);
+  }, [user, fetchAppointments, subscribeToAppointments, unsubscribeFromAppointments]);
 
   const formatDate = (dateString: string) =>
     formatDateTimeNG(dateString, {

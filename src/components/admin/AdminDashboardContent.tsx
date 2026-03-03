@@ -7,6 +7,8 @@ type StatSummary = {
   totalDoctors: number;
   totalAppointments: number;
   totalRevenue: number;
+  totalAdminCommission: number;
+  totalDoctorNet: number;
 };
 
 type MonthlyRevenuePoint = {
@@ -44,7 +46,7 @@ const statusColors: Record<string, string> = {
 const AdminDashboardContent = ({ stats, monthlyRevenue, appointmentStatus, userGrowth }: AdminDashboardContentProps) => {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Total Patients</CardTitle>
@@ -74,10 +76,28 @@ const AdminDashboardContent = ({ stats, monthlyRevenue, appointmentStatus, userG
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Revenue (NGN)</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Gross Volume (NGN)</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-gray-900">{stats.totalRevenue.toLocaleString("en-NG")}</p>
+            <p className="text-xs text-gray-500 mt-1">From completed payments</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Admin Commission (NGN)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalAdminCommission.toLocaleString("en-NG")}</p>
+            <p className="text-xs text-gray-500 mt-1">From completed payments</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Doctor Net (NGN)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalDoctorNet.toLocaleString("en-NG")}</p>
             <p className="text-xs text-gray-500 mt-1">From completed payments</p>
           </CardContent>
         </Card>
