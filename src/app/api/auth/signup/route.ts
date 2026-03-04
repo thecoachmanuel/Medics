@@ -7,7 +7,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password, name, type } = body;
     // Default redirect to origin/auth/callback or just origin
-    const redirectTo = body.redirectTo || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    // Force use of NEXT_PUBLIC_SITE_URL if available
+    let redirectTo = body.redirectTo;
+    
+    // If the body redirect contains localhost but we have a production URL, override it
+    if (process.env.NEXT_PUBLIC_SITE_URL && (!redirectTo || redirectTo.includes('localhost'))) {
+        redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
+    } else if (!redirectTo) {
+        redirectTo = "http://localhost:3000/auth/callback";
+    }
 
     if (!email || !password || !name || !type) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });

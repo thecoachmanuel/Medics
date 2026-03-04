@@ -207,7 +207,7 @@ export const userAuthStore = create<AuthState>()(
             password: data.password,
             name: data.name,
             type: 'doctor',
-            redirectTo: `${window.location.origin}/auth/callback`,
+            // redirectTo is handled by the server based on NEXT_PUBLIC_SITE_URL
           }),
         });
 
@@ -247,7 +247,7 @@ export const userAuthStore = create<AuthState>()(
             password: data.password,
             name: data.name,
             type: 'patient',
-            redirectTo: `${window.location.origin}/auth/callback`,
+            // redirectTo is handled by the server based on NEXT_PUBLIC_SITE_URL
           }),
         });
 

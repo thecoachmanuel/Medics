@@ -14,13 +14,19 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
   const { id } = await props.params;
   const supabase = getServiceSupabase();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select(
       "id,name,email,phone,type,gender,blood_group,is_blocked,created_at,updated_at,dob"
     )
     .eq("id", id)
     .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching user profile:', error);
+    // Optionally return an error UI or just notFound
+    notFound(); 
+  }
 
   if (!data) notFound();
   const profile = data as {
