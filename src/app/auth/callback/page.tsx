@@ -36,9 +36,17 @@ function AuthCallbackContent() {
           const { error } = await supabase.auth.exchangeCodeForSession(code)
           if (error) throw error
 
-          // If it's a recovery flow (detected by type param or event), redirect to reset password
-          if (type === 'recovery') {
-            router.push('/reset-password')
+          // If it's a recovery flow (detected by type param or next param)
+          if (type === 'recovery' || next?.includes('/reset-password')) {
+            // Fetch profile to determine user type
+            const user = await fetchProfile()
+            if (user) {
+                // Redirect to the appropriate profile page security section
+                router.push(`/${user.type}/profile?section=security&type=recovery`)
+            } else {
+                // Fallback to generic reset password page if profile fetch fails
+                router.push('/reset-password')
+            }
             return
           }
 
