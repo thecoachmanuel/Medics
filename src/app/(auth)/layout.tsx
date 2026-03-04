@@ -1,12 +1,17 @@
 'use client'
 import { userAuthStore } from '@/store/authStore';
-import { redirect } from 'next/navigation';
+import { redirect, usePathname } from 'next/navigation';
 import React, { useEffect } from 'react'
 
 const layout = ({children}:{children:React.ReactNode}) => {
 
  const {isAuthenticated,user} = userAuthStore();
+ const pathname = usePathname();
+
   useEffect(() => {
+    // Don't redirect if on reset-password page
+    if (pathname?.includes('/reset-password')) return;
+
     if(isAuthenticated &&  user) {
       if(!user.isVerified){
         redirect(`/onboarding/${user.type}`)
@@ -18,7 +23,7 @@ const layout = ({children}:{children:React.ReactNode}) => {
         }
       }
     }
-  },[isAuthenticated,user])
+  },[isAuthenticated,user,pathname])
   return (
     <div className='min-h-screen flex'>
      

@@ -30,10 +30,9 @@ function AuthCallbackContent() {
           // Refresh profile
           await fetchProfile()
           
-          // Redirect to dashboard
-          // We could also check user type to redirect to specific dashboard
-          // But dashboard/layout usually handles that or the dashboard page itself
-          router.push('/dashboard') 
+          // Redirect to dashboard or next page
+          const next = searchParams.get('next')
+          router.push(next || '/dashboard') 
         } catch (err: any) {
           console.error('Auth callback error:', err)
           setError(err.message || 'Failed to verify email')
