@@ -69,7 +69,10 @@ export default function ResetPasswordForm() {
             .single();
           
           if (profile) {
-            setUserType(profile.type as 'doctor' | 'patient');
+            const type = profile.type as 'doctor' | 'patient';
+            // Redirect to profile change password section
+            router.push(`/${type}/profile?section=security&type=recovery`);
+            return;
           }
         } catch (err) {
           console.error('Error fetching profile:', err);

@@ -10,10 +10,12 @@ import {
   Stethoscope,
   User,
   X,
+  Lock,
 } from "lucide-react";
 import React, { ChangeEvent, useEffect, useState } from "react";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
+import ChangePasswordForm from "../auth/ChangePasswordForm";
 import Header from "../landing/Header";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Card, CardContent } from "../ui/card";
@@ -38,6 +40,7 @@ interface ProfileProps {
 const ProfilePage = ({ userType }: ProfileProps) => {
   const { user, fetchProfile, updateProfile, loading } = userAuthStore();
   const [activeSection, setActiveSection] = useState("about");
+  const [isRecovery, setIsRecovery] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [taxonomySpecializations, setTaxonomySpecializations] = useState<string[] | null>(null);
@@ -105,9 +108,15 @@ const ProfilePage = ({ userType }: ProfileProps) => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const section = params.get("section");
-    if (!section) return;
-    const validIds = new Set(sidebarItems.map((item) => item.id));
-    if (validIds.has(section)) {
+    const type = params.get("type");
+    
+    if (type === "recovery") {
+      setIsRecovery(true);
+      setActiveSection("security");
+    } else if (section) {
+      // We can't validate sidebarItems here easily as they are defined later, 
+      // but 'security' is now valid.
+      // Assuming section is valid or fallback to default
       setActiveSection(section);
     }
   }, []);
@@ -295,12 +304,14 @@ const ProfilePage = ({ userType }: ProfileProps) => {
           { id: "professional", label: "Professional Info", icon: Stethoscope },
           { id: "hospital", label: "Hospital Information", icon: MapPin },
           { id: "availability", label: "Availability", icon: Clock },
+          { id: "security", label: "Security", icon: Lock },
         ]
       : [
           { id: "about", label: "About", icon: User },
           { id: "contact", label: "Contact Information", icon: Phone },
           { id: "medical", label: "Medical History", icon: FileText },
           { id: "emergency", label: "Emergency Contact", icon: Phone },
+          { id: "security", label: "Security", icon: Lock },
         ];
 
   const renderAboutSection = () => (
@@ -794,6 +805,12 @@ const ProfilePage = ({ userType }: ProfileProps) => {
       </div>
     </div>
   );
+  const renderSecuritySection = () => (
+    <div className="space-y-6">
+      <ChangePasswordForm isRecovery={isRecovery} userEmail={user?.email} />
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeSection) {
       case "about":
@@ -810,6 +827,8 @@ const ProfilePage = ({ userType }: ProfileProps) => {
         return renderMedicalSection();
       case "emergency":
         return renderEmergencySection();
+      case "security":
+        return renderSecuritySection();
       default:
         return renderAboutSection();
     }
@@ -883,20 +902,22 @@ const ProfilePage = ({ userType }: ProfileProps) => {
                       }
                     </h2>
                     <div className="flex space-x-2">
-                      {isEditing ? (
-                        <>
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsEditing(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button onClick={handleSave} disabled={loading}>
-                            {loading ? "Saving..." : "Save"}
-                          </Button>
-                        </>
-                      ) : (
-                        <Button onClick={() => setIsEditing(true)}>Edit</Button>
+                      {activeSection !== "security" && (
+                        isEditing ? (
+                          <>
+                            <Button
+                              variant="outline"
+                              onClick={() => setIsEditing(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button onClick={handleSave} disabled={loading}>
+                              {loading ? "Saving..." : "Save"}
+                            </Button>
+                          </>
+                        ) : (
+                          <Button onClick={() => setIsEditing(true)}>Edit</Button>
+                        )
                       )}
                     </div>
                   </div>
