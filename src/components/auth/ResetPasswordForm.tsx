@@ -70,9 +70,13 @@ export default function ResetPasswordForm() {
           
           if (profile) {
             const type = profile.type as 'doctor' | 'patient';
-            // Redirect to profile change password section
-            router.push(`/${type}/profile?section=security&type=recovery`);
-            return;
+            setUserType(type);
+            
+            // Only redirect to profile if not in recovery flow
+            if (!isRecovery) {
+              router.push(`/${type}/profile?section=security&type=recovery`);
+              return;
+            }
           }
         } catch (err) {
           console.error('Error fetching profile:', err);
@@ -109,7 +113,8 @@ export default function ResetPasswordForm() {
       setTimeout(async () => {
         await supabase.auth.signOut();
         const loginPath = userType === 'doctor' ? '/login/doctor' : '/login/patient';
-        router.push(loginPath);
+        // Fallback to generic login if type is unknown, though we try to fetch it
+        router.push(loginPath === '/login/patient' && !userType ? '/login/doctor' : loginPath); 
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to update password');

@@ -106,6 +106,10 @@ export const userAuthStore = create<AuthState>()(
           .single();
         if (profileError) throw profileError;
         const profileType = (profile?.type as 'doctor' | 'patient') || 'patient';
+        if (profile?.is_blocked) {
+          await supabase.auth.signOut();
+          throw new Error('Your account has been blocked. Please contact support.');
+        }
         const user: User = {
           id: authUser.id,
           name: profile?.name || '',
