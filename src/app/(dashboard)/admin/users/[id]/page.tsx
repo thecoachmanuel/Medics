@@ -29,6 +29,11 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
   }
 
   if (!data) notFound();
+  
+  if (data.type === 'doctor') {
+    redirect(`/admin/doctors/${id}`);
+  }
+
   const profile = data as {
     id: string;
     name: string | null;

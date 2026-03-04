@@ -351,7 +351,7 @@ export default async function AdminUsersPage(props: {
                               <AvatarImage src={p.profile_image ?? undefined} alt={p.name ?? undefined} />
                               <AvatarFallback>{(p.name || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
                             </Avatar>
-                            <Link href={`/admin/users/${p.id}`} className="text-blue-600 hover:underline">
+                            <Link href={p.type === "doctor" ? `/admin/doctors/${p.id}` : `/admin/users/${p.id}`} className="text-blue-600 hover:underline">
                               {p.name || "Unnamed"}
                             </Link>
                           </div>
