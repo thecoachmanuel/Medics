@@ -28,22 +28,26 @@ interface AuthFormProps {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  
   const {
     registerPatient,
     registerDoctor,
     loginPatient,
     loginDoctor,
     loading,
-    error,
+    error: authError,
   } = userAuthStore();
+  
+  // Local error state to handle UI-specific errors or override store errors
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const router = useRouter();
 
-
-  
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLocalError(null);
+    
     if (type === 'signup' && !agreeToTerms) return;
 
     try {
@@ -61,42 +65,74 @@ interface AuthFormProps {
             password: formData.password,
           });
         }
-
-        const { user } = userAuthStore.getState();
-        if (user) {
-          if (!user.isVerified) {
-            router.push(`/onboarding/${user.type}`);
-          } else if (user.type === 'doctor') {
-            router.push('/doctor/dashboard');
-          } else {
-            router.push('/patient/dashboard');
-          }
-        } else {
-          router.push(`/onboarding/${userRole}`);
-        }
+        // If we reach here, signup was successful (store didn't throw)
+        setSignupSuccess(true);
+        // Do NOT redirect. Show success message.
       } else {
-        if (userRole === 'doctor') {
-          await loginDoctor(formData.email, formData.password);
-        } else {
-          await loginPatient(formData.email, formData.password);
-        }
-
-        const { user } = userAuthStore.getState();
-        if (user) {
-          if (!user.isVerified) {
-            router.push(`/onboarding/${user.type}`);
-          } else if (user.type === 'doctor') {
-            router.push('/doctor/dashboard');
-          } else {
-            router.push('/patient/dashboard');
-          }
+        // LOGIN FLOW
+        try {
+            if (userRole === 'doctor') {
+            await loginDoctor(formData.email, formData.password);
+            } else {
+            await loginPatient(formData.email, formData.password);
+            }
+    
+            const { user } = userAuthStore.getState();
+            if (user) {
+            if (!user.isVerified) {
+                // This is checking if the doctor is verified by admin, not email confirmation
+                // Email confirmation is handled by Supabase login failure if configured
+                router.push(`/onboarding/${user.type}`);
+            } else if (user.type === 'doctor') {
+                router.push('/doctor/dashboard');
+            } else {
+                router.push('/patient/dashboard');
+            }
+            }
+        } catch (loginErr: any) {
+             // Check for specific Supabase errors
+             if (loginErr.message?.includes("Email not confirmed")) {
+                 setLocalError("Please confirm your email address before logging in. Check your inbox (and spam folder) for the confirmation link.");
+             } else if (loginErr.message?.includes("Invalid login credentials")) {
+                 setLocalError("Invalid email or password. Please try again.");
+             } else {
+                 setLocalError(loginErr.message || "Login failed");
+             }
+             // Re-throw if you want the store error to persist, but we have local state now
         }
       }
-    } catch (err) {
-        console.log(err)
+    } catch (err: any) {
       console.error(`${type} failed:`, err);
+      // Fallback for signup errors
+      setLocalError(err.message || "An error occurred");
     }
   };
+
+  if (signupSuccess) {
+      return (
+        <Card className="w-full max-w-md mx-auto shadow-lg border-t-4 border-t-blue-600">
+            <CardContent className="pt-6 pb-8 px-8 text-center space-y-4">
+                <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                    <Stethoscope className="w-6 h-6 text-blue-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Check your email</h2>
+                <p className="text-gray-600">
+                    We've sent a confirmation link to <span className="font-semibold text-gray-900">{formData.email}</span>.
+                </p>
+                <p className="text-sm text-gray-500">
+                    Please click the link in the email to verify your account and start using MedicsOnline.
+                </p>
+                <div className="pt-4">
+                    <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
+                        Back to Login
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+      );
+  }
+
+  const displayedError = localError || authError;
 
   const handleGoogleAuth = async () => {
     await supabase.auth.signInWithOAuth({
@@ -125,9 +161,9 @@ interface AuthFormProps {
         <CardContent className="p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">{title}</h2>
           
-          {error && (
+          {displayedError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-              {error}
+              {displayedError}
             </div>
           )}
 
@@ -186,6 +222,16 @@ interface AuthFormProps {
                   )}
                 </Button>
               </div>
+              {!isSignup && (
+                <div className="flex justify-end pt-1">
+                  <Link 
+                    href="/forgot-password" 
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Terms checkbox for signup */}
