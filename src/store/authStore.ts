@@ -199,30 +199,35 @@ export const userAuthStore = create<AuthState>()(
     registerDoctor: async (data) => {
       set({ loading: true, error: null });
       try {
-        const { data: signUp, error } = await supabase.auth.signUp({
-          email: data.email,
-          password: data.password,
-          options: { data: { type: 'doctor', name: data.name } },
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+            name: data.name,
+            type: 'doctor',
+            redirectTo: `${window.location.origin}/auth/callback`,
+          }),
         });
-        if (error) throw error;
-        const userId = signUp.user?.id;
-        if (!userId) throw new Error('Signup failed');
-        const { error: upsertError } = await supabase.from('profiles').upsert({
-          id: userId,
-          email: data.email,
-          name: data.name,
-          type: 'doctor',
-        });
-        if (upsertError) throw upsertError;
-        await get().fetchProfile();
-        try {
-          await fetch('/api/admin/activity', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'signup', payload: { userId } }),
-          });
-        } catch {
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Signup failed');
         }
+
+        // We don't log them in automatically because they need to confirm email.
+        // We can optionally show a message "Check your email".
+        // The UI component likely handles success by redirecting or showing a message.
+        // We update the state to reflect "not authenticated but success" if needed,
+        // or just let the component handle it.
+        // But the original code called fetchProfile() which implies login?
+        // No, original code called signUp which might auto-login if email confirm is disabled.
+        // But with email confirm enabled, session is null.
+        // So fetchProfile would fail or return null.
+        // We'll just return success.
+
       } catch (error: any) {
         set({ error: error.message });
         throw error;
@@ -234,30 +239,24 @@ export const userAuthStore = create<AuthState>()(
     registerPatient: async (data) => {
       set({ loading: true, error: null });
       try {
-        const { data: signUp, error } = await supabase.auth.signUp({
-          email: data.email,
-          password: data.password,
-          options: { data: { type: 'patient', name: data.name } },
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+            name: data.name,
+            type: 'patient',
+            redirectTo: `${window.location.origin}/auth/callback`,
+          }),
         });
-        if (error) throw error;
-        const userId = signUp.user?.id;
-        if (!userId) throw new Error('Signup failed');
-        const { error: upsertError } = await supabase.from('profiles').upsert({
-          id: userId,
-          email: data.email,
-          name: data.name,
-          type: 'patient',
-        });
-        if (upsertError) throw upsertError;
-        await get().fetchProfile();
-        try {
-          await fetch('/api/admin/activity', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'signup', payload: { userId } }),
-          });
-        } catch {
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Signup failed');
         }
+
       } catch (error: any) {
         set({ error: error.message });
         throw error;
