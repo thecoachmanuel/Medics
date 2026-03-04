@@ -380,6 +380,16 @@ interface AdminUpdateUserInput {
   gender?: string;
   blood_group?: string;
   type?: UserRole;
+  medical_history?: {
+    allergies?: string;
+    currentMedications?: string;
+    chronicConditions?: string;
+  };
+  emergency_contact?: {
+    name?: string;
+    phone?: string;
+    relationship?: string;
+  };
 }
 
 export async function adminUpdateUser(input: AdminUpdateUserInput): Promise<{ success: boolean; error?: string }>{
@@ -392,6 +402,9 @@ export async function adminUpdateUser(input: AdminUpdateUserInput): Promise<{ su
   if (typeof input.gender === "string") patch.gender = input.gender;
   if (typeof input.blood_group === "string") patch.blood_group = input.blood_group;
   if (input.type === "doctor" || input.type === "patient") patch.type = input.type;
+  if (input.medical_history) patch.medical_history = input.medical_history;
+  if (input.emergency_contact) patch.emergency_contact = input.emergency_contact;
+
   if (!Object.keys(patch).length) return { success: false, error: "No fields to update." };
   const { error } = await supabase.from("profiles").update(patch).eq("id", id);
   if (error) return { success: false, error: "Unable to update user." };

@@ -17,7 +17,7 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id,name,email,phone,type,gender,blood_group,is_blocked,created_at,updated_at,dob"
+      "id,name,email,phone,type,gender,blood_group,is_blocked,created_at,updated_at,dob,medical_history,emergency_contact"
     )
     .eq("id", id)
     .maybeSingle();
@@ -46,6 +46,16 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
     dob: string | null;
     created_at: string;
     updated_at: string;
+    medical_history: {
+      allergies?: string;
+      currentMedications?: string;
+      chronicConditions?: string;
+    } | null;
+    emergency_contact: {
+      name?: string;
+      phone?: string;
+      relationship?: string;
+    } | null;
   };
 
   async function handleUpdate(formData: FormData) {
@@ -55,6 +65,19 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
     const gender = String(formData.get("gender") || "");
     const blood = String(formData.get("blood_group") || "");
     const type = String(formData.get("type") || "");
+
+    const medical_history = {
+      allergies: String(formData.get("medical_history.allergies") || ""),
+      currentMedications: String(formData.get("medical_history.currentMedications") || ""),
+      chronicConditions: String(formData.get("medical_history.chronicConditions") || ""),
+    };
+
+    const emergency_contact = {
+      name: String(formData.get("emergency_contact.name") || ""),
+      phone: String(formData.get("emergency_contact.phone") || ""),
+      relationship: String(formData.get("emergency_contact.relationship") || ""),
+    };
+
     await adminUpdateUser({
       id: String(formData.get("id") || ""),
       name: name || undefined,
@@ -62,6 +85,8 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
       gender: gender || undefined,
       blood_group: blood || undefined,
       type: type === "doctor" || type === "patient" ? (type as any) : undefined,
+      medical_history,
+      emergency_contact,
     });
     redirect(`/admin/users/${id}`);
   }
@@ -102,6 +127,24 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
           <div><span className="font-semibold mr-1">Blood group:</span>{profile.blood_group || "-"}</div>
           <div><span className="font-semibold mr-1">DOB:</span>{profile.dob || "-"}</div>
           <div><span className="font-semibold mr-1">Account:</span>{profile.is_blocked ? "Blocked" : "Active"}</div>
+          
+          <div className="md:col-span-2 mt-4 pt-4 border-t">
+            <h4 className="font-medium text-gray-900 mb-2">Medical History</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div><span className="font-semibold block text-xs text-gray-500">Allergies</span>{profile.medical_history?.allergies || "-"}</div>
+              <div><span className="font-semibold block text-xs text-gray-500">Current Medications</span>{profile.medical_history?.currentMedications || "-"}</div>
+              <div><span className="font-semibold block text-xs text-gray-500">Chronic Conditions</span>{profile.medical_history?.chronicConditions || "-"}</div>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 mt-4 pt-4 border-t">
+            <h4 className="font-medium text-gray-900 mb-2">Emergency Contact</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div><span className="font-semibold block text-xs text-gray-500">Name</span>{profile.emergency_contact?.name || "-"}</div>
+              <div><span className="font-semibold block text-xs text-gray-500">Phone</span>{profile.emergency_contact?.phone || "-"}</div>
+              <div><span className="font-semibold block text-xs text-gray-500">Relationship</span>{profile.emergency_contact?.relationship || "-"}</div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -136,6 +179,43 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
                 <option value="doctor">Doctor</option>
               </select>
             </div>
+
+            <div className="md:col-span-2 pt-4 border-t">
+              <h4 className="font-medium text-gray-900 mb-2">Medical History</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Allergies</label>
+                  <input name="medical_history.allergies" defaultValue={profile.medical_history?.allergies || ''} className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Current Medications</label>
+                  <input name="medical_history.currentMedications" defaultValue={profile.medical_history?.currentMedications || ''} className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Chronic Conditions</label>
+                  <input name="medical_history.chronicConditions" defaultValue={profile.medical_history?.chronicConditions || ''} className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" />
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 pt-4 border-t">
+              <h4 className="font-medium text-gray-900 mb-2">Emergency Contact</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Contact Name</label>
+                  <input name="emergency_contact.name" defaultValue={profile.emergency_contact?.name || ''} className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Contact Phone</label>
+                  <input name="emergency_contact.phone" defaultValue={profile.emergency_contact?.phone || ''} className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Relationship</label>
+                  <input name="emergency_contact.relationship" defaultValue={profile.emergency_contact?.relationship || ''} className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm" />
+                </div>
+              </div>
+            </div>
+
             <div className="md:col-span-2 flex justify-end">
               <Button type="submit" size="sm">Save changes</Button>
             </div>
