@@ -6,6 +6,7 @@ type EmailBranding = {
   fromEmail?: string | null
   replyToEmail?: string | null
   headerLogoUrl?: string | null
+  headerLogoPublicId?: string | null
   footerText?: string | null
 }
 

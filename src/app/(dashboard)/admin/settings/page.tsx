@@ -161,6 +161,7 @@ export default function AdminSettingsPage() {
     fromEmail?: string | null;
     replyToEmail?: string | null;
     headerLogoUrl?: string | null;
+    headerLogoPublicId?: string | null;
     footerText?: string | null;
   };
 
@@ -168,7 +169,7 @@ export default function AdminSettingsPage() {
 
   const [emailOpen, setEmailOpen] = useState(true);
   const [templatesOpen, setTemplatesOpen] = useState(true);
-  const [emailBranding, setEmailBranding] = useState<BrandingConfig>({ fromName: "", fromEmail: "", replyToEmail: "", headerLogoUrl: null, footerText: "" });
+  const [emailBranding, setEmailBranding] = useState<BrandingConfig>({ fromName: "", fromEmail: "", replyToEmail: "", headerLogoUrl: null, headerLogoPublicId: null, footerText: "" });
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailSaved, setEmailSaved] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -498,6 +499,64 @@ export default function AdminSettingsPage() {
                   <img src={emailBranding.headerLogoUrl || undefined} alt="Email header logo" className="h-10 w-auto rounded border" />
                 ) : (
                   <div className="text-xs text-gray-500">No email header logo set</div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500">Recommended: SVG or PNG, ~150px width.</p>
+              <div
+                className="mt-2 rounded border border-dashed border-gray-300 p-3 text-xs text-gray-600 text-center cursor-pointer hover:bg-gray-50"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files?.[0];
+                  if (!file) return;
+                  try {
+                    const { uploadImage } = await import("@/lib/cloudinary");
+                    const res = await uploadImage(file, "medimeet/email");
+                    setEmailBranding((prev) => ({ ...prev, headerLogoUrl: res.url, headerLogoPublicId: res.publicId }));
+                  } catch {}
+                }}
+              >
+                Drag & drop logo here
+              </div>
+              <div className="flex gap-2 mt-2">
+                <label className="inline-flex items-center justify-center gap-2 text-xs cursor-pointer bg-white px-3 py-1.5 rounded-md border border-gray-300 shadow-sm hover:bg-gray-50 font-medium text-gray-700">
+                  <span>Upload Image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const { uploadImage } = await import("@/lib/cloudinary");
+                        const res = await uploadImage(file, "medimeet/email");
+                        setEmailBranding((prev) => ({ ...prev, headerLogoUrl: res.url, headerLogoPublicId: res.publicId }));
+                      } catch {
+                      } finally {
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                </label>
+                {emailBranding.headerLogoUrl && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-auto py-1.5 text-xs"
+                    onClick={async () => {
+                      const publicId = emailBranding.headerLogoPublicId;
+                      if (publicId) {
+                        try {
+                          await fetch('/api/upload/destroy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ publicId }) });
+                        } catch {}
+                      }
+                      setEmailBranding((prev) => ({ ...prev, headerLogoUrl: null, headerLogoPublicId: null }));
+                    }}
+                  >
+                    Remove
+                  </Button>
                 )}
               </div>
             </div>
