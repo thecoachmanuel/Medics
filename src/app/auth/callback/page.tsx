@@ -15,6 +15,8 @@ function AuthCallbackContent() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       const code = searchParams.get('code')
+      const type = searchParams.get('type') // Check for recovery type
+      const next = searchParams.get('next')
       const errorDescription = searchParams.get('error_description')
       
       if (errorDescription) {
@@ -24,15 +26,33 @@ function AuthCallbackContent() {
 
       if (code) {
         try {
+          // Setup listener for recovery event
+          const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'PASSWORD_RECOVERY') {
+              router.push('/reset-password')
+            }
+          })
+
           const { error } = await supabase.auth.exchangeCodeForSession(code)
           if (error) throw error
+
+          // If it's a recovery flow (detected by type param or event), redirect to reset password
+          if (type === 'recovery') {
+            router.push('/reset-password')
+            return
+          }
 
           // Refresh profile
           await fetchProfile()
           
           // Redirect to dashboard or next page
-          const next = searchParams.get('next')
           router.push(next || '/dashboard') 
+          
+          // Clean up subscription
+          setTimeout(() => {
+            subscription.unsubscribe()
+          }, 1000)
+
         } catch (err: any) {
           console.error('Auth callback error:', err)
           setError(err.message || 'Failed to verify email')

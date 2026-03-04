@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = getServiceSupabase();
     
-    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?next=/reset-password`;
+    // Use simple redirect URL to avoid Supabase Allow List issues with query params
+    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`;
 
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
