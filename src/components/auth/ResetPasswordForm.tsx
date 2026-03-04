@@ -51,6 +51,7 @@ export default function ResetPasswordForm() {
   const [verifying, setVerifying] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userType, setUserType] = useState<'doctor' | 'patient' | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -59,6 +60,20 @@ export default function ResetPasswordForm() {
         setError('Invalid or expired reset link. Please try again.');
         setVerifying(false);
       } else {
+        // Fetch user profile to determine type
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('type')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            setUserType(profile.type as 'doctor' | 'patient');
+          }
+        } catch (err) {
+          console.error('Error fetching profile:', err);
+        }
         setVerifying(false);
       }
     };
@@ -87,10 +102,12 @@ export default function ResetPasswordForm() {
 
       setSuccess(true);
       
-      // Redirect after a delay
-      setTimeout(() => {
-        router.push('/login/doctor'); // Default to doctor login, user can switch
-      }, 3000);
+      // Sign out and redirect to appropriate login page
+      setTimeout(async () => {
+        await supabase.auth.signOut();
+        const loginPath = userType === 'doctor' ? '/login/doctor' : '/login/patient';
+        router.push(loginPath);
+      }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to update password');
     } finally {
