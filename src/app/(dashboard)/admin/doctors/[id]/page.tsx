@@ -201,7 +201,6 @@ export default async function AdminDoctorDetailPage(props: {
     .from("notifications")
     .select("id,title,message,created_at")
     .eq("user_id", profile.id)
-    .eq("role", "doctor")
     .in("title", [
       "Your profile has been approved",
       "Your account has been suspended",

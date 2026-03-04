@@ -168,7 +168,6 @@ async function UserNotifications({ userId, role }: { userId: string; role: "doct
     .from("notifications")
     .select("id,title,message,created_at")
     .eq("user_id", userId)
-    .eq("role", role)
     .order("created_at", { ascending: false })
     .limit(20);
   const rows = (data || []) as { id: string; title: string; message: string | null; created_at: string }[];
