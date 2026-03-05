@@ -43,18 +43,43 @@ export async function POST(req: NextRequest) {
 
     // Send email
     const html = `
-      <div style="font-family: sans-serif;">
-        <h2 style="color: #1a202c;">Reset Your Password</h2>
-        <p style="color: #4a5568;">Hello,</p>
-        <p style="color: #4a5568;">We received a request to reset your password for your MedicsOnline account.</p>
-        <div style="margin: 24px 0;">
-          <a href="${actionLink}" style="display: inline-block; background-color: #2563EB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
-            Reset Password
-          </a>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f7fa; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .card { background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 40px; margin-top: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .logo { color: #2563EB; font-size: 24px; font-weight: bold; text-decoration: none; }
+          .btn { display: inline-block; background-color: #2563EB; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; margin-top: 20px; }
+          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #999; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <a href="${origin}" class="logo">MedicsOnline</a>
+          </div>
+          <div class="card">
+            <h2 style="color: #1a202c; margin-top: 0;">Reset Your Password</h2>
+            <p>Hello,</p>
+            <p>We received a request to reset the password for your MedicsOnline account. If you didn't make this request, you can safely ignore this email.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${actionLink}" class="btn">Reset Password</a>
+            </div>
+            <p style="font-size: 14px; color: #666;">This link will expire in 1 hour for your security.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+            <p style="font-size: 13px; color: #888;">If the button above doesn't work, copy and paste this link into your browser:<br />
+            <a href="${actionLink}" style="color: #2563EB; word-break: break-all;">${actionLink}</a></p>
+          </div>
+          <div class="footer">
+            &copy; ${new Date().getFullYear()} MedicsOnline. All rights reserved.
+          </div>
         </div>
-        <p style="color: #4a5568; font-size: 14px;">This link will expire in 1 hour.</p>
-        <p style="color: #718096; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
-      </div>
+      </body>
+      </html>
     `;
 
     const emailResult = await sendMail({

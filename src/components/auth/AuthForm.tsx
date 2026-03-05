@@ -225,7 +225,7 @@ interface AuthFormProps {
               {!isSignup && (
                 <div className="flex justify-end pt-1">
                   <Link 
-                    href="/forgot-password" 
+                    href={`/forgot-password?role=${userRole}`} 
                     className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
                   >
                     Forgot password?

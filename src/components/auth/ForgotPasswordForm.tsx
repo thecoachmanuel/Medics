@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Mail, Stethoscope } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 function BrandLogoLink() {
   const [logo, setLogo] = React.useState<string | null>(null);
@@ -41,10 +42,15 @@ function BrandLogoLink() {
 }
 
 export default function ForgotPasswordForm() {
+  const searchParams = useSearchParams();
+  const role = searchParams.get('role');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const backLink = role === 'patient' ? '/login/patient' : '/login/doctor';
+  const userTypeLabel = role === 'patient' ? 'Patient' : 'Doctor';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,9 +98,9 @@ export default function ForgotPasswordForm() {
                     Please check your inbox and spam folder. The link will expire in 1 hour.
                 </p>
                 <div className="pt-4">
-                    <Link href="/login/doctor">
+                    <Link href={backLink}>
                         <Button variant="outline" className="w-full">
-                            Back to Login
+                            Back to {userTypeLabel} Login
                         </Button>
                     </Link>
                 </div>
