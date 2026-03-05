@@ -24,8 +24,14 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
 
   if (error) {
     console.error('Error fetching user profile:', error);
-    // Optionally return an error UI or just notFound
-    notFound(); 
+    // Return notFound only if it's truly not found, otherwise maybe show error?
+    // For now, let's keep it simple but log it clearly.
+    // If column does not exist, it will error here.
+    return (
+      <div className="p-4 text-red-500">
+        Error loading profile: {error.message}
+      </div>
+    );
   }
 
   if (!data) notFound();

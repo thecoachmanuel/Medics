@@ -29,7 +29,7 @@ function AuthCallbackContent() {
           // Setup listener for recovery event
           const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
             if (event === 'PASSWORD_RECOVERY') {
-              router.push('/reset-password')
+              router.push('/reset-password?type=recovery')
             }
           })
 
