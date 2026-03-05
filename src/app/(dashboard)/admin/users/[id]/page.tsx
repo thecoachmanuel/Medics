@@ -5,8 +5,7 @@ import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { adminUpdateUser, updateUserBlockStatus } from "@/actions/admin-actions";
-import AdminResetPassword from "@/components/admin/AdminResetPassword";
+import BlockUserButton from "@/components/admin/BlockUserButton";
 
 export const dynamic = 'force-dynamic';
 
@@ -234,12 +233,11 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
           <CardTitle className="text-sm font-medium text-gray-700">Account controls</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form action={handleBlockToggle}>
-            <input type="hidden" name="current" value={profile.is_blocked ? "blocked" : "active"} />
-            <Button type="submit" size="sm" variant={profile.is_blocked ? "outline" : "default"}>
-              {profile.is_blocked ? "Unblock account" : "Block account"}
-            </Button>
-          </form>
+          <BlockUserButton 
+            userId={profile.id} 
+            isBlocked={profile.is_blocked || false} 
+            userRole={profile.type === "doctor" ? "doctor" : "patient"} 
+          />
 
           <div>
             <div className="text-sm font-medium text-gray-700 mb-2">Security</div>
