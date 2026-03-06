@@ -3,9 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import AdminRefreshToggle from "@/components/admin/AdminRefreshToggle";
+import AdminResetPassword from "@/components/admin/AdminResetPassword";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import BlockUserButton from "@/components/admin/BlockUserButton";
+import { adminUpdateUser } from "@/actions/admin-actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -93,15 +95,6 @@ export default async function AdminUserDetailPage(props: { params: Promise<{ id:
       medical_history,
       emergency_contact,
     });
-    redirect(`/admin/users/${id}`);
-  }
-
-  async function handleBlockToggle(formData: FormData) {
-    "use server";
-    const current = String(formData.get("current") || "active");
-    const action = current === "blocked" ? "unblock" : "block";
-    const role = (profile.type === "doctor" || profile.type === "patient") ? profile.type : "patient";
-    await updateUserBlockStatus(profile.id, role, action as any);
     redirect(`/admin/users/${id}`);
   }
 

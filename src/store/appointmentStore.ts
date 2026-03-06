@@ -25,7 +25,7 @@ export interface Appointment {
   consultationType: "Video Consultation" | "Voice Call";
   status: "Scheduled" | "Completed" | "Cancelled" | "In Progress" | "Missed" | "Expired";
   symptoms: string;
-  zegoRoomId: string;
+  streamCallId: string;
   fees: number;
   prescription?: string;
   notes?: string;
@@ -210,7 +210,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         consultationType: r.consultation_type,
         status: r.status,
         symptoms: r.symptoms,
-        zegoRoomId: r.zego_room_id,
+        streamCallId: r.stream_call_id,
         fees: r.fees,
         prescription: r.prescription || undefined,
         notes: r.notes || undefined,
@@ -270,7 +270,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         consultationType: r.consultation_type,
         status: r.status,
         symptoms: r.symptoms,
-        zegoRoomId: r.zego_room_id,
+        streamCallId: r.stream_call_id,
         fees: r.fees,
         prescription: r.prescription || undefined,
         notes: r.notes || undefined,
@@ -339,7 +339,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         consultation_type: data.consultationType || 'Video Consultation',
         symptoms: data.symptoms,
         status: 'Scheduled',
-        zego_room_id: crypto.randomUUID(),
+        stream_call_id: crypto.randomUUID(),
         fees: data.totalAmount,
       };
       const { data: inserted, error } = await supabase.from('appointments').insert(payload).select('*').single();
@@ -354,7 +354,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         consultationType: inserted.consultation_type,
         status: inserted.status,
         symptoms: inserted.symptoms,
-        zegoRoomId: inserted.zego_room_id,
+        streamCallId: inserted.stream_call_id,
         fees: inserted.fees,
         createdAt: inserted.created_at,
         updatedAt: inserted.updated_at,

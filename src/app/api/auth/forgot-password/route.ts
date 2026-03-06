@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
     const origin = req.nextUrl.origin;
     
     // Add next param to ensure redirect to reset-password page
-    const redirectTo = `${origin}/auth/callback?next=/reset-password&type=recovery`;
+    // Encode the next path to ensure it's handled correctly
+    const nextPath = encodeURIComponent('/reset-password');
+    const redirectTo = `${origin}/auth/callback?next=${nextPath}&type=recovery`;
 
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',

@@ -26,10 +26,13 @@ function AuthCallbackContent() {
 
       if (code) {
         try {
+          // Track if recovery event fires
+          let isRecoveryEvent = false;
+          
           // Setup listener for recovery event
           const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
             if (event === 'PASSWORD_RECOVERY') {
-              router.push('/reset-password?type=recovery')
+              isRecoveryEvent = true;
             }
           })
 
@@ -37,16 +40,27 @@ function AuthCallbackContent() {
           if (error) throw error
 
           // If it's a recovery flow (detected by type param or next param)
+          // We check this immediately to avoid unnecessary delays if params are present
           if (type === 'recovery' || next?.includes('/reset-password')) {
             router.push('/reset-password?type=recovery')
             return
+          }
+
+          // If params are missing, give a grace period for the PASSWORD_RECOVERY event to fire
+          // This handles race conditions where the event fires slightly after the session exchange resolves
+          await new Promise(resolve => setTimeout(resolve, 1500));
+
+          if (isRecoveryEvent) {
+             router.push('/reset-password?type=recovery')
+             return
           }
 
           // Refresh profile
           await fetchProfile()
           
           // Redirect to dashboard or next page
-          router.push(next || '/dashboard') 
+          const redirectPath = next && next.startsWith('/') ? next : '/dashboard';
+          router.push(redirectPath) 
           
           // Clean up subscription
           setTimeout(() => {

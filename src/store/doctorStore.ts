@@ -315,7 +315,7 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
           consultationType: r.consultation_type,
           status: r.status,
           symptoms: r.symptoms,
-          zegoRoomId: r.zego_room_id,
+          streamCallId: r.stream_call_id,
           fees: r.fees,
           prescription: r.prescription || undefined,
           notes: r.notes || undefined,

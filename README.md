@@ -28,7 +28,7 @@ The app is designed with production‑grade patterns: typed TypeScript, Supabase
   - Patient dashboard with upcoming and past appointments
   - Doctor dashboard with daily schedule, appointment details and prescriptions
   - Dedicated payments pages for both roles
-- Video/voice consultation using Zego Cloud prebuilt UI
+- Video/voice consultation using Stream.io Video SDK
 - Cloudinary integration for profile image uploads
 
 ---
@@ -40,7 +40,7 @@ The app is designed with production‑grade patterns: typed TypeScript, Supabase
 - **State management:** Zustand
 - **Backend:** Supabase (Postgres, auth, RLS, migrations)
 - **Payments:** Paystack (inline, verify endpoint, webhook)
-- **Realtime calls:** Zego UIKit Prebuilt
+- **Realtime calls:** Stream.io Video SDK
 - **UI:** Tailwind CSS 4, Radix UI primitives, shadcn‑style components
 
 ---
@@ -106,8 +106,8 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
-NEXT_PUBLIC_ZEGOCLOUD_APP_ID=your_zegocloud_app_id
-NEXT_PUBLIC_ZEGOCLOUD_SERVER_SECRET=your_zegocloud_server_secret
+NEXT_PUBLIC_STREAM_API_KEY=your_stream_api_key
+STREAM_SECRET_KEY=your_stream_secret_key
 ```
 
 > Use your own credentials for Supabase, Paystack, and Cloudinary. Do not commit this file.

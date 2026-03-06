@@ -60,9 +60,9 @@ Create a `.env.local` file in the `frontend/` directory with the following varia
 # API Configuration
 NEXT_PUBLIC_API_URL=http://localhost:8000/api
 
-# Zego Cloud Configuration (for video calls)
-NEXT_PUBLIC_ZEGO_APP_ID=your-zego-app-id
-NEXT_PUBLIC_ZEGO_SERVER_SECRET=your-zego-server-secret
+# Stream.io Configuration (for video calls)
+NEXT_PUBLIC_STREAM_API_KEY=your-stream-api-key
+STREAM_SECRET_KEY=your-stream-secret-key
 ```
 
 ## Setup Instructions
@@ -150,12 +150,12 @@ cd doctor-consultation-app
 3. Generate API keys (use Test keys for development)
 4. Copy the Key ID and Key Secret to your backend `.env` file
 
-### Zego Cloud Setup (for Video Calls)
+### Stream.io Setup (for Video Calls)
 
-1. Sign up at [Zego Cloud](https://www.zegocloud.com/)
-2. Create a new project
-3. Get your App ID and Server Secret from the dashboard
-4. Add them to your frontend `.env.local` file
+1. Sign up at [Stream](https://getstream.io/video/)
+2. Create a new app and enable Video
+3. Get your API Key and Secret from the dashboard
+4. Add them to your `.env.local` file
 
 ## Available Scripts
 
@@ -238,4 +238,3 @@ For issues or questions:
 ---
 
 **Note**: Remember to never commit `.env` files to version control. Add them to `.gitignore` if not already present.
-

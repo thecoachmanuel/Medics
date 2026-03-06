@@ -64,7 +64,8 @@ const page = () => {
   const currentUserData = {
     id:user.id,
     name:user.name,
-    role:user.type as 'doctor' | 'patient' 
+    role:user.type as 'doctor' | 'patient',
+    image: user.profileImage,
   }
 
   return (
