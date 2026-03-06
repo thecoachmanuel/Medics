@@ -736,6 +736,13 @@ function TwoUpStackedLayout({
   // If there's no secondary participant (only one person in call),
   // show the primary participant in full screen.
   if (!secondary) {
+    if (!primary) {
+      return (
+        <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+          Waiting for participant...
+        </div>
+      );
+    }
     return (
       <div className="h-full w-full overflow-hidden">
         <ParticipantView participant={primary} />
