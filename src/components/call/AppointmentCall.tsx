@@ -288,7 +288,7 @@ function MyCallUI({
   type StackedOrientation = "vertical" | "horizontal";
   type StackedOrder = "remote-first" | "self-first";
 
-  const [layout, setLayout] = useState<LayoutKey>("stacked");
+  const [layout, setLayout] = useState<LayoutKey>("speaker");
   const [stackedOrientation, setStackedOrientation] = useState<"vertical" | "horizontal">("vertical");
   const [stackedOrder, setStackedOrder] = useState<"remote-first" | "self-first">("remote-first");
   const [stackedSplit, setStackedSplit] = useState(55);
@@ -299,21 +299,24 @@ function MyCallUI({
   const [ratingComment, setRatingComment] = useState<string>("");
   const [ratingSaving, setRatingSaving] = useState(false);
   const [navigateAfterRating, setNavigateAfterRating] = useState(false);
-  const [unreadChats, setUnreadChats] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    // Default layout logic based on screen size if no preference is saved
-    const key = "medics_call_layout_prefs_v1";
-    try {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) {
-        // No preference saved, set defaults based on screen width
-        const isMobile = window.innerWidth < 768;
-        setLayout("stacked");
-        setStackedOrientation(isMobile ? "vertical" : "horizontal");
-      }
-    } catch {}
-  }, []);
+    if (chatOpen) {
+      setUnreadCount(0);
+    }
+  }, [chatOpen]);
+
+  useEffect(() => {
+    const unsubscribe = call.on("custom", (event: StreamVideoEvent) => {
+      const custom = (event as unknown as CustomVideoEvent).custom as unknown;
+      if (!isChatCustomPayload(custom)) return;
+      if (chatOpen) return;
+      if (custom.senderId === currentUser.id) return;
+      setUnreadCount((c) => c + 1);
+    });
+    return () => unsubscribe();
+  }, [call, chatOpen, currentUser.id]);
 
   useEffect(() => {
     const key = "medics_call_layout_prefs_v1";
@@ -486,6 +489,9 @@ function MyCallUI({
 
   return (
     <div className="flex h-screen w-full flex-col bg-slate-950 text-white">
+      <style>{`
+        .str-video__notification { display: none !important; }
+      `}</style>
       <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 p-4">
         <div>
           <h1 className="text-lg font-semibold">
@@ -547,9 +553,14 @@ function MyCallUI({
           </DropdownMenu>
           <button
             onClick={() => setChatOpen(!chatOpen)}
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
+            className="relative rounded bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
           >
             {chatOpen ? "Close chat" : "Chat"}
+            {!chatOpen && unreadCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] text-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
           <button
             onClick={() => void requestLeave()}
@@ -578,22 +589,20 @@ function MyCallUI({
           </div>
         </div>
 
-        <div className="hidden border-l border-slate-800 bg-slate-900 md:block">
-          {chatOpen ? (
-            <div className="h-full w-96">
-              <CallChatPanel call={call} currentUser={currentUser} />
-            </div>
-          ) : null}
-        </div>
+        {chatOpen && (
+          <div className="hidden w-96 border-l border-slate-800 bg-slate-900 md:block">
+            <CallChatPanel call={call} currentUser={currentUser} />
+          </div>
+        )}
       </div>
 
-      {chatOpen ? (
-        <div className="fixed inset-0 z-50 bg-black/60 md:hidden" onClick={() => setChatOpen(false)}>
+      {chatOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 md:hidden" onClick={() => setChatOpen(false)}>
           <div
-            className="absolute bottom-0 left-0 right-0 h-[85vh] rounded-t-2xl border-t border-slate-800 bg-slate-900 flex flex-col"
+            className="flex h-[80vh] w-full flex-col rounded-t-2xl border-t border-slate-800 bg-slate-900 pb-8"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-800 p-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-800 p-4">
               <p className="text-sm font-medium">Chat</p>
               <button
                 onClick={() => setChatOpen(false)}
@@ -602,10 +611,12 @@ function MyCallUI({
                 Close
               </button>
             </div>
-            <CallChatPanel call={call} currentUser={currentUser} />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <CallChatPanel call={call} currentUser={currentUser} />
+            </div>
           </div>
         </div>
-      ) : null}
+      )}
 
       <div className="border-t border-slate-800 bg-slate-900 p-4">
         <CallControls onLeave={() => void requestLeave()} />
