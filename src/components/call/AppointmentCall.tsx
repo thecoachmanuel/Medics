@@ -135,10 +135,10 @@ function LobbyUI({
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-950 p-4 text-white">
-      <div className="w-full max-w-lg space-y-6 rounded-2xl bg-slate-900 p-8 shadow-xl border border-slate-800">
+      <div className="w-full max-w-lg space-y-6 rounded-2xl bg-slate-900 p-6 sm:p-8 shadow-xl border border-slate-800">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold">Ready to join?</h2>
-          <p className="text-slate-400">
+          <h2 className="text-xl sm:text-2xl font-bold">Ready to join?</h2>
+          <p className="text-sm sm:text-base text-slate-400">
              {appointment.consultationType} with {currentUser.role === 'doctor' ? appointment.patientId?.name : appointment.doctorId?.name}
           </p>
         </div>
@@ -588,20 +588,22 @@ function MyCallUI({
       <style>{`
         .str-video__notification { display: none !important; }
       `}</style>
-      <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 p-4">
+      <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 p-2 sm:p-4">
         <div>
-          <h1 className="text-lg font-semibold">
+          <h1 className="text-base sm:text-lg font-semibold">
             {appointment.consultationType}
           </h1>
-          <p className="text-sm text-slate-400">{otherPartyLabel}</p>
+          <p className="text-xs sm:text-sm text-slate-400">{otherPartyLabel}</p>
         </div>
         <div className="flex items-center gap-2">
-          <CallStatsButton />
+          <div className="hidden sm:block">
+            <CallStatsButton />
+          </div>
           
           <button
             onClick={() => setParticipantsOpen(!participantsOpen)}
             className={cn(
-                "inline-flex items-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors",
+                "inline-flex items-center gap-2 rounded px-2 sm:px-4 py-2 text-sm font-medium transition-colors",
                 participantsOpen ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-800 hover:bg-slate-700"
             )}
           >
@@ -611,7 +613,7 @@ function MyCallUI({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-2 rounded bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors">
+              <button className="inline-flex items-center gap-2 rounded bg-slate-800 px-2 sm:px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors">
                 <LayoutGrid className="h-4 w-4" />
                 <span className="hidden sm:inline">Layout</span>
               </button>
@@ -662,7 +664,7 @@ function MyCallUI({
           <button
             onClick={() => setChatOpen(!chatOpen)}
             className={cn(
-                "relative inline-flex items-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors",
+                "relative inline-flex items-center gap-2 rounded px-2 sm:px-4 py-2 text-sm font-medium transition-colors",
                 chatOpen ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-800 hover:bg-slate-700"
             )}
           >
@@ -787,20 +789,20 @@ function MyCallUI({
         </div>
       )}
 
-      <div className="border-t border-slate-800 bg-slate-900 p-4">
-        <div className="flex items-center justify-center gap-4">
+      <div className="border-t border-slate-800 bg-slate-900 p-2 sm:p-4">
+        <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
             <button
                 onClick={async () => {
                     await microphone.toggle();
                     toast.info(isMicEnabled ? "Microphone Off" : "Microphone On", { duration: 1000 });
                 }}
                 className={cn(
-                    "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                    "flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-colors",
                     isMicEnabled ? "bg-slate-800 hover:bg-slate-700" : "bg-red-600 hover:bg-red-700"
                 )}
                 title="Toggle Microphone"
             >
-                {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+                {isMicEnabled ? <Mic className="h-4 w-4 sm:h-5 sm:w-5" /> : <MicOff className="h-4 w-4 sm:h-5 sm:w-5" />}
             </button>
 
             <button
@@ -809,16 +811,18 @@ function MyCallUI({
                     toast.info(isCamEnabled ? "Camera Off" : "Camera On", { duration: 1000 });
                 }}
                 className={cn(
-                    "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                    "flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-colors",
                     isCamEnabled ? "bg-slate-800 hover:bg-slate-700" : "bg-red-600 hover:bg-red-700"
                 )}
                 title="Toggle Camera"
             >
-                {isCamEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+                {isCamEnabled ? <Video className="h-4 w-4 sm:h-5 sm:w-5" /> : <VideoOff className="h-4 w-4 sm:h-5 sm:w-5" />}
             </button>
             
             <ReactionsButton />
-            <ScreenShareButton />
+            <div className="hidden sm:block">
+              <ScreenShareButton />
+            </div>
             <RecordCallButton />
             <CancelCallButton onLeave={requestLeave} />
         </div>
