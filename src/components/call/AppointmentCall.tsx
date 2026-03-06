@@ -18,6 +18,9 @@ import {
   ScreenShareButton,
   ToggleAudioPublishingButton,
   ToggleVideoPublishingButton,
+  CancelCallButton,
+  RecordCallButton,
+  ReactionsButton,
 } from "@stream-io/video-react-sdk";
 import type { CustomVideoEvent, StreamVideoEvent, StreamVideoParticipant } from "@stream-io/video-react-sdk";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
@@ -681,8 +684,8 @@ function MyCallUI({
 
         {/* Persistent Chat (Desktop) */}
         <div className={cn(
-            "w-96 border-l border-slate-800 bg-slate-900 hidden md:block transition-all",
-            chatOpen ? "block" : "hidden"
+            "w-96 border-l border-slate-800 bg-slate-900 transition-all hidden",
+            chatOpen && "md:block"
         )}>
             <CallChatPanel call={call} currentUser={currentUser} />
         </div>
@@ -775,9 +778,12 @@ function MyCallUI({
 
       <div className="border-t border-slate-800 bg-slate-900 p-4">
         <div className="flex items-center justify-center gap-4">
+            <RecordCallButton />
+            <ReactionsButton />
             <ToggleAudioPublishingButton />
             <ToggleVideoPublishingButton />
             <ScreenShareButton />
+            <CancelCallButton onLeave={requestLeave} />
         </div>
       </div>
 
@@ -1008,14 +1014,18 @@ function CallChatPanel({
         {messages.length ? (
           <div className="space-y-3">
             {messages.map((m) => (
-              <div key={m.id} className={m.senderId === currentUser.id ? "text-right" : "text-left"}>
-                <p className="text-xs text-slate-400">{m.senderName}</p>
+              <div key={m.id} className={cn("flex flex-col gap-1", m.senderId === currentUser.id ? "items-end" : "items-start")}>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-medium">{m.senderName}</span>
+                    <span className="text-[10px] text-slate-500">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
                 <div
-                  className={
+                  className={cn(
+                    "max-w-[85%] rounded-2xl px-3 py-2 text-sm break-words",
                     m.senderId === currentUser.id
-                      ? "ml-auto inline-block max-w-[85%] rounded-2xl bg-emerald-600 px-3 py-2 text-sm"
-                      : "mr-auto inline-block max-w-[85%] rounded-2xl bg-slate-800 px-3 py-2 text-sm"
-                  }
+                      ? "bg-emerald-600 text-white rounded-br-none"
+                      : "bg-slate-800 text-slate-200 rounded-bl-none"
+                  )}
                 >
                   {m.text}
                 </div>

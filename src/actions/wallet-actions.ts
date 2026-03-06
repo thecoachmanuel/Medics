@@ -189,7 +189,7 @@ export async function payWithWallet(appointmentId: string, userId: string, amoun
           {
             user_id: null,
             role: 'admin',
-            title: 'New Wallet Payment',
+            title: 'New Booking Paid',
             message: `${patientName} paid ${formattedAmount} via Wallet for ${doctorName} on ${whenText}.`,
             type: 'appointment_payment'
           }
