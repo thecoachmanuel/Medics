@@ -6,6 +6,8 @@ import {
   CallControls,
   CallStatsButton,
   CallingState,
+  PaginatedGridLayout,
+  ParticipantView,
   SpeakerLayout,
   StreamCall,
   StreamTheme,
@@ -13,9 +15,30 @@ import {
   StreamVideoClient,
   useCallStateHooks,
 } from "@stream-io/video-react-sdk";
-import type { CustomVideoEvent, StreamVideoEvent } from "@stream-io/video-react-sdk";
+import type { CustomVideoEvent, StreamVideoEvent, StreamVideoParticipant } from "@stream-io/video-react-sdk";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
-import { Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useAppointmentStore } from "@/store/appointmentStore";
+import { LayoutGrid, Loader2, Star } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -173,12 +196,8 @@ export default function AppointmentCall({
   }, [appointment._id, call, joining, joinConsultation]);
 
   const handleLeave = useCallback(async () => {
-    try {
-      await call?.leave();
-    } catch {
-    }
     onCallEnd();
-  }, [call, onCallEnd]);
+  }, [onCallEnd]);
 
   if (error) {
     return (
@@ -260,8 +279,66 @@ function MyCallUI({
   setChatOpen: (open: boolean) => void;
   call: Call;
 }) {
-  const { useCallCallingState } = useCallStateHooks();
+  const { useCallCallingState, useParticipants, useLocalParticipant } = useCallStateHooks();
   const callingState = useCallCallingState();
+  const participants = useParticipants();
+  const localParticipant = useLocalParticipant();
+  const rateDoctor = useAppointmentStore((s) => s.rateDoctor);
+  type LayoutKey = "speaker" | "grid" | "stacked";
+  type StackedOrientation = "vertical" | "horizontal";
+  type StackedOrder = "remote-first" | "self-first";
+
+  const [layout, setLayout] = useState<LayoutKey>("speaker");
+  const [stackedOrientation, setStackedOrientation] = useState<"vertical" | "horizontal">("vertical");
+  const [stackedOrder, setStackedOrder] = useState<"remote-first" | "self-first">("remote-first");
+  const [stackedSplit, setStackedSplit] = useState(55);
+  const [everJoined, setEverJoined] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [ratingOpen, setRatingOpen] = useState(false);
+  const [ratingValue, setRatingValue] = useState<number>(5);
+  const [ratingComment, setRatingComment] = useState<string>("");
+  const [ratingSaving, setRatingSaving] = useState(false);
+  const [navigateAfterRating, setNavigateAfterRating] = useState(false);
+
+  useEffect(() => {
+    const key = "medics_call_layout_prefs_v1";
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return;
+      const parsed: unknown = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+      const rec = parsed as Record<string, unknown>;
+      if (rec.layout === "speaker" || rec.layout === "grid" || rec.layout === "stacked") {
+        setLayout(rec.layout);
+      }
+      if (rec.stackedOrientation === "vertical" || rec.stackedOrientation === "horizontal") {
+        setStackedOrientation(rec.stackedOrientation);
+      }
+      if (rec.stackedOrder === "remote-first" || rec.stackedOrder === "self-first") {
+        setStackedOrder(rec.stackedOrder);
+      }
+      if (typeof rec.stackedSplit === "number" && Number.isFinite(rec.stackedSplit)) {
+        setStackedSplit(Math.max(30, Math.min(70, Math.round(rec.stackedSplit))));
+      }
+    } catch {
+    }
+  }, []);
+
+  useEffect(() => {
+    const key = "medics_call_layout_prefs_v1";
+    try {
+      window.localStorage.setItem(
+        key,
+        JSON.stringify({
+          layout,
+          stackedOrientation,
+          stackedOrder,
+          stackedSplit,
+        })
+      );
+    } catch {
+    }
+  }, [layout, stackedOrientation, stackedOrder, stackedSplit]);
   const otherPartyLabel = useMemo(() => {
     return currentUser.role === "doctor"
       ? `Patient: ${appointment.patientId?.name || "Unknown"}`
@@ -269,6 +346,75 @@ function MyCallUI({
   }, [appointment.doctorId?.name, appointment.patientId?.name, currentUser.role]);
 
   const joined = callingState === CallingState.JOINED;
+
+  useEffect(() => {
+    if (joined) setEverJoined(true);
+  }, [joined]);
+
+  const maybeOpenRating = useCallback(async (): Promise<boolean> => {
+    if (currentUser.role !== "patient") return false;
+    try {
+      const { data: apt } = await supabase
+        .from("appointments")
+        .select("status")
+        .eq("id", appointment._id)
+        .maybeSingle();
+      const status = (apt as { status?: string | null } | null)?.status ?? null;
+      if (status !== "Completed") return false;
+      const { data: existing } = await supabase
+        .from("doctor_ratings")
+        .select("rating,comment")
+        .eq("appointment_id", appointment._id)
+        .maybeSingle();
+      const existingRating = (existing as { rating?: number | null; comment?: string | null } | null)?.rating ?? null;
+      const existingComment = (existing as { rating?: number | null; comment?: string | null } | null)?.comment ?? null;
+      if (typeof existingRating === "number" && Number.isFinite(existingRating)) return false;
+      setRatingValue(5);
+      setRatingComment(typeof existingComment === "string" ? existingComment : "");
+      setRatingOpen(true);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [appointment._id, currentUser.role]);
+
+  const requestLeave = useCallback(async () => {
+    if (leaving) return;
+    setLeaving(true);
+    try {
+      await call.leave();
+    } catch {
+    }
+
+    if (currentUser.role === "patient") {
+      const opened = await maybeOpenRating();
+      if (opened) {
+        setNavigateAfterRating(true);
+        setLeaving(false);
+        return;
+      }
+    }
+
+    onCallEnd();
+  }, [call, currentUser.role, leaving, maybeOpenRating, onCallEnd]);
+
+  useEffect(() => {
+    if (!everJoined) return;
+    if (joined) return;
+    if (leaving) return;
+    if (currentUser.role !== "patient") {
+      onCallEnd();
+      return;
+    }
+    void (async () => {
+      const opened = await maybeOpenRating();
+      if (opened) {
+        setNavigateAfterRating(true);
+        return;
+      }
+      onCallEnd();
+    })();
+  }, [currentUser.role, everJoined, joined, leaving, maybeOpenRating, onCallEnd]);
 
   if (!joined) {
     return (
@@ -334,6 +480,56 @@ function MyCallUI({
         </div>
         <div className="flex items-center gap-2">
           <CallStatsButton />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-2 rounded bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors">
+                <LayoutGrid className="h-4 w-4" />
+                Layout
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Video layout</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={layout} onValueChange={(v) => setLayout(v as LayoutKey)}>
+                <DropdownMenuRadioItem value="speaker">Speaker</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="grid">Grid</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="stacked">Stacked</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+
+              {layout === "stacked" ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Stack options</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={stackedOrientation}
+                    onValueChange={(v) => setStackedOrientation(v as StackedOrientation)}
+                  >
+                    <DropdownMenuRadioItem value="vertical">Up & down</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="horizontal">Side by side</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+
+                  <DropdownMenuRadioGroup value={stackedOrder} onValueChange={(v) => setStackedOrder(v as StackedOrder)}>
+                    <DropdownMenuRadioItem value="remote-first">Doctor/Patient first</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="self-first">You first</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+
+                  <div className="px-2 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm">Split</p>
+                      <p className="text-xs text-muted-foreground">{stackedSplit}%</p>
+                    </div>
+                    <input
+                      type="range"
+                      min={30}
+                      max={70}
+                      value={stackedSplit}
+                      onChange={(e) => setStackedSplit(Math.max(30, Math.min(70, Number(e.target.value))))}
+                      className="mt-2 w-full"
+                    />
+                  </div>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             onClick={() => setChatOpen(!chatOpen)}
             className="rounded bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
@@ -341,17 +537,30 @@ function MyCallUI({
             {chatOpen ? "Close chat" : "Chat"}
           </button>
           <button
-            onClick={onCallEnd}
-            className="rounded bg-red-600 px-4 py-2 text-sm font-medium hover:bg-red-700 transition-colors"
+            onClick={() => void requestLeave()}
+            className="rounded bg-red-600 px-4 py-2 text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-60"
+            disabled={leaving || ratingSaving}
           >
-            Leave Call
+            {leaving ? "Leaving..." : "Leave Call"}
           </button>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-hidden p-3 sm:p-4">
-          <SpeakerLayout participantsBarPosition="bottom" />
+        <div className="flex-1 min-h-0 overflow-hidden p-3 sm:p-4">
+          <div className="h-full min-h-0 overflow-hidden rounded-xl bg-slate-900 ring-1 ring-slate-800">
+            {layout === "speaker" ? <SpeakerLayout participantsBarPosition="bottom" /> : null}
+            {layout === "grid" ? <PaginatedGridLayout groupSize={6} /> : null}
+            {layout === "stacked" ? (
+              <TwoUpStackedLayout
+                participants={participants}
+                localParticipantSessionId={localParticipant?.sessionId}
+                orientation={stackedOrientation}
+                order={stackedOrder}
+                split={stackedSplit}
+              />
+            ) : null}
+          </div>
         </div>
 
         <div className="hidden w-96 border-l border-slate-800 bg-slate-900 md:block">
@@ -386,8 +595,145 @@ function MyCallUI({
       ) : null}
 
       <div className="border-t border-slate-800 bg-slate-900 p-4">
-        <CallControls onLeave={onCallEnd} />
+        <CallControls onLeave={() => void requestLeave()} />
       </div>
+
+      <Dialog
+        open={ratingOpen}
+        onOpenChange={(open) => {
+          setRatingOpen(open);
+          if (!open && navigateAfterRating) onCallEnd();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rate your doctor</DialogTitle>
+            <DialogDescription>
+              Your feedback helps improve care quality. This takes a few seconds.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((v) => {
+                const filled = v <= ratingValue;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    disabled={ratingSaving}
+                    onClick={() => setRatingValue(v)}
+                    className="rounded p-1 focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:opacity-60"
+                  >
+                    <Star className={filled ? "h-6 w-6 fill-yellow-400 text-yellow-400" : "h-6 w-6 text-gray-300"} />
+                  </button>
+                );
+              })}
+              <span className="ml-2 text-sm text-muted-foreground">{ratingValue} / 5</span>
+            </div>
+
+            <Textarea
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              placeholder="Share anything that stood out (optional)"
+              rows={3}
+              disabled={ratingSaving}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRatingOpen(false);
+                if (navigateAfterRating) onCallEnd();
+              }}
+              disabled={ratingSaving}
+            >
+              Not now
+            </Button>
+            <Button
+              onClick={async () => {
+                if (ratingSaving) return;
+                setRatingSaving(true);
+                try {
+                  const trimmed = ratingComment.trim();
+                  await rateDoctor(appointment._id, ratingValue, trimmed.length ? trimmed : undefined);
+                } finally {
+                  setRatingSaving(false);
+                  setRatingOpen(false);
+                  if (navigateAfterRating) onCallEnd();
+                }
+              }}
+              disabled={ratingSaving}
+            >
+              {ratingSaving ? "Saving..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function TwoUpStackedLayout({
+  participants,
+  localParticipantSessionId,
+  orientation,
+  order,
+  split,
+}: {
+  participants: StreamVideoParticipant[];
+  localParticipantSessionId?: string;
+  orientation: "vertical" | "horizontal";
+  order: "remote-first" | "self-first";
+  split: number;
+}) {
+  const local = localParticipantSessionId
+    ? participants.find((p) => p.sessionId === localParticipantSessionId)
+    : participants[0];
+  const remote = localParticipantSessionId
+    ? participants.find((p) => p.sessionId !== localParticipantSessionId)
+    : participants.find((p) => p.sessionId !== local?.sessionId);
+
+  const primary = order === "remote-first" ? remote ?? local : local;
+  const secondary = order === "remote-first" ? (remote ? local : null) : remote ?? null;
+
+  const dir = orientation === "vertical" ? "flex-col" : "flex-row";
+  const firstPct = Math.max(30, Math.min(70, Math.round(split)));
+  const secondPct = 100 - firstPct;
+
+  return (
+    <div className={`flex h-full min-h-0 w-full ${dir}`}>
+      {primary ? (
+        <div
+          className={
+            orientation === "vertical"
+              ? "min-h-0 min-w-0 flex-none border-b border-slate-800/70"
+              : "min-h-0 min-w-0 flex-none border-r border-slate-800/70"
+          }
+          style={orientation === "vertical" ? { height: `${firstPct}%` } : { width: `${firstPct}%` }}
+        >
+          <div className="h-full w-full overflow-hidden">
+            <ParticipantView participant={primary} />
+          </div>
+        </div>
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+          Waiting for participant...
+        </div>
+      )}
+
+      {secondary ? (
+        <div
+          className="min-h-0 min-w-0 flex-auto"
+          style={orientation === "vertical" ? { height: `${secondPct}%` } : { width: `${secondPct}%` }}
+        >
+          <div className="h-full w-full overflow-hidden">
+            <ParticipantView participant={secondary} />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
