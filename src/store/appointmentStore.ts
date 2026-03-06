@@ -225,13 +225,10 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
       appointments.sort((a, b) => {
         const aTime = a.slotStartIso ? new Date(a.slotStartIso).getTime() : 0;
         const bTime = b.slotStartIso ? new Date(b.slotStartIso).getTime() : 0;
-        if (tab === "upcoming") {
-          // Ascending for upcoming (closest first)
-          if (aTime === 0) return 1;
-          if (bTime === 0) return -1;
-          return aTime - bTime;
-        }
-        // Descending for past (most recent first)
+        // Always Descending (most recent/future first) as per user request
+        // "if an appointment is appening at 2pm today, it shows at the top, followed by 1pm then 12pm"
+        if (aTime === 0) return 1;
+        if (bTime === 0) return -1;
         return bTime - aTime;
       });
 

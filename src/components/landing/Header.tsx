@@ -1,5 +1,5 @@
 "use client";
-import { Bell, Calendar, CreditCard, LogOut, Settings, Stethoscope, User } from "lucide-react";
+import { Bell, Calendar, CreditCard, DollarSign, LogOut, Settings, Stethoscope, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -170,6 +170,12 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
           icon: CreditCard,
           href: "/doctor/payments",
           active: pathname?.includes("/doctor/payments") || false,
+        },
+        {
+          lable: "Payouts",
+          icon: DollarSign,
+          href: "/doctor/payouts",
+          active: pathname?.includes("/doctor/payouts") || false,
         },
       ];
     }
