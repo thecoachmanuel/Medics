@@ -348,6 +348,21 @@ const DoctorDashboardContent = () => {
                       </span>
                     </div>
                   </div>
+
+                  <div className="md:hidden grid grid-cols-2 gap-3 mt-4 w-full">
+                     <Link href="/doctor/appointments" className="w-full">
+                        <Button variant="outline" className="w-full h-auto py-2 text-xs sm:text-sm">
+                           <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
+                           Upcoming Meetings
+                        </Button>
+                     </Link>
+                     <Link href="/doctor/payouts" className="w-full">
+                        <Button className="w-full h-auto py-2 text-xs sm:text-sm bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800">
+                           <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
+                           Request Payout
+                        </Button>
+                     </Link>
+                  </div>
                 </div>
               </div>
 
