@@ -380,10 +380,12 @@ function MyCallUI({
   setChatOpen: (open: boolean) => void;
   call: Call;
 }) {
-  const { useCallCallingState, useParticipants, useLocalParticipant } = useCallStateHooks();
+  const { useCallCallingState, useParticipants, useLocalParticipant, useMicrophoneState, useCameraState } = useCallStateHooks();
   const callingState = useCallCallingState();
   const participants = useParticipants();
   const localParticipant = useLocalParticipant();
+  const { isEnabled: isMicEnabled, microphone } = useMicrophoneState();
+  const { isEnabled: isCamEnabled, camera } = useCameraState();
   const rateDoctor = useAppointmentStore((s) => s.rateDoctor);
   type LayoutKey = "speaker" | "grid" | "stacked";
   type StackedOrientation = "vertical" | "horizontal";
@@ -402,6 +404,7 @@ function MyCallUI({
   const [navigateAfterRating, setNavigateAfterRating] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     if (!call) return;
@@ -437,9 +440,16 @@ function MyCallUI({
     const unsubscribe = call.on("custom", (event: StreamVideoEvent) => {
       const custom = (event as unknown as CustomVideoEvent).custom as unknown;
       if (!isChatCustomPayload(custom)) return;
-      if (chatOpen) return;
-      if (custom.senderId === currentUser.id) return;
-      setUnreadCount((c) => c + 1);
+      
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === custom.id)) return prev;
+        const next = [...prev, { ...custom }];
+        return next.length > 200 ? next.slice(next.length - 200) : next;
+      });
+
+      if (!chatOpen && custom.senderId !== currentUser.id) {
+        setUnreadCount((c) => c + 1);
+      }
     });
     return () => unsubscribe();
   }, [call, chatOpen, currentUser.id]);
@@ -498,23 +508,16 @@ function MyCallUI({
   const maybeOpenRating = useCallback(async (): Promise<boolean> => {
     if (currentUser.role !== "patient") return false;
     try {
-      const { data: apt } = await supabase
-        .from("appointments")
-        .select("status")
-        .eq("id", appointment._id)
-        .maybeSingle();
-      const status = (apt as { status?: string | null } | null)?.status ?? null;
-      if (status !== "Completed") return false;
       const { data: existing } = await supabase
         .from("doctor_ratings")
-        .select("rating,comment")
+        .select("rating")
         .eq("appointment_id", appointment._id)
         .maybeSingle();
-      const existingRating = (existing as { rating?: number | null; comment?: string | null } | null)?.rating ?? null;
-      const existingComment = (existing as { rating?: number | null; comment?: string | null } | null)?.comment ?? null;
-      if (typeof existingRating === "number" && Number.isFinite(existingRating)) return false;
+        
+      if (existing) return false;
+
       setRatingValue(5);
-      setRatingComment(typeof existingComment === "string" ? existingComment : "");
+      setRatingComment("");
       setRatingOpen(true);
       return true;
     } catch {
@@ -525,10 +528,18 @@ function MyCallUI({
   const requestLeave = useCallback(async () => {
     if (leaving) return;
     setLeaving(true);
+    
+    try {
+        // Stop devices
+        if (isMicEnabled) await microphone.disable();
+        if (isCamEnabled) await camera.disable();
+    } catch (e) {
+        console.error("Failed to stop devices", e);
+    }
+
     try {
       await call.leave();
-    } catch {
-    }
+    } catch {}
 
     if (currentUser.role === "patient") {
       const opened = await maybeOpenRating();
@@ -540,7 +551,7 @@ function MyCallUI({
     }
 
     onCallEnd();
-  }, [call, currentUser.role, leaving, maybeOpenRating, onCallEnd]);
+  }, [call, currentUser.role, leaving, maybeOpenRating, onCallEnd, microphone, camera, isMicEnabled, isCamEnabled]);
 
   useEffect(() => {
     if (!everJoined) return;
@@ -687,7 +698,7 @@ function MyCallUI({
             "w-96 border-l border-slate-800 bg-slate-900 transition-all hidden",
             chatOpen && "md:block"
         )}>
-            <CallChatPanel call={call} currentUser={currentUser} />
+            <CallChatPanel call={call} currentUser={currentUser} messages={messages} setMessages={setMessages} />
         </div>
 
         {/* Participants Panel (Desktop) */}
@@ -732,7 +743,7 @@ function MyCallUI({
               </button>
             </div>
             <div className="flex-1 min-h-0 overflow-hidden">
-              <CallChatPanel call={call} currentUser={currentUser} />
+              <CallChatPanel call={call} currentUser={currentUser} messages={messages} setMessages={setMessages} />
             </div>
           </div>
         </div>
@@ -778,11 +789,37 @@ function MyCallUI({
 
       <div className="border-t border-slate-800 bg-slate-900 p-4">
         <div className="flex items-center justify-center gap-4">
-            <RecordCallButton />
+            <button
+                onClick={async () => {
+                    await microphone.toggle();
+                    toast.info(isMicEnabled ? "Microphone Off" : "Microphone On", { duration: 1000 });
+                }}
+                className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                    isMicEnabled ? "bg-slate-800 hover:bg-slate-700" : "bg-red-600 hover:bg-red-700"
+                )}
+                title="Toggle Microphone"
+            >
+                {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+            </button>
+
+            <button
+                onClick={async () => {
+                    await camera.toggle();
+                    toast.info(isCamEnabled ? "Camera Off" : "Camera On", { duration: 1000 });
+                }}
+                className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                    isCamEnabled ? "bg-slate-800 hover:bg-slate-700" : "bg-red-600 hover:bg-red-700"
+                )}
+                title="Toggle Camera"
+            >
+                {isCamEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+            </button>
+            
             <ReactionsButton />
-            <ToggleAudioPublishingButton />
-            <ToggleVideoPublishingButton />
             <ScreenShareButton />
+            <RecordCallButton />
             <CancelCallButton onLeave={requestLeave} />
         </div>
       </div>
@@ -945,29 +982,16 @@ function TwoUpStackedLayout({
 function CallChatPanel({
   call,
   currentUser,
+  messages,
+  setMessages,
 }: {
   call: Call;
   currentUser: AppointmentCallProps["currentUser"];
+  messages: ChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = call.on("custom", (event: StreamVideoEvent) => {
-      const custom = (event as unknown as CustomVideoEvent).custom as unknown;
-      if (!isChatCustomPayload(custom)) return;
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === custom.id)) return prev;
-        const next = [...prev, { ...custom }];
-        return next.length > 200 ? next.slice(next.length - 200) : next;
-      });
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [call]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -996,7 +1020,7 @@ function CallChatPanel({
       await call.sendCustomEvent(payload);
     } catch {
     }
-  }, [call, currentUser.id, currentUser.name, text]);
+  }, [call, currentUser.id, currentUser.name, setMessages, text]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
