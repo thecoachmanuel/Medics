@@ -223,11 +223,15 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
       } as Appointment});
 
       appointments.sort((a, b) => {
-        const aTime = new Date(a.slotStartIso).getTime();
-        const bTime = new Date(b.slotStartIso).getTime();
+        const aTime = a.slotStartIso ? new Date(a.slotStartIso).getTime() : 0;
+        const bTime = b.slotStartIso ? new Date(b.slotStartIso).getTime() : 0;
         if (tab === "upcoming") {
+          // Ascending for upcoming (closest first)
+          if (aTime === 0) return 1;
+          if (bTime === 0) return -1;
           return aTime - bTime;
         }
+        // Descending for past (most recent first)
         return bTime - aTime;
       });
 

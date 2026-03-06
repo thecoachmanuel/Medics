@@ -14,6 +14,10 @@ import {
   StreamVideo,
   StreamVideoClient,
   useCallStateHooks,
+  VideoPreview,
+  ScreenShareButton,
+  ToggleAudioPublishingButton,
+  ToggleVideoPublishingButton,
 } from "@stream-io/video-react-sdk";
 import type { CustomVideoEvent, StreamVideoEvent, StreamVideoParticipant } from "@stream-io/video-react-sdk";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
@@ -34,13 +38,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppointmentStore } from "@/store/appointmentStore";
-import { LayoutGrid, Loader2, Star } from "lucide-react";
+import { LayoutGrid, Loader2, Star, Users, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface AppointmentCallProps {
   appointment: Appointment;
@@ -91,6 +98,97 @@ const isChatCustomPayload = (value: unknown): value is ChatCustomPayload => {
     typeof value.senderName === "string" &&
     typeof value.text === "string" &&
     typeof value.createdAt === "number"
+  );
+}
+
+function LobbyUI({
+  call,
+  onJoin,
+  joining,
+  currentUser,
+  appointment,
+}: {
+  call: Call;
+  onJoin: () => void;
+  joining: boolean;
+  currentUser: AppointmentCallProps["currentUser"];
+  appointment: Appointment;
+}) {
+  const { useMicrophoneState, useCameraState } = useCallStateHooks();
+  const { isEnabled: isMicEnabled, microphone } = useMicrophoneState();
+  const { isEnabled: isCamEnabled, camera } = useCameraState();
+
+  useEffect(() => {
+    const initDevices = async () => {
+      try {
+        await camera.enable();
+        await microphone.enable();
+      } catch (err) {
+        console.warn("Failed to enable devices in lobby", err);
+      }
+    };
+    initDevices();
+  }, [camera, microphone]);
+
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-950 p-4 text-white">
+      <div className="w-full max-w-lg space-y-6 rounded-2xl bg-slate-900 p-8 shadow-xl border border-slate-800">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold">Ready to join?</h2>
+          <p className="text-slate-400">
+             {appointment.consultationType} with {currentUser.role === 'doctor' ? appointment.patientId?.name : appointment.doctorId?.name}
+          </p>
+        </div>
+
+        <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-slate-800 ring-1 ring-slate-700 flex items-center justify-center">
+             <div className="absolute inset-0">
+                <VideoPreview />
+             </div>
+             {!isCamEnabled && (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10">
+                   <div className="text-slate-500 font-medium flex flex-col items-center gap-2">
+                      <VideoOff className="h-8 w-8" />
+                      <span>Camera Off</span>
+                   </div>
+                </div>
+             )}
+        </div>
+
+        <div className="flex justify-center gap-4">
+          <Button
+            variant={isMicEnabled ? "secondary" : "destructive"}
+            size="icon"
+            className="h-12 w-12 rounded-full"
+            onClick={() => microphone.toggle()}
+          >
+            {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+          </Button>
+          <Button
+            variant={isCamEnabled ? "secondary" : "destructive"}
+            size="icon"
+            className="h-12 w-12 rounded-full"
+            onClick={() => camera.toggle()}
+          >
+            {isCamEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+          </Button>
+        </div>
+
+        <Button
+          className="w-full text-lg bg-emerald-600 hover:bg-emerald-700 h-12"
+          onClick={onJoin}
+          disabled={joining}
+        >
+          {joining ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Joining...
+            </>
+          ) : (
+            "Join Call"
+          )}
+        </Button>
+      </div>
+    </div>
   );
 };
 
@@ -187,12 +285,6 @@ export default function AppointmentCall({
     setJoining(true);
     try {
       await call.join({ create: true });
-      try {
-        await call.camera.enable();
-        await call.microphone.enable();
-      } catch (err) {
-        console.warn("Failed to enable devices:", err);
-      }
       await joinConsultation(appointment._id);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -306,6 +398,31 @@ function MyCallUI({
   const [ratingSaving, setRatingSaving] = useState(false);
   const [navigateAfterRating, setNavigateAfterRating] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [participantsOpen, setParticipantsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!call) return;
+    const handleParticipantJoined = (event: any) => {
+        const user = event.participant?.user;
+        if (user?.name) {
+            toast.info(`${user.name} joined the call`);
+        }
+    };
+    const handleParticipantLeft = (event: any) => {
+        const user = event.participant?.user;
+        if (user?.name) {
+             toast.info(`${user.name} left the call`);
+        }
+    };
+
+    const unsubJoined = call.on("participantJoined", handleParticipantJoined);
+    const unsubLeft = call.on("participantLeft", handleParticipantLeft);
+
+    return () => {
+        unsubJoined();
+        unsubLeft();
+    };
+  }, [call]);
 
   useEffect(() => {
     if (chatOpen) {
@@ -442,54 +559,13 @@ function MyCallUI({
 
   if (!joined) {
     return (
-      <div className="flex h-screen w-full flex-col bg-slate-950 text-white">
-        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 p-4">
-          <div>
-            <h1 className="text-lg font-semibold">{appointment.consultationType}</h1>
-            <p className="text-sm text-slate-400">{otherPartyLabel}</p>
-          </div>
-          <button
-            onClick={onCallEnd}
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
-          >
-            Back
-          </button>
-        </div>
-
-        <div className="flex flex-1 items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-sm font-semibold">
-                {currentUser.role === "doctor" ? "DR" : "PT"}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm text-slate-400">Signed in as</p>
-                <p className="truncate text-base font-medium">{currentUser.name}</p>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <button
-                onClick={onJoin}
-                disabled={joining}
-                className="flex w-full items-center justify-center gap-2 rounded bg-emerald-600 px-4 py-2 font-medium hover:bg-emerald-700 disabled:opacity-60 transition-colors"
-              >
-                {joining ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Joining...
-                  </>
-                ) : (
-                  "Join consultation"
-                )}
-              </button>
-              <p className="mt-3 text-xs text-slate-400">
-                You can configure microphone and camera from the in-call controls.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <LobbyUI
+        call={call}
+        onJoin={onJoin}
+        joining={joining}
+        currentUser={currentUser}
+        appointment={appointment}
+      />
     );
   }
 
@@ -507,11 +583,23 @@ function MyCallUI({
         </div>
         <div className="flex items-center gap-2">
           <CallStatsButton />
+          
+          <button
+            onClick={() => setParticipantsOpen(!participantsOpen)}
+            className={cn(
+                "inline-flex items-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors",
+                participantsOpen ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-800 hover:bg-slate-700"
+            )}
+          >
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">People</span>
+          </button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="inline-flex items-center gap-2 rounded bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors">
                 <LayoutGrid className="h-4 w-4" />
-                Layout
+                <span className="hidden sm:inline">Layout</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
@@ -526,14 +614,13 @@ function MyCallUI({
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel>Stack options</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup
-                    value={stackedOrientation}
-                    onValueChange={(v) => setStackedOrientation(v as StackedOrientation)}
-                  >
-                    <DropdownMenuRadioItem value="vertical">Up & down</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="horizontal">Side by side</DropdownMenuRadioItem>
+                  <DropdownMenuRadioGroup value={stackedOrientation} onValueChange={(v) => setStackedOrientation(v as StackedOrientation)}>
+                    <DropdownMenuRadioItem value="vertical">Vertical</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="horizontal">Horizontal</DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
 
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Stack order</DropdownMenuLabel>
                   <DropdownMenuRadioGroup value={stackedOrder} onValueChange={(v) => setStackedOrder(v as StackedOrder)}>
                     <DropdownMenuRadioItem value="remote-first">Doctor/Patient first</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value="self-first">You first</DropdownMenuRadioItem>
@@ -557,9 +644,13 @@ function MyCallUI({
               ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
+
           <button
             onClick={() => setChatOpen(!chatOpen)}
-            className="relative rounded bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
+            className={cn(
+                "relative inline-flex items-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors",
+                chatOpen ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-800 hover:bg-slate-700"
+            )}
           >
             {chatOpen ? "Close chat" : "Chat"}
             {!chatOpen && unreadCount > 0 && (
@@ -567,13 +658,6 @@ function MyCallUI({
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
-          </button>
-          <button
-            onClick={() => void requestLeave()}
-            className="rounded bg-red-600 px-4 py-2 text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-60"
-            disabled={leaving || ratingSaving}
-          >
-            {leaving ? "Leaving..." : "Leave Call"}
           </button>
         </div>
       </div>
@@ -595,13 +679,40 @@ function MyCallUI({
           </div>
         </div>
 
-        {chatOpen && (
-          <div className="hidden w-96 border-l border-slate-800 bg-slate-900 md:block">
+        {/* Persistent Chat (Desktop) */}
+        <div className={cn(
+            "w-96 border-l border-slate-800 bg-slate-900 hidden md:block transition-all",
+            chatOpen ? "block" : "hidden"
+        )}>
             <CallChatPanel call={call} currentUser={currentUser} />
-          </div>
+        </div>
+
+        {/* Participants Panel (Desktop) */}
+        {participantsOpen && (
+             <div className="w-80 border-l border-slate-800 bg-slate-900 p-4 hidden md:block overflow-y-auto">
+                 <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-slate-400">Participants ({participants.length})</h3>
+                 <div className="space-y-4">
+                     {participants.map((p) => (
+                         <div key={p.sessionId} className="flex items-center gap-3">
+                             <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-medium">
+                                 {p.name?.[0] || "?"}
+                             </div>
+                             <div className="min-w-0 flex-1">
+                                 <p className="truncate text-sm font-medium">{p.name || "Unknown"}</p>
+                                 <p className="text-xs text-slate-400">{p.isLocalParticipant ? "(You)" : (p.userId === appointment.patientId?._id ? "Patient" : "Doctor")}</p>
+                             </div>
+                             <div className="flex items-center gap-2 text-slate-400">
+                                 {p.isSpeaking && <Mic className="h-4 w-4 text-emerald-500" />}
+                                 {!p.isSpeaking && <MicOff className="h-3 w-3" />}
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+             </div>
         )}
       </div>
 
+      {/* Mobile Chat Overlay */}
       {chatOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 md:hidden" onClick={() => setChatOpen(false)}>
           <div
@@ -624,8 +735,50 @@ function MyCallUI({
         </div>
       )}
 
+      {/* Mobile Participants Overlay */}
+      {participantsOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 md:hidden" onClick={() => setParticipantsOpen(false)}>
+          <div
+            className="flex h-[60vh] w-full flex-col rounded-t-2xl border-t border-slate-800 bg-slate-900 pb-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-800 p-4">
+              <p className="text-sm font-medium">Participants ({participants.length})</p>
+              <button
+                onClick={() => setParticipantsOpen(false)}
+                className="rounded bg-slate-800 px-3 py-1 text-sm font-medium hover:bg-slate-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-4">
+                 <div className="space-y-4">
+                     {participants.map((p) => (
+                         <div key={p.sessionId} className="flex items-center gap-3">
+                             <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-medium">
+                                 {p.name?.[0] || "?"}
+                             </div>
+                             <div className="min-w-0 flex-1">
+                                 <p className="truncate text-base font-medium">{p.name || "Unknown"}</p>
+                                 <p className="text-sm text-slate-400">{p.isLocalParticipant ? "(You)" : (p.userId === appointment.patientId?._id ? "Patient" : "Doctor")}</p>
+                             </div>
+                             <div className="flex items-center gap-2 text-slate-400">
+                                 {p.isSpeaking && <Mic className="h-5 w-5 text-emerald-500" />}
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="border-t border-slate-800 bg-slate-900 p-4">
-        <CallControls onLeave={() => void requestLeave()} />
+        <div className="flex items-center justify-center gap-4">
+            <ToggleAudioPublishingButton />
+            <ToggleVideoPublishingButton />
+            <ScreenShareButton />
+        </div>
       </div>
 
       <Dialog
