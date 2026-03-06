@@ -46,7 +46,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppointmentStore } from "@/store/appointmentStore";
-import { LayoutGrid, Loader2, Star, Users, Mic, MicOff, Video, VideoOff, Send } from "lucide-react";
+import { LayoutGrid, Loader2, Star, Users, Mic, MicOff, Video, VideoOff, Send, MessageSquare } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
