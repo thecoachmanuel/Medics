@@ -187,6 +187,12 @@ export default function AppointmentCall({
     setJoining(true);
     try {
       await call.join({ create: true });
+      try {
+        await call.camera.enable();
+        await call.microphone.enable();
+      } catch (err) {
+        console.warn("Failed to enable devices:", err);
+      }
       await joinConsultation(appointment._id);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -727,6 +733,16 @@ function TwoUpStackedLayout({
   const firstPct = Math.max(30, Math.min(70, Math.round(split)));
   const secondPct = 100 - firstPct;
 
+  // If there's no secondary participant (only one person in call),
+  // show the primary participant in full screen.
+  if (!secondary) {
+    return (
+      <div className="h-full w-full overflow-hidden">
+        <ParticipantView participant={primary} />
+      </div>
+    );
+  }
+
   return (
     <div className={`flex h-full min-h-0 w-full ${dir}`}>
       {primary ? (
@@ -748,16 +764,14 @@ function TwoUpStackedLayout({
         </div>
       )}
 
-      {secondary ? (
-        <div
-          className="min-h-0 min-w-0 flex-auto"
-          style={orientation === "vertical" ? { height: `${secondPct}%` } : { width: `${secondPct}%` }}
-        >
-          <div className="h-full w-full overflow-hidden">
-            <ParticipantView participant={secondary} />
-          </div>
+      <div
+        className="min-h-0 min-w-0 flex-auto"
+        style={orientation === "vertical" ? { height: `${secondPct}%` } : { width: `${secondPct}%` }}
+      >
+        <div className="h-full w-full overflow-hidden">
+          <ParticipantView participant={secondary} />
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }

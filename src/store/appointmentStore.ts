@@ -225,6 +225,9 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
       appointments.sort((a, b) => {
         const aTime = new Date(a.slotStartIso).getTime();
         const bTime = new Date(b.slotStartIso).getTime();
+        if (tab === "upcoming") {
+          return aTime - bTime;
+        }
         return bTime - aTime;
       });
 
