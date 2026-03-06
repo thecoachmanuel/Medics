@@ -427,8 +427,11 @@ function MyCallUI({
     return () => {
         unsubJoined();
         unsubLeft();
+        // Ensure devices are stopped when the component unmounts
+        microphone.disable();
+        camera.disable();
     };
-  }, [call]);
+  }, [call, microphone, camera]);
 
   useEffect(() => {
     if (chatOpen) {
@@ -557,6 +560,11 @@ function MyCallUI({
     if (!everJoined) return;
     if (joined) return;
     if (leaving) return;
+
+    // Ensure devices are stopped if call ended remotely
+    microphone.disable();
+    camera.disable();
+
     if (currentUser.role !== "patient") {
       onCallEnd();
       return;
@@ -569,7 +577,7 @@ function MyCallUI({
       }
       onCallEnd();
     })();
-  }, [currentUser.role, everJoined, joined, leaving, maybeOpenRating, onCallEnd]);
+  }, [currentUser.role, everJoined, joined, leaving, maybeOpenRating, onCallEnd, microphone, camera]);
 
   if (!joined) {
     return (
