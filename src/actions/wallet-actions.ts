@@ -2,6 +2,8 @@
 
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { revalidatePath } from "next/cache";
+import { sendTransactionalTemplate } from "@/lib/email/mailer";
+import { formatDateTimeNG } from "@/lib/datetime";
 
 export async function getWalletBalance(userId: string) {
   const supabase = getServiceSupabase();
@@ -90,6 +92,38 @@ export async function fundWallet(userId: string, amount: number, reference: stri
 
     if (error) throw error;
     
+    // Send notifications for wallet funding
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', userId)
+        .single();
+        
+      const patientName = profile?.name || 'User';
+      const formattedAmount = `₦${amount.toLocaleString('en-NG')}`;
+
+      // Notification for patient
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        role: 'patient',
+        title: 'Wallet Funded',
+        message: `Your wallet has been funded with ${formattedAmount}.`,
+        type: 'wallet_funding',
+      });
+
+      // Notification for admin
+      await supabase.from('notifications').insert({
+        user_id: null,
+        role: 'admin',
+        title: 'Wallet Funded',
+        message: `${patientName} funded their wallet with ${formattedAmount}.`,
+        type: 'wallet_funding',
+      });
+    } catch (err) {
+      console.error('Error sending funding notifications:', err);
+    }
+
     revalidatePath('/patient/payments');
     return { success: true };
   } catch (error: any) {
@@ -109,6 +143,93 @@ export async function payWithWallet(appointmentId: string, userId: string, amoun
 
     if (error) throw error;
     if (!data) return { success: false, error: "Insufficient balance or invalid appointment" };
+
+    // Send notifications and emails
+    try {
+      const { data: appointment } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          doctor:profiles!appointments_doctor_id_fkey(name, email),
+          patient:profiles!appointments_patient_id_fkey(name, email)
+        `)
+        .eq('id', appointmentId)
+        .single();
+        
+      if (appointment) {
+        // @ts-ignore
+        const doctorName = appointment.doctor?.name || 'Doctor';
+        // @ts-ignore
+        const doctorEmail = appointment.doctor?.email;
+        // @ts-ignore
+        const patientName = appointment.patient?.name || 'Patient';
+        // @ts-ignore
+        const patientEmail = appointment.patient?.email;
+        const adminEmail = process.env.NEXT_ADMIN_EMAIL;
+
+        const slotStart = appointment.slot_start_iso;
+        const whenText = slotStart ? formatDateTimeNG(slotStart, { hour12: true }) : (appointment.date || 'your scheduled time');
+        const formattedAmount = `₦${amount.toLocaleString('en-NG')}`;
+
+        const notifications = [
+          {
+            user_id: appointment.patient_id,
+            role: 'patient',
+            title: 'Payment Confirmed',
+            message: `Your payment of ${formattedAmount} for appointment with ${doctorName} on ${whenText} was successful.`,
+            type: 'appointment_payment'
+          },
+          {
+            user_id: appointment.doctor_id,
+            role: 'doctor',
+            title: 'New Appointment Booked',
+            message: `${patientName} has booked an appointment with you for ${whenText}.`,
+            type: 'appointment_payment'
+          },
+          {
+            user_id: null,
+            role: 'admin',
+            title: 'New Wallet Payment',
+            message: `${patientName} paid ${formattedAmount} via Wallet for ${doctorName} on ${whenText}.`,
+            type: 'appointment_payment'
+          }
+        ];
+
+        await supabase.from('notifications').insert(notifications);
+
+        if (patientEmail) {
+          await sendTransactionalTemplate('payment_patient', patientEmail, {
+            doctorName,
+            when: whenText,
+            amount: String(amount),
+            currency: 'NGN',
+            patientName,
+          });
+        }
+
+        if (doctorEmail) {
+          await sendTransactionalTemplate('payment_doctor', doctorEmail, {
+            doctorName,
+            when: whenText,
+            amount: String(amount),
+            currency: 'NGN',
+            patientName,
+          });
+        }
+
+        if (adminEmail) {
+          await sendTransactionalTemplate('payment_admin', adminEmail, {
+            doctorName,
+            when: whenText,
+            amount: String(amount),
+            currency: 'NGN',
+            patientName,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error sending wallet payment notifications:', err);
+    }
 
     revalidatePath('/patient/payments');
     return { success: true };

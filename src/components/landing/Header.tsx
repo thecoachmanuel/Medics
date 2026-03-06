@@ -108,11 +108,28 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
 
     fetchUnreadCount();
 
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
     window.addEventListener("notifications:markAllRead", handleMarkedAllRead);
 
     return () => {
       isMounted = false;
       window.removeEventListener("notifications:markAllRead", handleMarkedAllRead);
+      supabase.removeChannel(channel);
     };
   }, [user?.id, showDashboardNav]);
 
