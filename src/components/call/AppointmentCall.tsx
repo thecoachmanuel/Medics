@@ -299,6 +299,7 @@ function MyCallUI({
   const [ratingComment, setRatingComment] = useState<string>("");
   const [ratingSaving, setRatingSaving] = useState(false);
   const [navigateAfterRating, setNavigateAfterRating] = useState(false);
+  const [unreadChats, setUnreadChats] = useState(0);
 
   useEffect(() => {
     const key = "medics_call_layout_prefs_v1";
@@ -350,6 +351,24 @@ function MyCallUI({
   useEffect(() => {
     if (joined) setEverJoined(true);
   }, [joined]);
+
+  useEffect(() => {
+    if (!call) return;
+    const unsub = call.on("custom", (event: StreamVideoEvent) => {
+      const payload = (event as unknown as CustomVideoEvent).custom as unknown;
+      if (!isRecord(payload)) return;
+      if (payload.type === "chat-message") {
+        if (!chatOpen) setUnreadChats((c) => c + 1);
+      }
+    });
+    return () => {
+      unsub();
+    };
+  }, [call, chatOpen]);
+
+  useEffect(() => {
+    if (chatOpen) setUnreadChats(0);
+  }, [chatOpen]);
 
   const maybeOpenRating = useCallback(async (): Promise<boolean> => {
     if (currentUser.role !== "patient") return false;
@@ -440,7 +459,7 @@ function MyCallUI({
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm text-slate-400">Signed in as</p>
-                <p className="truncate text-base font-medium">{currentUser.name}</p>
+                <p className="truncate text-base font-medium">{currentUser.name} (you)</p>
               </div>
             </div>
 
@@ -530,11 +549,39 @@ function MyCallUI({
               ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="rounded bg-slate-800 px-3 py-2 text-sm font-medium hover:bg-slate-700 transition-colors">🙂 Reactions</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Send reaction</DropdownMenuLabel>
+              <div className="flex gap-2 px-2 py-2">
+                {['👏','👍','❤️','😊','🎉'].map((e) => (
+                  <button
+                    key={e}
+                    className="rounded bg-slate-800 px-2 py-1 text-sm hover:bg-slate-700"
+                    onClick={async () => {
+                      try {
+                        await call.sendCustomEvent({ type: 'reaction', emoji: e });
+                      } catch {}
+                    }}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             onClick={() => setChatOpen(!chatOpen)}
             className="rounded bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
           >
             {chatOpen ? "Close chat" : "Chat"}
+            {!chatOpen && unreadChats > 0 ? (
+              <span className="ml-2 inline-flex items-center justify-center rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold">
+                {unreadChats}
+              </span>
+            ) : null}
           </button>
           <button
             onClick={() => void requestLeave()}
@@ -574,10 +621,12 @@ function MyCallUI({
         </div>
       </div>
 
+      <ReactionOverlay call={call} />
+
       {chatOpen ? (
         <div className="fixed inset-0 z-50 bg-black/60 md:hidden" onClick={() => setChatOpen(false)}>
           <div
-            className="absolute bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border-t border-slate-800 bg-slate-900"
+            className="absolute bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border-t border-slate-800 bg-slate-900 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-800 p-4">
@@ -589,7 +638,9 @@ function MyCallUI({
                 Close
               </button>
             </div>
-            <CallChatPanel call={call} currentUser={currentUser} />
+            <div className="flex-1 min-h-0">
+              <CallChatPanel call={call} currentUser={currentUser} />
+            </div>
           </div>
         </div>
       ) : null}
@@ -676,6 +727,61 @@ function MyCallUI({
   );
 }
 
+function ReactionOverlay({ call }: { call: Call }) {
+  const [bursts, setBursts] = useState<{ id: string; emoji: string }[]>([]);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const unsub = call.on('custom', (event: StreamVideoEvent) => {
+      const custom = (event as unknown as CustomVideoEvent).custom as any;
+      if (!isRecord(custom)) return;
+      if (custom.type !== 'reaction') return;
+      const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+      setBursts((prev) => [...prev, { id, emoji: String(custom.emoji || '🎉') }]);
+      setTimeout(() => {
+        setBursts((prev) => prev.filter((b) => b.id !== id));
+      }, 1200);
+    });
+    return () => {
+      unsub();
+    };
+  }, [call]);
+
+  return (
+    <div ref={containerRef} className="pointer-events-none fixed inset-0 z-40">
+      {bursts.map((b) => {
+        const items = Array.from({ length: 14 }).map((_, i) => ({
+          key: `${b.id}-${i}`,
+          left: Math.random() * 100,
+          top: 30 + Math.random() * 40,
+          dx: (Math.random() - 0.5) * 40,
+          dy: -20 - Math.random() * 30,
+          scale: 0.8 + Math.random() * 0.6,
+        }));
+        return (
+          <div key={b.id} className="absolute inset-0">
+            {items.map((it) => (
+              <span
+                key={it.key}
+                className="absolute"
+                style={{
+                  left: `calc(${it.left}% )`,
+                  top: `calc(${it.top}% )`,
+                  transform: `translate(${it.dx}px, ${it.dy}px) scale(${it.scale})`,
+                  transition: 'transform 1.2s ease-out, opacity 1.2s ease-out',
+                  opacity: 0.9,
+                }}
+              >
+                {b.emoji}
+              </span>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function TwoUpStackedLayout({
   participants,
   localParticipantSessionId,
@@ -703,6 +809,13 @@ function TwoUpStackedLayout({
   const firstPct = Math.max(30, Math.min(70, Math.round(split)));
   const secondPct = 100 - firstPct;
 
+  const labelFor = (p: StreamVideoParticipant | undefined): string => {
+    if (!p) return "";
+    const base = (p as any).name || (p as any).user?.name || p.sessionId;
+    const isSelf = localParticipantSessionId && p.sessionId === localParticipantSessionId;
+    return isSelf ? `${base} (you)` : String(base);
+  };
+
   return (
     <div className={`flex h-full min-h-0 w-full ${dir}`}>
       {primary ? (
@@ -714,8 +827,11 @@ function TwoUpStackedLayout({
           }
           style={orientation === "vertical" ? { height: `${firstPct}%` } : { width: `${firstPct}%` }}
         >
-          <div className="h-full w-full overflow-hidden">
+          <div className="relative h-full w-full overflow-hidden">
             <ParticipantView participant={primary} />
+            <div className="absolute left-3 top-3 rounded bg-black/60 px-2 py-1 text-xs">
+              {labelFor(primary)}
+            </div>
           </div>
         </div>
       ) : (
@@ -729,8 +845,11 @@ function TwoUpStackedLayout({
           className="min-h-0 min-w-0 flex-auto"
           style={orientation === "vertical" ? { height: `${secondPct}%` } : { width: `${secondPct}%` }}
         >
-          <div className="h-full w-full overflow-hidden">
+          <div className="relative h-full w-full overflow-hidden">
             <ParticipantView participant={secondary} />
+            <div className="absolute left-3 top-3 rounded bg-black/60 px-2 py-1 text-xs">
+              {labelFor(secondary)}
+            </div>
           </div>
         </div>
       ) : null}
@@ -839,7 +958,7 @@ function CallChatPanel({
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Type a message..."
-            className="flex-1 rounded bg-slate-950 px-3 py-2 text-sm outline-none ring-1 ring-slate-800 focus:ring-emerald-600"
+            className="flex-1 rounded bg-white px-3 py-2 text-sm text-black outline-none ring-1 ring-slate-300 focus:ring-emerald-600"
           />
           <button
             onClick={() => void send()}
