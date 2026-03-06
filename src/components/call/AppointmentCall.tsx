@@ -46,7 +46,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppointmentStore } from "@/store/appointmentStore";
-import { LayoutGrid, Loader2, Star, Users, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { LayoutGrid, Loader2, Star, Users, Mic, MicOff, Video, VideoOff, Send } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -1069,20 +1069,20 @@ function CallChatPanel({
       </div>
 
       <div className="border-t border-slate-800 p-4">
-        <div className="flex gap-2">
+        <div className="relative w-full">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Type a message..."
-            className="flex-1 rounded bg-slate-950 px-3 py-2 text-sm outline-none ring-1 ring-slate-800 focus:ring-emerald-600"
+            className="w-full rounded bg-slate-950 pl-3 pr-10 py-2 text-sm outline-none ring-1 ring-slate-800 focus:ring-emerald-600"
           />
           <button
             onClick={() => void send()}
             disabled={!text.trim()}
-            className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-emerald-500 hover:text-emerald-400 disabled:opacity-50 transition-colors"
           >
-            Send
+            <Send className="h-4 w-4" />
           </button>
         </div>
       </div>
