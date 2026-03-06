@@ -114,36 +114,31 @@ const PatientDashboardContent = () => {
   const AppointmentCard = ({ appointment }: { appointment: Appointment }) => {
     const [savingRating, setSavingRating] = useState(false);
     const [comment, setComment] = useState(appointment.reviewComment ?? "");
+    const [localRating, setLocalRating] = useState<number | undefined>(appointment.rating);
 
     useEffect(() => {
       setComment(appointment.reviewComment ?? "");
     }, [appointment.reviewComment]);
 
-    const handleRate = async (value: number) => {
+    useEffect(() => {
+      setLocalRating(appointment.rating);
+    }, [appointment.rating]);
+
+    const handleRate = (value: number) => {
       if (savingRating) return;
-      if (appointment.rating === value) return;
-      setSavingRating(true);
-      try {
-        const trimmed = comment.trim();
-        await rateDoctor(
-          appointment._id,
-          value,
-          trimmed.length ? trimmed : undefined
-        );
-      } finally {
-        setSavingRating(false);
-      }
+      setLocalRating(value);
     };
 
     const handleSaveReview = async () => {
       if (savingRating) return;
+      if (localRating === undefined) return;
+      
       const trimmed = comment.trim();
-      if (!trimmed && typeof appointment.rating !== "number") return;
+      if (!trimmed && localRating === appointment.rating) return;
+
       setSavingRating(true);
       try {
-        const ratingValue =
-          typeof appointment.rating === "number" ? appointment.rating : 5;
-        await rateDoctor(appointment._id, ratingValue, trimmed || undefined);
+        await rateDoctor(appointment._id, localRating, trimmed || undefined);
       } finally {
         setSavingRating(false);
       }
@@ -272,8 +267,8 @@ const PatientDashboardContent = () => {
                   {[...Array(5)].map((_, i) => {
                     const value = i + 1;
                     const filled =
-                      typeof appointment.rating === 'number'
-                        ? value <= appointment.rating
+                      localRating !== undefined
+                        ? value <= localRating
                         : false;
                     return (
                       <button
@@ -294,8 +289,8 @@ const PatientDashboardContent = () => {
                     );
                   })}
                   <span className="ml-2 text-xs text-gray-500">
-                    {typeof appointment.rating === 'number'
-                      ? `${appointment.rating.toFixed(1)} / 5`
+                    {localRating !== undefined
+                      ? `${localRating.toFixed(1)} / 5`
                       : 'Tap to rate your doctor'}
                   </span>
                 </div>
@@ -310,7 +305,7 @@ const PatientDashboardContent = () => {
                   />
                   <Button
                     size="sm"
-                    disabled={savingRating || (!comment.trim() && typeof appointment.rating !== 'number')}
+                    disabled={savingRating || localRating === undefined}
                     onClick={handleSaveReview}
                   >
                     {savingRating ? 'Saving...' : 'Save Review'}
