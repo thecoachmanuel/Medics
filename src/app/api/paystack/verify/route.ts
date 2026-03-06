@@ -140,12 +140,19 @@ export async function POST(request: Request) {
       title: doctorTitle,
       message: doctorMessage,
     },
+    {
+      user_id: null,
+      role: 'admin',
+      title: 'New booking paid',
+      message: `${patientName} paid ₦${String(nairaAmount)} for ${doctorName} on ${whenText}.`,
+    },
   ]
 
   await supabase.from('notifications').insert(notifications)
 
   const doctorEmail = (doctorProfile as any)?.email as string | undefined
   const patientEmail = (patientProfile as any)?.email as string | undefined
+  const adminEmail = process.env.NEXT_ADMIN_EMAIL as string | undefined
 
   if (patientEmail) {
     await sendTransactionalTemplate('payment_patient', patientEmail, {
@@ -159,6 +166,16 @@ export async function POST(request: Request) {
 
   if (doctorEmail) {
     await sendTransactionalTemplate('payment_doctor', doctorEmail, {
+      doctorName,
+      when: whenText,
+      amount: String(nairaAmount),
+      currency,
+      patientName,
+    })
+  }
+
+  if (adminEmail) {
+    await sendTransactionalTemplate('payment_admin', adminEmail, {
       doctorName,
       when: whenText,
       amount: String(nairaAmount),

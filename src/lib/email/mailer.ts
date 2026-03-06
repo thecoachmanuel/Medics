@@ -104,6 +104,10 @@ export async function sendTransactionalTemplate(slug: string, to: string | strin
       'payment_doctor': {
         subject: 'New appointment booked',
         html: '<p>{{patientName}} has paid and booked an appointment with you on {{when}}. Amount: {{amount}} {{currency}}.</p>'
+      },
+      'payment_admin': {
+        subject: 'New booking paid',
+        html: '<p>{{patientName}} paid {{amount}} {{currency}} for {{doctorName}} on {{when}}.</p>'
       }
     }
 
@@ -117,4 +121,3 @@ export async function sendTransactionalTemplate(slug: string, to: string | strin
     return { success: false, error: msg }
   }
 }
-

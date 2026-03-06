@@ -115,7 +115,7 @@ const ConsultationStep = ({
             htmlFor="symptoms"
             className="text-base font-semibold mb-4 block"
           >
-            Describe your symptoms or concerns *
+            Describe your symptoms or concerns (optional)
           </Label>
           <Textarea
             id="symptoms"
@@ -134,7 +134,7 @@ const ConsultationStep = ({
         </Button>
         <Button
           onClick={onContinue}
-          disabled={!symptoms.trim() || isLoading}
+          disabled={isLoading}
           className="px-7 py-3 bg-blue-600 hover:bg-blue-700"
         >
           {isLoading ? "Processing..." : "Continue to Payment"}

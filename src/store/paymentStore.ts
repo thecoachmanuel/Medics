@@ -29,7 +29,7 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
       const { data: session } = await supabase.auth.getUser();
       const uid = session.user?.id;
       if (!uid) throw new Error("Not authenticated");
-      let query = supabase.from("payments").select("*");
+      let query = supabase.from("payments").select("*, appointments(status)");
       if (role === "doctor") query = query.eq("doctor_id", uid);
       else query = query.eq("patient_id", uid);
       if (filters.from) query = query.gte("created_at", filters.from);
@@ -68,4 +68,3 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
     }
   },
 }));
-
