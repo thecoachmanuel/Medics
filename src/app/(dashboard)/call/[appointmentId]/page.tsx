@@ -19,23 +19,21 @@ const page = () => {
         }
       },[appointmentId,fetchAppointmentById])
 
-      const handleCallEnd  = useCallback(async () => {
-        if(isNavigating) return;
+      const handleCallEnd = useCallback(async () => {
+        if (isNavigating) return;
         try {
-             setIsNavigating(true);
+          setIsNavigating(true);
 
-             if(user?.type === 'doctor') {
-                router.push(`/doctor/dashboard?completedCall=${appointmentId}`)
-             }else{
-                  router.push('/patient/dashboard')
-             }
+          if (user?.type === 'doctor') {
+            router.push(`/doctor/dashboard?completedCall=${appointmentId}`);
+          } else {
+            router.push('/patient/dashboard');
+          }
         } catch (error) {
-             console.error(error)
-             router.push('/')
-        }finally{
-            setIsNavigating(false)
+          console.error(error);
+          router.push('/');
         }
-      },[user?.type, router,appointmentId,isNavigating])
+      }, [user?.type, router, appointmentId, isNavigating]);
 
   if (!currentAppointment || !user) {
     return(

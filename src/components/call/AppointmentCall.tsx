@@ -831,6 +831,21 @@ function MyCallUI({
             <div className="hidden sm:block">
               <ScreenShareButton />
             </div>
+            <button
+                onClick={() => setChatOpen(!chatOpen)}
+                className={cn(
+                    "relative flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-colors",
+                    chatOpen ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-800 hover:bg-slate-700"
+                )}
+                title="Chat"
+            >
+                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
+                {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold shadow-sm">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                )}
+            </button>
             <RecordCallButton />
             <CancelCallButton onLeave={requestLeave} />
         </div>
