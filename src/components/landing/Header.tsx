@@ -20,6 +20,7 @@ import { supabase } from "@/lib/supabase/client";
 interface HeaderProps {
   showDashboardNav?: boolean;
   siteName?: string;
+  logoUrl?: string | null;
 }
 
 interface NavigationItem {
@@ -28,14 +29,20 @@ interface NavigationItem {
   href: string;
   active: boolean;
 }
-const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) => {
+const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, logoUrl }) => {
   const { user, isAuthenticated, logout } = userAuthStore();
   const pathname = usePathname();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const brandName = siteName && siteName.trim().length > 0 ? siteName : "MedicsOnline";
-  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
+  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(logoUrl || null);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+      if (logoUrl !== undefined) {
+          setHeaderLogoUrl(logoUrl);
+      }
+  }, [logoUrl]);
 
   useEffect(() => {
     const checkAdmin = () => {
@@ -53,6 +60,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
   };
 
   useEffect(() => {
+    if (logoUrl !== undefined && logoUrl !== null) return;
     let mounted = true;
     const loadBrand = async () => {
       try {
@@ -66,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName }) =
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [logoUrl]);
 
   useEffect(() => {
     if (!user || !showDashboardNav) {

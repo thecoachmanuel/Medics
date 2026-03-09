@@ -56,6 +56,8 @@ type HomepageContent = {
   footerLogoUrl?: string | null;
 };
 
+import NativeWelcome from "@/components/native/NativeWelcome";
+
 export default function Home() {
   const { user } = userAuthStore();
   const router = useRouter();
@@ -177,7 +179,12 @@ export default function Home() {
 
   return (
      <div className="min-h-screen bg-white">
-      <Header showDashboardNav={false} siteName={content?.siteName} />
+      <NativeWelcome />
+      <Header 
+        showDashboardNav={false} 
+        siteName={content?.siteName || "MedicsOnline"} 
+        logoUrl={content?.headerLogoUrl} 
+      />
       <main className="pt-16">
          <LandingHero
            title={content?.heroTitle}

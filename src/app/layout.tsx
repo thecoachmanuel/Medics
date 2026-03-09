@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,6 +21,14 @@ export const metadata: Metadata = {
   authors: [{ name: 'MedicsOnline' }],
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#ffffff",
+};
+
 
 export default function RootLayout({
   children,
@@ -33,6 +42,7 @@ export default function RootLayout({
       >
         <Providers>
               {children}
+              <MobileBottomNav />
         </Providers>
       </body>
     </html>
