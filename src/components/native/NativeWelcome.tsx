@@ -42,9 +42,9 @@ export default function NativeWelcome() {
   if (step === 'loading') return null;
 
   return (
-    <>
+    <div className="fixed inset-0 z-[9999] bg-white">
       {step === 'splash' && <SplashScreen />}
       {step === 'onboarding' && <OnboardingScreen onComplete={handleOnboardingComplete} />}
-    </>
+    </div>
   );
 }
