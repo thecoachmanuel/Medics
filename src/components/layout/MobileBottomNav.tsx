@@ -16,7 +16,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export function MobileBottomNav() {
+import { Suspense } from "react";
+
+function MobileBottomNavContent() {
   const isApp = useAppDetection();
   const pathname = usePathname();
   const { user } = userAuthStore();
@@ -98,10 +100,9 @@ export function MobileBottomNav() {
           {links.map((link) => {
             const Icon = link.icon;
             const isActive = link.activePattern.test(pathname);
-            
             return (
-              <Link
-                key={link.href}
+              <Link 
+                key={link.href} 
                 href={link.href}
                 className={cn(
                   "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200",
@@ -110,17 +111,14 @@ export function MobileBottomNav() {
                     : "text-gray-500 hover:text-gray-900"
                 )}
               >
-                <div className={cn(
-                  "p-1 rounded-xl transition-all duration-200",
-                  isActive && "bg-blue-50"
-                )}>
-                  <Icon 
-                    size={24} 
-                    strokeWidth={isActive ? 2.5 : 2}
-                    className={cn("transition-transform duration-200", isActive && "scale-105")}
-                  />
-                </div>
-                <span className="text-[10px] font-medium tracking-tight">
+                <Icon 
+                  className={cn(
+                    "w-6 h-6 transition-transform duration-200",
+                    isActive && "scale-110"
+                  )} 
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+                <span className="text-[10px] font-medium tracking-wide">
                   {link.label}
                 </span>
               </Link>
@@ -129,5 +127,13 @@ export function MobileBottomNav() {
         </div>
       </div>
     </>
+  );
+}
+
+export function MobileBottomNav() {
+  return (
+    <Suspense fallback={null}>
+      <MobileBottomNavContent />
+    </Suspense>
   );
 }

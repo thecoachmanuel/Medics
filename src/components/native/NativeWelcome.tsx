@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDetection } from '@/hooks/use-app-detection';
 import SplashScreen from './SplashScreen';
 import OnboardingScreen from './OnboardingScreen';
 
-export default function NativeWelcome() {
+function NativeWelcomeContent() {
   const isApp = useAppDetection();
   const router = useRouter();
   const [step, setStep] = useState<'loading' | 'splash' | 'onboarding' | 'complete'>('loading');
@@ -46,5 +46,13 @@ export default function NativeWelcome() {
       {step === 'splash' && <SplashScreen />}
       {step === 'onboarding' && <OnboardingScreen onComplete={handleOnboardingComplete} />}
     </div>
+  );
+}
+
+export default function NativeWelcome() {
+  return (
+    <Suspense fallback={null}>
+      <NativeWelcomeContent />
+    </Suspense>
   );
 }
