@@ -36,8 +36,27 @@ const page = () => {
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [createdAppointmentId,setCreatedAppointmentId] = useState<string | null>(null)
+  const [voiceDiscount, setVoiceDiscount] = useState<{ type: 'flat' | 'percentage', value: number } | null>(null);
   const { user } = userAuthStore();
   const patientName = user?.name || user?.email || "Patient";
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/admin/billing-settings', { cache: 'no-store' });
+        const data = await res.json();
+        if (data?.config) {
+            setVoiceDiscount({
+                type: data.config.voiceCallDiscountType || 'percentage',
+                value: Number(data.config.voiceCallDiscountValue || 0)
+            });
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     if (doctorId) {
@@ -226,7 +245,18 @@ const page = () => {
 
   const getConsultationPrice = (): number => {
     const basePrice = currentDoctor?.fees || 0;
-    const typePrice = consultationType === "Voice Call" ? -100 : 0;
+    
+    if (consultationType === "Voice Call" && voiceDiscount) {
+        let discount = 0;
+        if (voiceDiscount.type === 'flat') {
+            discount = voiceDiscount.value;
+        } else {
+            discount = (basePrice * voiceDiscount.value) / 100;
+        }
+        return Math.max(0, basePrice - discount);
+    }
+    
+    const typePrice = consultationType === "Voice Call" ? -5000 : 0;
     return Math.max(0, basePrice + typePrice);
   };
 

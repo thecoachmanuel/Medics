@@ -46,7 +46,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppointmentStore } from "@/store/appointmentStore";
-import { LayoutGrid, Loader2, Star, Users, Mic, MicOff, Video, VideoOff, Send, MessageSquare } from "lucide-react";
+import { LayoutGrid, Loader2, Star, Users, Mic, MicOff, Video, VideoOff, Send, MessageSquare, Check } from "lucide-react";
 // Ensure MessageSquare import is present
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -402,6 +402,7 @@ function MyCallUI({
   const [ratingValue, setRatingValue] = useState<number>(5);
   const [ratingComment, setRatingComment] = useState<string>("");
   const [ratingSaving, setRatingSaving] = useState(false);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [navigateAfterRating, setNavigateAfterRating] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [participantsOpen, setParticipantsOpen] = useState(false);
@@ -855,75 +856,120 @@ function MyCallUI({
       <Dialog
         open={ratingOpen}
         onOpenChange={(open) => {
+          if (ratingSubmitted) return; // Prevent closing while showing success
           setRatingOpen(open);
           if (!open && navigateAfterRating) onCallEnd();
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rate your doctor</DialogTitle>
-            <DialogDescription>
-              Your feedback helps improve care quality. This takes a few seconds.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((v) => {
-                const filled = v <= ratingValue;
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    disabled={ratingSaving}
-                    onClick={() => setRatingValue(v)}
-                    className="rounded p-1 focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:opacity-60"
-                  >
-                    <Star className={filled ? "h-6 w-6 fill-yellow-400 text-yellow-400" : "h-6 w-6 text-gray-300"} />
-                  </button>
-                );
-              })}
-              <span className="ml-2 text-sm text-muted-foreground">{ratingValue} / 5</span>
+        <DialogContent className="sm:max-w-md">
+          {ratingSubmitted ? (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4 text-center animate-in fade-in zoom-in duration-300">
+              <div className="h-20 w-20 bg-emerald-100 rounded-full flex items-center justify-center mb-2 shadow-sm">
+                <Check className="h-10 w-10 text-emerald-600" strokeWidth={3} />
+              </div>
+              <DialogTitle className="text-2xl font-bold text-gray-900">Thank You!</DialogTitle>
+              <DialogDescription className="text-center text-base text-gray-600 max-w-xs mx-auto">
+                Your feedback has been submitted successfully. We appreciate your input!
+              </DialogDescription>
             </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-center text-xl font-semibold">Rate your experience</DialogTitle>
+                <DialogDescription className="text-center text-gray-500">
+                  How was your consultation with {currentUser.role === "doctor" ? appointment.patientId?.name : "Dr. " + appointment.doctorId?.name}?
+                </DialogDescription>
+              </DialogHeader>
 
-            <Textarea
-              value={ratingComment}
-              onChange={(e) => setRatingComment(e.target.value)}
-              placeholder="Share anything that stood out (optional)"
-              rows={3}
-              disabled={ratingSaving}
-            />
-          </div>
+              <div className="flex flex-col space-y-6 py-2">
+                <div className="flex justify-center gap-2">
+                  {[1, 2, 3, 4, 5].map((v) => {
+                    const filled = v <= ratingValue;
+                    return (
+                      <button
+                        key={v}
+                        type="button"
+                        disabled={ratingSaving}
+                        onClick={() => setRatingValue(v)}
+                        className={cn(
+                          "p-1 transition-all duration-200 hover:scale-110 focus:outline-none",
+                          filled ? "text-yellow-400 drop-shadow-sm" : "text-gray-200 hover:text-yellow-200"
+                        )}
+                      >
+                        <Star 
+                          className={cn("h-8 w-8", filled ? "fill-current" : "")} 
+                          strokeWidth={filled ? 0 : 1.5}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                <div className="text-center text-sm font-medium text-emerald-600 h-5">
+                    {ratingValue === 5 && "Excellent!"}
+                    {ratingValue === 4 && "Very Good"}
+                    {ratingValue === 3 && "Good"}
+                    {ratingValue === 2 && "Fair"}
+                    {ratingValue === 1 && "Poor"}
+                </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setRatingOpen(false);
-                if (navigateAfterRating) onCallEnd();
-              }}
-              disabled={ratingSaving}
-            >
-              Not now
-            </Button>
-            <Button
-              onClick={async () => {
-                if (ratingSaving) return;
-                setRatingSaving(true);
-                try {
-                  const trimmed = ratingComment.trim();
-                  await rateDoctor(appointment._id, ratingValue, trimmed.length ? trimmed : undefined);
-                } finally {
-                  setRatingSaving(false);
-                  setRatingOpen(false);
-                  if (navigateAfterRating) onCallEnd();
-                }
-              }}
-              disabled={ratingSaving}
-            >
-              {ratingSaving ? "Saving..." : "Submit"}
-            </Button>
-          </DialogFooter>
+                <Textarea
+                  value={ratingComment}
+                  onChange={(e) => setRatingComment(e.target.value)}
+                  placeholder="Share your thoughts about the consultation (optional)..."
+                  rows={4}
+                  disabled={ratingSaving}
+                  className="resize-none border-gray-200 focus:border-emerald-500 focus:ring-emerald-500 bg-gray-50"
+                />
+              </div>
+
+              <DialogFooter className="sm:justify-between gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setRatingOpen(false);
+                    if (navigateAfterRating) onCallEnd();
+                  }}
+                  disabled={ratingSaving}
+                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                >
+                  Skip
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (ratingSaving) return;
+                    setRatingSaving(true);
+                    try {
+                      const trimmed = ratingComment.trim();
+                      await rateDoctor(appointment._id, ratingValue, trimmed.length ? trimmed : undefined);
+                      setRatingSubmitted(true);
+                      // Wait for 2 seconds before closing
+                      setTimeout(() => {
+                        setRatingOpen(false);
+                        if (navigateAfterRating) onCallEnd();
+                        // Reset state for next time if needed
+                        setTimeout(() => setRatingSubmitted(false), 300); 
+                      }, 2000);
+                    } catch (e) {
+                      setRatingSaving(false);
+                      toast.error("Failed to submit rating");
+                    }
+                  }}
+                  disabled={ratingSaving}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[100px]"
+                >
+                  {ratingSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving
+                    </>
+                  ) : (
+                    "Submit Review"
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

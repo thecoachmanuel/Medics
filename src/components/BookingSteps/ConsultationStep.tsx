@@ -1,5 +1,5 @@
 import { consultationTypes } from "@/lib/constant";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Label } from "../ui/label";
 import { Icon } from "lucide-react";
 import { Badge } from "../ui/badge";
@@ -83,12 +83,18 @@ const ConsultationStep = ({
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-gray-900">
-                          ₦{currentPrice}
+                          ₦{currentPrice.toLocaleString()}
                         </p>
-                        {price !== 0 && (
+                        {type === 'Voice Call' ? (
                           <p className="text-sm text-green-600">
-                            Save ₦{Math.abs(price)}
+                            Save ₦{Math.max(0, doctorFees - currentPrice).toLocaleString()}
                           </p>
+                        ) : (
+                          price !== 0 && (
+                            <p className="text-sm text-green-600">
+                              Save ₦{Math.abs(price).toLocaleString()}
+                            </p>
+                          )
                         )}
                       </div>
                     </div>
@@ -105,7 +111,7 @@ const ConsultationStep = ({
               Selected Consultation:
             </span>
             <span className="text-lg font-bold text-blue-900">
-              {consultationType} - ₦{getConsultationPrice()}
+              {consultationType} - ₦{getConsultationPrice().toLocaleString()}
             </span>
           </div>
         </div>

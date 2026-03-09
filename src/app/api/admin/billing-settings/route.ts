@@ -5,6 +5,8 @@ type BillingSettings = {
   platformFeePercent: number; // charged on top of consultation fee to patient
   adminCommissionPercent: number; // deducted from doctor earnings
   maxWithdrawalPercent: number; // max percentage of available balance that can be withdrawn
+  voiceCallDiscountType: 'flat' | 'percentage'; // type of discount for voice calls
+  voiceCallDiscountValue: number; // value of the discount
 };
 
 type BillingRow = {
@@ -16,6 +18,8 @@ const DEFAULTS: BillingSettings = {
   platformFeePercent: 0,
   adminCommissionPercent: 20,
   maxWithdrawalPercent: 85,
+  voiceCallDiscountType: 'percentage',
+  voiceCallDiscountValue: 0,
 };
 
 export async function GET() {
@@ -33,10 +37,15 @@ export async function GET() {
   const platform = Number(cfg.platformFeePercent);
   const commission = Number(cfg.adminCommissionPercent);
   const withdrawal = Number(cfg.maxWithdrawalPercent);
+  const voiceDiscountType = cfg.voiceCallDiscountType === 'flat' ? 'flat' : 'percentage';
+  const voiceDiscountValue = Number(cfg.voiceCallDiscountValue);
+
   const sanitized: BillingSettings = {
     platformFeePercent: Number.isFinite(platform) && platform >= 0 && platform <= 100 ? platform : DEFAULTS.platformFeePercent,
     adminCommissionPercent: Number.isFinite(commission) && commission >= 0 && commission <= 100 ? commission : DEFAULTS.adminCommissionPercent,
     maxWithdrawalPercent: Number.isFinite(withdrawal) && withdrawal >= 0 && withdrawal <= 100 ? withdrawal : DEFAULTS.maxWithdrawalPercent,
+    voiceCallDiscountType: voiceDiscountType,
+    voiceCallDiscountValue: Number.isFinite(voiceDiscountValue) && voiceDiscountValue >= 0 ? voiceDiscountValue : DEFAULTS.voiceCallDiscountValue,
   };
   return NextResponse.json({ config: sanitized });
 }
@@ -56,11 +65,15 @@ export async function POST(req: NextRequest) {
   const platform = Math.max(0, Math.min(100, Number(b.platformFeePercent ?? DEFAULTS.platformFeePercent)));
   const commission = Math.max(0, Math.min(100, Number(b.adminCommissionPercent ?? DEFAULTS.adminCommissionPercent)));
   const withdrawal = Math.max(0, Math.min(100, Number(b.maxWithdrawalPercent ?? DEFAULTS.maxWithdrawalPercent)));
+  const voiceDiscountType = b.voiceCallDiscountType === 'flat' ? 'flat' : 'percentage';
+  const voiceDiscountValue = Math.max(0, Number(b.voiceCallDiscountValue ?? DEFAULTS.voiceCallDiscountValue));
 
   const config: BillingSettings = { 
     platformFeePercent: platform, 
     adminCommissionPercent: commission,
-    maxWithdrawalPercent: withdrawal 
+    maxWithdrawalPercent: withdrawal,
+    voiceCallDiscountType: voiceDiscountType,
+    voiceCallDiscountValue: voiceDiscountValue
   };
 
   const { data: existing, error: loadError } = await supabase

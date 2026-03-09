@@ -151,7 +151,19 @@ export default function AdminSettingsPage() {
   const [taxonomiesError, setTaxonomiesError] = useState<string | null>(null);
   const [taxonomiesSaved, setTaxonomiesSaved] = useState(false);
   const [billingOpen, setBillingOpen] = useState(true);
-  const [billingSettings, setBillingSettings] = useState<{ platformFeePercent: number; adminCommissionPercent: number; maxWithdrawalPercent: number }>({ platformFeePercent: 0, adminCommissionPercent: 20, maxWithdrawalPercent: 85 });
+  const [billingSettings, setBillingSettings] = useState<{ 
+    platformFeePercent: number; 
+    adminCommissionPercent: number; 
+    maxWithdrawalPercent: number;
+    voiceCallDiscountType: 'flat' | 'percentage';
+    voiceCallDiscountValue: number;
+  }>({ 
+    platformFeePercent: 0, 
+    adminCommissionPercent: 20, 
+    maxWithdrawalPercent: 85,
+    voiceCallDiscountType: 'percentage',
+    voiceCallDiscountValue: 0
+  });
   const [billingSaving, setBillingSaving] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [billingSaved, setBillingSaved] = useState(false);
@@ -295,6 +307,8 @@ export default function AdminSettingsPage() {
           platformFeePercent: Number(cfg.platformFeePercent || 0),
           adminCommissionPercent: Number(cfg.adminCommissionPercent || 20),
           maxWithdrawalPercent: Number(cfg.maxWithdrawalPercent || 85),
+          voiceCallDiscountType: cfg.voiceCallDiscountType === 'flat' ? 'flat' : 'percentage',
+          voiceCallDiscountValue: Number(cfg.voiceCallDiscountValue || 0),
         });
       } catch {}
     };
@@ -327,6 +341,8 @@ export default function AdminSettingsPage() {
           platformFeePercent: Number(cfg.platformFeePercent || 0),
           adminCommissionPercent: Number(cfg.adminCommissionPercent || 20),
           maxWithdrawalPercent: Number(cfg.maxWithdrawalPercent || 85),
+          voiceCallDiscountType: cfg.voiceCallDiscountType === 'flat' ? 'flat' : 'percentage',
+          voiceCallDiscountValue: Number(cfg.voiceCallDiscountValue || 0),
         });
       }
     } catch {
@@ -656,6 +672,38 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setBillingSettings((prev) => ({ ...prev, maxWithdrawalPercent: Math.max(0, Math.min(100, Number(e.target.value || 0))) }))}
               />
               <p className="text-xs text-gray-500 mt-1">Percentage of available balance a doctor can withdraw. Default 85%.</p>
+            </div>
+            <div className="md:col-span-2 pt-2 border-t border-gray-100">
+               <label className="block text-xs font-semibold text-gray-700 mb-2">Voice Call Discount</label>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <label className="text-xs font-medium text-gray-600">Discount Type</label>
+                   <select 
+                     className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                     value={billingSettings.voiceCallDiscountType}
+                     onChange={(e) => setBillingSettings((prev) => ({ ...prev, voiceCallDiscountType: e.target.value as 'flat' | 'percentage' }))}
+                   >
+                     <option value="percentage">Percentage (%)</option>
+                     <option value="flat">Flat Rate (NGN)</option>
+                   </select>
+                   <p className="text-xs text-gray-500 mt-1">How the discount is calculated for voice calls.</p>
+                 </div>
+                 <div>
+                   <label className="text-xs font-medium text-gray-600">Discount Value</label>
+                   <input
+                     type="number"
+                     min={0}
+                     className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                     value={billingSettings.voiceCallDiscountValue}
+                     onChange={(e) => setBillingSettings((prev) => ({ ...prev, voiceCallDiscountValue: Math.max(0, Number(e.target.value || 0)) }))}
+                   />
+                   <p className="text-xs text-gray-500 mt-1">
+                     {billingSettings.voiceCallDiscountType === 'percentage' 
+                       ? 'Percentage discount applied to consultation fee.' 
+                       : 'Flat amount deducted from consultation fee.'}
+                   </p>
+                 </div>
+               </div>
             </div>
           </div>
           {billingError && <div className="text-xs text-red-600">{billingError}</div>}
