@@ -11,6 +11,7 @@ import { formatDateTimeNG } from "@/lib/datetime";
 import { WalletCard } from "./WalletCard";
 import { useWalletStore } from "@/store/walletStore";
 import { userAuthStore } from "@/store/authStore";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
 const statusColor = (s: PaymentStatus) =>
   s === "success"
@@ -25,6 +26,7 @@ const currency = (n: number, cur: string) =>
   new Intl.NumberFormat("en-NG", { style: "currency", currency: cur || "NGN" }).format(n);
 
 export default function PatientPaymentsContent() {
+  const isApp = useAppDetection();
   const { payments, fetchPayments, loading } = usePaymentStore();
   const { fetchWallet, fetchTransactions } = useWalletStore();
   const { user } = userAuthStore();
@@ -64,7 +66,7 @@ export default function PatientPaymentsContent() {
   return (
     <>
       <Header showDashboardNav={true} />
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className={`min-h-screen bg-gray-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
         <div className="container mx-auto px-4 py-6 space-y-6">
           <div className="flex items-center justify-between">
             <div>

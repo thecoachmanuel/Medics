@@ -13,8 +13,10 @@ import { Badge } from "../ui/badge";
 import { emptyStates, getStatusColor } from "@/lib/constant";
 import { formatDateTimeNG } from "@/lib/datetime";
 import PrescriptionViewModal from "./PrescriptionViewModal";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
 const DoctorAppointmentContent = () => {
+  const isApp = useAppDetection();
   const { user } = userAuthStore();
   const { appointments, fetchAppointments, loading ,updateAppointmentStatus, subscribeToAppointments, unsubscribeFromAppointments} = useAppointmentStore();
   const [activeTab, setActiveTab] = useState("upcoming");
@@ -294,7 +296,7 @@ const DoctorAppointmentContent = () => {
     <>
       <Header showDashboardNav={true} />
 
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className={`min-h-screen bg-gray-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-8">
             <div>

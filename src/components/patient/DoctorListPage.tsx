@@ -19,8 +19,10 @@ import {
 } from "../ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import Link from "next/link";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
 const DoctorListPage = () => {
+  const isApp = useAppDetection();
   const searchParams = useSearchParams();
   const categoryParams = searchParams.get("category");
 
@@ -105,7 +107,7 @@ const DoctorListPage = () => {
         )
       : healthcareCategories;
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className={`min-h-screen bg-gray-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
       <Header />
 
       <div className="bg-white border-b ">

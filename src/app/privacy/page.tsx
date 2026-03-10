@@ -2,11 +2,14 @@
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Suspense } from "react";
 
 const PrivacyPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-50">
-      <Header showDashboardNav={false} />
+      <Suspense fallback={<div className="h-20 bg-white/80 backdrop-blur-md" />}>
+        <Header showDashboardNav={false} />
+      </Suspense>
       <main className="pt-20 pb-16">
         <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
           <div className="space-y-4">
@@ -198,7 +201,9 @@ const PrivacyPage = () => {
           </Card>
         </section>
       </main>
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </div>
   );
 };

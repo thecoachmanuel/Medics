@@ -9,6 +9,7 @@ import { useWalletStore } from "@/store/walletStore";
 import { payWithWallet } from "@/actions/wallet-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
 declare global {
   interface Window {
@@ -77,6 +78,7 @@ const PayementStep = ({
   appointmentId,
   patientName,
 }: PaymentStepInterface) => {
+  const isApp = useAppDetection();
   const [paymentStatus, setPaymentStatus] = useState<
     "idle" | "processing" | "success" | "failed"
   >("idle");
@@ -261,7 +263,7 @@ const PayementStep = ({
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">
       <Card>
-        <CardContent className="p-6">
+        <CardContent className={isApp ? "p-4" : "p-6"}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Payment</h2>

@@ -29,7 +29,10 @@ interface NavigationItem {
   href: string;
   active: boolean;
 }
+import { useAppDetection } from "@/hooks/use-app-detection";
+
 const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, logoUrl }) => {
+  const isApp = useAppDetection();
   const { user, isAuthenticated, logout } = userAuthStore();
   const pathname = usePathname();
   const router = useRouter();
@@ -53,6 +56,8 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
     };
     checkAdmin();
   }, []);
+
+  if (isApp) return null; // Hide header in app mode
 
   const handleLogout = () => {
     logout();

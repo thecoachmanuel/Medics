@@ -1,5 +1,6 @@
 import ProfilePage from "@/components/ProfilePage/ProfilePage";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Patient Profile | MedicsOnline",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return  <ProfilePage userType='patient'/>
+  return (
+    <Suspense fallback={<div className="h-16" />}> 
+      <ProfilePage userType='patient'/>
+    </Suspense>
+  )
 }

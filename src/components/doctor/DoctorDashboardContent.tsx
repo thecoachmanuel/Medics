@@ -32,8 +32,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { getStatusColor } from "@/lib/constant";
 import { formatDateTimeNG } from "@/lib/datetime";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
 const DoctorDashboardContent = () => {
+  const isApp = useAppDetection();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isAuthenticated } = userAuthStore();
@@ -300,7 +302,7 @@ const DoctorDashboardContent = () => {
     <>
       <Header showDashboardNav={true} />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pt-16">
+      <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">
             <div className="flex items-center justify-between">

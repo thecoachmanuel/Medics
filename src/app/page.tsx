@@ -8,7 +8,7 @@ import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import { CalendarCheck, ShieldCheck, Smartphone, Stethoscope, Video } from "lucide-react";
 import { userAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 type HomepageFaqItem = {
   question: string;
@@ -179,12 +179,16 @@ export default function Home() {
 
   return (
      <div className="min-h-screen bg-white">
-      <NativeWelcome />
-      <Header 
-        showDashboardNav={false} 
-        siteName={content?.siteName || "MedicsOnline"} 
-        logoUrl={content?.headerLogoUrl} 
-      />
+      <Suspense fallback={null}>
+        <NativeWelcome />
+      </Suspense>
+      <Suspense fallback={<div className="h-16" />}>
+        <Header 
+          showDashboardNav={false} 
+          siteName={content?.siteName || "MedicsOnline"} 
+          logoUrl={content?.headerLogoUrl} 
+        />
+      </Suspense>
       <main className="pt-16">
          <LandingHero
            title={content?.heroTitle}
@@ -298,14 +302,16 @@ export default function Home() {
           subtitle={content?.faqSubtitle}
           items={content?.faqItems}
         />
-        <Footer
-          introText={content?.footerIntro}
-          contactPhone={content?.footerContactPhone}
-          contactEmail={content?.footerContactEmail}
-          contactLocation={content?.footerContactLocation}
-          socialLinks={content?.socials}
-          footerLogoUrl={content?.footerLogoUrl}
-        />
+        <Suspense fallback={null}>
+          <Footer
+            introText={content?.footerIntro}
+            contactPhone={content?.footerContactPhone}
+            contactEmail={content?.footerContactEmail}
+            contactLocation={content?.footerContactLocation}
+            socialLinks={content?.socials}
+            footerLogoUrl={content?.footerLogoUrl}
+          />
+        </Suspense>
       </main>
       
       {isEditable && hasChanges && (

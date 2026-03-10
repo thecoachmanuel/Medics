@@ -3,6 +3,7 @@ import { contactInfo, footerSections, socials as defaultSocials } from "@/lib/co
 import { Stethoscope, Twitter, Facebook, Linkedin, Instagram, Youtube, Github } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
 interface FooterProps {
   introText?: string;
@@ -14,6 +15,7 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, contactLocation, socialLinks, footerLogoUrl }) => {
+  const isApp = useAppDetection();
   const resolvedIntro =
     introText && introText.trim().length > 0
       ? introText
@@ -46,6 +48,8 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  if (isApp) return null; // Hide footer in app mode
 
   const handleSubscribe = async () => {
     setSubmitting(true);

@@ -34,7 +34,7 @@ function MobileBottomNavContent() {
   const patientLinks = [
     {
       href: "/patient/dashboard",
-      label: "Home",
+      label: "Dashboard",
       icon: Home,
       activePattern: /^\/patient\/dashboard/,
     },
@@ -61,7 +61,7 @@ function MobileBottomNavContent() {
   const doctorLinks = [
     {
       href: "/doctor/dashboard",
-      label: "Home",
+      label: "Dashboard",
       icon: LayoutGrid,
       activePattern: /^\/doctor\/dashboard/,
     },
@@ -88,7 +88,7 @@ function MobileBottomNavContent() {
   const links = user.type === "doctor" ? doctorLinks : patientLinks;
 
   // Don't show on login/signup pages even if in app (unlikely if we have user, but good safety)
-  if (pathname.includes("/login") || pathname.includes("/signup")) return null;
+  if (pathname.includes("/login") || pathname.includes("/signup") || pathname.includes("/call/")) return null;
 
   return (
     <>

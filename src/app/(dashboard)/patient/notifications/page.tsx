@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Header from "@/components/landing/Header";
 import { supabase } from "@/lib/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDateTimeNG } from "@/lib/datetime";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
 interface NotificationRow {
   id: string;
@@ -14,7 +15,8 @@ interface NotificationRow {
   is_read: boolean;
 }
 
-export default function Page() {
+const PageContent = () => {
+  const isApp = useAppDetection();
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -87,7 +89,7 @@ export default function Page() {
   return (
     <>
       <Header showDashboardNav={true} />
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className={`min-h-screen bg-gray-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
         <div className="container mx-auto px-4 py-8 space-y-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Notifications</h1>
@@ -140,5 +142,13 @@ export default function Page() {
         </div>
       </div>
     </>
+  );
+};
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <PageContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/landing/Header";
 import { userAuthStore } from "@/store/authStore";
@@ -9,8 +9,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle, Send } from "lucide-react";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
-const AppealPage = () => {
+const AppealPageContent = () => {
+  const isApp = useAppDetection();
   const router = useRouter();
   const { user, isAuthenticated } = userAuthStore();
   const [reason, setReason] = useState("");
@@ -66,7 +68,7 @@ const AppealPage = () => {
   return (
     <>
       <Header showDashboardNav={Boolean(isAuthenticated && user)} />
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-amber-50 pt-16">
+      <div className={`min-h-screen bg-gradient-to-br from-red-50 via-white to-amber-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
         <div className="container mx-auto px-4 py-12 max-w-2xl">
           <Card className="border border-red-200 bg-white/90">
             <CardHeader className="flex flex-row items-center gap-3">
@@ -131,5 +133,11 @@ const AppealPage = () => {
   );
 };
 
-export default AppealPage;
+export default function AppealPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <AppealPageContent />
+    </Suspense>
+  );
+}
 

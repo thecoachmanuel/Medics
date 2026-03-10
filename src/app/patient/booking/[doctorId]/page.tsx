@@ -9,6 +9,7 @@ import { userAuthStore } from "@/store/authStore";
 import { ArrowLeft, Check } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useAppDetection } from "@/hooks/use-app-detection";
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import CalendarStep from "@/components/BookingSteps/CalendarStep";
@@ -17,6 +18,7 @@ import PayementStep from "@/components/BookingSteps/PayementStep";
 import { toast } from "sonner";
 
 const page = () => {
+  const isApp = useAppDetection();
   const params = useParams();
   const router = useRouter();
   const doctorId = params.doctorId as string;
@@ -279,17 +281,19 @@ const page = () => {
   console.log("this is my current doctor", currentDoctor);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 ${isApp ? 'pt-4' : ''}`}>
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link href="/doctor-list">
-                <Button variant="ghost" size="sm" className="text-gray-600">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Doctors
-                </Button>
-              </Link>
+              {!isApp && (
+                <Link href="/doctor-list">
+                  <Button variant="ghost" size="sm" className="text-gray-600">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Doctors
+                  </Button>
+                </Link>
+              )}
               <div className="h-6 w-px bg-gray-200"></div>
               <div>
                 <h1 className="text-sm md:text-2xl font-bold text-gray-900">

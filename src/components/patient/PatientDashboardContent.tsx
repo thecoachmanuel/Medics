@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Header from "../landing/Header";
 import { userAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
@@ -16,8 +16,10 @@ import { formatDateTimeNG } from "@/lib/datetime";
 import { WalletCard } from "./WalletCard";
 import PrescriptionViewModal from "../doctor/PrescriptionViewModal";
 import { Textarea } from "../ui/textarea";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
-const PatientDashboardContent = () => {
+const PatientDashboardContentInner = () => {
+  const isApp = useAppDetection();
   const { user, isAuthenticated } = userAuthStore();
   const router = useRouter();
   const { appointments, fetchAppointments, loading, rateDoctor, subscribeToAppointments, unsubscribeFromAppointments } = useAppointmentStore();
@@ -364,7 +366,7 @@ const PatientDashboardContent = () => {
     <>
       <Header showDashboardNav={true} />
 
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className={`min-h-screen bg-gray-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -483,5 +485,11 @@ const PatientDashboardContent = () => {
     </>
   );
 };
+
+const PatientDashboardContent = () => (
+  <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+    <PatientDashboardContentInner />
+  </Suspense>
+);
 
 export default PatientDashboardContent;

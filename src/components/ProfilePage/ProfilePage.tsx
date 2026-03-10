@@ -33,11 +33,13 @@ import { Textarea } from "../ui/textarea";
 import { Badge } from "../ui/badge";
 import { Checkbox } from "../ui/checkbox";
 import { uploadImage } from "@/lib/cloudinary";
+import { useAppDetection } from "@/hooks/use-app-detection";
 
 interface ProfileProps {
   userType: "doctor" | "patient";
 }
 const ProfilePage = ({ userType }: ProfileProps) => {
+  const isApp = useAppDetection();
   const { user, fetchProfile, updateProfile, loading } = userAuthStore();
   const [activeSection, setActiveSection] = useState("about");
   const [isRecovery, setIsRecovery] = useState(false);
@@ -838,7 +840,7 @@ const ProfilePage = ({ userType }: ProfileProps) => {
   return (
     <>
       <Header showDashboardNav={true} />
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className={`min-h-screen bg-gray-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Records</h1>
