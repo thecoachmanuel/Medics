@@ -1,23 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 export function useAppDetection() {
   const [isApp, setIsApp] = useState(false);
-  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // 1. Check if we already detected it in this session
-    const storedIsApp = typeof window !== 'undefined' && sessionStorage.getItem("is_mobile_app") === "true";
-    if (storedIsApp) {
+    const getSessionFlag = (): boolean => {
+      try {
+        return (
+          typeof window !== "undefined" &&
+          window.sessionStorage?.getItem("is_mobile_app") === "true"
+        );
+      } catch {
+        return false;
+      }
+    };
+
+    const setSessionFlag = (): void => {
+      try {
+        if (typeof window !== "undefined") {
+          window.sessionStorage?.setItem("is_mobile_app", "true");
+        }
+      } catch {}
+    };
+
+    if (getSessionFlag()) {
       setIsApp(true);
       return;
     }
 
     // 2. Check for Query Parameter (e.g., ?source=mobile_app)
-    const sourceParam = searchParams.get("source");
-    const isSourceApp = sourceParam === "mobile_app" || sourceParam === "ios" || sourceParam === "android";
+    let sourceParam: string | null = null;
+    try {
+      if (typeof window !== "undefined") {
+        sourceParam = new URLSearchParams(window.location.search).get("source");
+      }
+    } catch {
+      sourceParam = null;
+    }
+    const isSourceApp =
+      sourceParam === "mobile_app" ||
+      sourceParam === "ios" ||
+      sourceParam === "android";
 
     // 3. Check for User Agent
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -33,11 +58,9 @@ export function useAppDetection() {
 
     if (isSourceApp || isUserAgentApp || isReactNative) {
       setIsApp(true);
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem("is_mobile_app", "true");
-      }
+      setSessionFlag();
     }
-  }, [searchParams]);
+  }, []);
 
   return isApp;
 }

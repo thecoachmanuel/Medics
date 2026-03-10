@@ -57,14 +57,13 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
     checkAdmin();
   }, []);
 
-  if (isApp) return null; // Hide header in app mode
-
   const handleLogout = () => {
     logout();
     router.push("/");
   };
 
   useEffect(() => {
+    if (isApp) return;
     if (logoUrl !== undefined && logoUrl !== null) return;
     let mounted = true;
     const loadBrand = async () => {
@@ -79,9 +78,10 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
     return () => {
       mounted = false;
     };
-  }, [logoUrl]);
+  }, [isApp, logoUrl]);
 
   useEffect(() => {
+    if (isApp) return;
     if (!user || !showDashboardNav) {
       setUnreadCount(0);
       return;
@@ -144,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
       window.removeEventListener("notifications:markAllRead", handleMarkedAllRead);
       supabase.removeChannel(channel);
     };
-  }, [user?.id, showDashboardNav]);
+  }, [isApp, user?.id, showDashboardNav]);
 
   const getDashboardNavigation = (): NavigationItem[] => {
     if (!user || !showDashboardNav) return [];
@@ -194,6 +194,8 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
     }
     return [];
   };
+
+  if (isApp) return null;
   return (
     <header className="border-b bg-white/95 backdrop:blur-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center  justify-between">

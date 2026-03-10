@@ -12,17 +12,33 @@ function NativeWelcomeContent() {
   const router = useRouter();
   const [step, setStep] = useState<'loading' | 'splash' | 'onboarding' | 'role_selection' | 'complete'>('loading');
 
+  const safeLocalStorageGet = (key: string): string | null => {
+    try {
+      if (typeof window === 'undefined') return null;
+      return window.localStorage?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  const safeLocalStorageSet = (key: string, value: string): void => {
+    try {
+      if (typeof window === 'undefined') return;
+      window.localStorage?.setItem(key, value);
+    } catch {}
+  };
+
   useEffect(() => {
     if (isApp) {
       // Start flow
       setStep('splash');
 
       const timer = setTimeout(() => {
-        const hasOnboarded = localStorage.getItem('native_onboarding_completed');
+        const hasOnboarded = safeLocalStorageGet('native_onboarding_completed');
         if (hasOnboarded) {
             // If already onboarded, go to login directly
             // Check if there is a saved role preference
-            const savedRole = localStorage.getItem('native_user_role');
+            const savedRole = safeLocalStorageGet('native_user_role');
             if (savedRole === 'doctor') {
               router.replace('/login/doctor');
             } else {
@@ -43,8 +59,8 @@ function NativeWelcomeContent() {
   };
 
   const handleRoleSelect = (role: 'patient' | 'doctor') => {
-    localStorage.setItem('native_onboarding_completed', 'true');
-    localStorage.setItem('native_user_role', role);
+    safeLocalStorageSet('native_onboarding_completed', 'true');
+    safeLocalStorageSet('native_user_role', role);
     
     if (role === 'patient') {
       router.push('/signup/patient');
