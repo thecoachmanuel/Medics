@@ -60,6 +60,8 @@ function NativeTopBarContent() {
 
   if (!shouldRender) return null;
 
+  if (!user) return null;
+
   const currentUser = user;
   const isDashboard = /^(\/doctor|\/patient)\/dashboard(\/|$)/.test(pathname);
   const showBack = !isDashboard;
