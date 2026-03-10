@@ -10,7 +10,8 @@ export function useAppDetection() {
       try {
         return (
           typeof window !== "undefined" &&
-          window.sessionStorage?.getItem("is_mobile_app") === "true"
+          "sessionStorage" in window &&
+          window.sessionStorage.getItem("is_mobile_app") === "true"
         );
       } catch {
         return false;
@@ -20,7 +21,9 @@ export function useAppDetection() {
     const setSessionFlag = (): void => {
       try {
         if (typeof window !== "undefined") {
-          window.sessionStorage?.setItem("is_mobile_app", "true");
+          if ("sessionStorage" in window) {
+            window.sessionStorage.setItem("is_mobile_app", "true");
+          }
         }
       } catch {}
     };

@@ -15,7 +15,8 @@ function NativeWelcomeContent() {
   const safeLocalStorageGet = (key: string): string | null => {
     try {
       if (typeof window === 'undefined') return null;
-      return window.localStorage?.getItem(key) ?? null;
+      if (!('localStorage' in window)) return null;
+      return window.localStorage.getItem(key);
     } catch {
       return null;
     }
@@ -24,7 +25,8 @@ function NativeWelcomeContent() {
   const safeLocalStorageSet = (key: string, value: string): void => {
     try {
       if (typeof window === 'undefined') return;
-      window.localStorage?.setItem(key, value);
+      if (!('localStorage' in window)) return;
+      window.localStorage.setItem(key, value);
     } catch {}
   };
 
