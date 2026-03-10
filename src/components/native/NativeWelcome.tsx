@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useAppDetection } from '@/hooks/use-app-detection';
 import SplashScreen from './SplashScreen';
 import OnboardingScreen from './OnboardingScreen';
+import RoleSelectionScreen from './RoleSelectionScreen';
 
 function NativeWelcomeContent() {
   const isApp = useAppDetection();
   const router = useRouter();
-  const [step, setStep] = useState<'loading' | 'splash' | 'onboarding' | 'complete'>('loading');
+  const [step, setStep] = useState<'loading' | 'splash' | 'onboarding' | 'role_selection' | 'complete'>('loading');
 
   useEffect(() => {
     if (isApp) {
@@ -20,7 +21,13 @@ function NativeWelcomeContent() {
         const hasOnboarded = localStorage.getItem('native_onboarding_completed');
         if (hasOnboarded) {
             // If already onboarded, go to login directly
-            router.replace('/login/patient');
+            // Check if there is a saved role preference
+            const savedRole = localStorage.getItem('native_user_role');
+            if (savedRole === 'doctor') {
+              router.replace('/login/doctor');
+            } else {
+              router.replace('/login/patient');
+            }
             // We keep showing splash until redirect happens
         } else {
             setStep('onboarding');
@@ -32,8 +39,18 @@ function NativeWelcomeContent() {
   }, [isApp, router]);
 
   const handleOnboardingComplete = () => {
+    setStep('role_selection');
+  };
+
+  const handleRoleSelect = (role: 'patient' | 'doctor') => {
     localStorage.setItem('native_onboarding_completed', 'true');
-    router.replace('/login');
+    localStorage.setItem('native_user_role', role);
+    
+    if (role === 'patient') {
+      router.push('/signup/patient');
+    } else {
+      router.push('/signup/doctor');
+    }
   };
 
   if (!isApp) return null;
@@ -45,6 +62,7 @@ function NativeWelcomeContent() {
     <div className="fixed inset-0 z-[9999] bg-white">
       {step === 'splash' && <SplashScreen />}
       {step === 'onboarding' && <OnboardingScreen onComplete={handleOnboardingComplete} />}
+      {step === 'role_selection' && <RoleSelectionScreen onSelect={handleRoleSelect} />}
     </div>
   );
 }
