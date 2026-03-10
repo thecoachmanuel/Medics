@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Stethoscope, Video, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -61,22 +60,13 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
         <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[50%] bg-blue-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
         <div className="absolute bottom-[-10%] left-[-20%] w-[80%] h-[50%] bg-purple-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="flex flex-col items-center text-center w-full max-w-sm z-10"
-          >
-            <div className={`w-32 h-32 rounded-[2rem] flex items-center justify-center mb-10 shadow-sm ${slides[currentSlide].color}`}>
-              <CurrentIcon className="w-14 h-14" strokeWidth={2} />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">{slides[currentSlide].title}</h2>
-            <p className="text-gray-500 leading-relaxed text-lg">{slides[currentSlide].description}</p>
-          </motion.div>
-        </AnimatePresence>
+        <div key={currentSlide} className="flex flex-col items-center text-center w-full max-w-sm z-10">
+          <div className={`w-32 h-32 rounded-[2rem] flex items-center justify-center mb-10 shadow-sm ${slides[currentSlide].color}`}>
+            <CurrentIcon className="w-14 h-14" strokeWidth={2} />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">{slides[currentSlide].title}</h2>
+          <p className="text-gray-500 leading-relaxed text-lg">{slides[currentSlide].description}</p>
+        </div>
       </div>
 
       {/* Footer Controls */}
