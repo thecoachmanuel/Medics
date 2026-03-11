@@ -21,13 +21,39 @@ function MobileBottomNavContent() {
   const pathname = usePathname();
   const { user } = userAuthStore();
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Only render on client, if it's the app, and we have a user
-  if (!mounted || !isApp || !user) return null;
+  useEffect(() => {
+    const update = () => {
+      try {
+        if (typeof window === "undefined") return;
+        const mq = window.matchMedia?.("(max-width: 768px)");
+        if (mq) {
+          setIsMobile(mq.matches);
+          return;
+        }
+        setIsMobile(window.innerWidth <= 768);
+      } catch {
+        setIsMobile(false);
+      }
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  // Only render on client and when we have a user
+  if (!mounted || !user) return null;
+
+  // Show on app wrapper and also for all mobile screens
+  if (!isApp && !isMobile) return null;
 
   const patientLinks = useMemo(() => [
     {
