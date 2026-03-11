@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 function MobileBottomNavContent() {
   const isApp = useAppDetection();
@@ -55,7 +55,7 @@ function MobileBottomNavContent() {
   // Show on app wrapper and also for all mobile screens
   if (!isApp && !isMobile) return null;
 
-  const patientLinks = useMemo(() => [
+  const patientLinks = [
     {
       href: "/patient/dashboard",
       label: "Dashboard",
@@ -80,9 +80,9 @@ function MobileBottomNavContent() {
       icon: User,
       activePattern: /^\/patient\/profile/,
     },
-  ], []);
+  ];
 
-  const doctorLinks = useMemo(() => [
+  const doctorLinks = [
     {
       href: "/doctor/dashboard",
       label: "Dashboard",
@@ -107,14 +107,14 @@ function MobileBottomNavContent() {
       icon: User,
       activePattern: /^\/doctor\/profile/,
     },
-  ], []);
+  ];
 
   const links = user.type === "doctor" ? doctorLinks : patientLinks;
 
-  const activeIndex = useMemo(() => {
+  const activeIndex = (() => {
     const idx = links.findIndex((link) => link.activePattern.test(pathname));
     return idx >= 0 ? idx : 0;
-  }, [links, pathname]);
+  })();
 
   // Don't show on login/signup pages even if in app (unlikely if we have user, but good safety)
   if (pathname.includes("/login") || pathname.includes("/signup") || pathname.includes("/call/")) return null;
