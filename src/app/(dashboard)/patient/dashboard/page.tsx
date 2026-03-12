@@ -1,3 +1,5 @@
+"use client";
+
 import Loader from '@/components/Loader'
 import PatientDashboardContent from '@/components/patient/PatientDashboardContent'
 import React, { Suspense } from 'react'
