@@ -1,0 +1,31 @@
+{
+  "name": "medicsapp-webview",
+  "version": "1.0.0",
+  "private": true,
+  "main": "App.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit || true",
+    "lint": "node -e \"const cp=require('node:child_process');\ntry{const eslintBin=require.resolve('eslint/bin/eslint');\nconst r=cp.spawnSync(process.execPath,[eslintBin,'.'],{stdio:'inherit'});\nprocess.exit(r.status??0);}catch(e){console.log('eslint not installed; skipping lint');}\""
+  },
+  "dependencies": {
+    "@react-native-community/netinfo": "11.4.1",
+    "babel-preset-expo": "~54.0.10",
+    "expo": "54.0.33",
+    "expo-splash-screen": "~31.0.13",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-web": "^0.21.0",
+    "react-native-webview": "13.15.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.20"
+  }
+}

@@ -58,46 +58,14 @@ function NativeTopBarContent() {
     return pathname.startsWith("/patient/") || pathname.startsWith("/doctor/");
   }, [isApp, mounted, pathname, user]);
 
-  if (!shouldRender) return null;
-
-  if (!user) return null;
-
   const currentUser = user;
-  const isDashboard = /^(\/doctor|\/patient)\/dashboard(\/|$)/.test(pathname);
+  const isDashboard = Boolean(currentUser && /^(\/doctor|\/patient)\/dashboard(\/|$)/.test(pathname));
   const showBack = !isDashboard;
   const showBell = isDashboard;
 
-  const fallback = (currentUser.name?.trim()?.[0] || currentUser.email?.trim()?.[0] || "U").toUpperCase();
-
-  const handleLogout = async () => {
-    await logout();
-    const role = currentUser.type === "doctor" ? "doctor" : "patient";
-    router.replace(`/login/${role}?source=mobile_app`);
-  };
-
-  const handleProfile = () => {
-    const path = currentUser.type === "doctor" ? "/doctor/profile" : "/patient/profile";
-    router.push(path);
-  };
-
-  const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-      return;
-    }
-    router.push(`/${currentUser.type}/dashboard`);
-  };
-
-  const handleLogo = () => {
-    router.push(`/${currentUser.type}/dashboard`);
-  };
-
-  const handleNotifications = () => {
-    router.push(`/${currentUser.type}/notifications`);
-  };
-
   useEffect(() => {
-    if (!isApp) return;
+    if (!shouldRender || !isApp || !showBell) return;
+    if (!currentUser?.id) return;
 
     let isMounted = true;
 
@@ -163,7 +131,40 @@ function NativeTopBarContent() {
       window.removeEventListener("notifications:markAllRead", handleMarkedAllRead);
       supabase.removeChannel(channel);
     };
-  }, [currentUser.id, isApp]);
+  }, [currentUser?.id, isApp, shouldRender, showBell]);
+
+  if (!shouldRender) return null;
+
+  if (!currentUser) return null;
+
+  const fallback = (currentUser.name?.trim()?.[0] || currentUser.email?.trim()?.[0] || "U").toUpperCase();
+
+  const handleLogout = async () => {
+    await logout();
+    const role = currentUser.type === "doctor" ? "doctor" : "patient";
+    router.replace(`/login/${role}?source=mobile_app`);
+  };
+
+  const handleProfile = () => {
+    const path = currentUser.type === "doctor" ? "/doctor/profile" : "/patient/profile";
+    router.push(path);
+  };
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(`/${currentUser.type}/dashboard`);
+  };
+
+  const handleLogo = () => {
+    router.push(`/${currentUser.type}/dashboard`);
+  };
+
+  const handleNotifications = () => {
+    router.push(`/${currentUser.type}/notifications`);
+  };
 
   return (
     <div className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
