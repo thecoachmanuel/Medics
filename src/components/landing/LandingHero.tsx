@@ -1,5 +1,5 @@
 "use client";
-import React from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '../ui/button'
 import Link from 'next/link'
 import { healthcareCategories } from '@/lib/constant'
@@ -28,6 +28,33 @@ const LandingHero: React.FC<LandingHeroProps> = ({
 }) => {
  const {isAuthenticated} = userAuthStore();
    const router = useRouter();
+   const sectionRef = useRef<HTMLElement | null>(null);
+   const [isRevealed, setIsRevealed] = useState(false);
+
+   useEffect(() => {
+     if (typeof window === "undefined") return;
+     if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+       setIsRevealed(true);
+       return;
+     }
+
+     const el = sectionRef.current;
+     if (!el) return;
+
+     const observer = new IntersectionObserver(
+       (entries) => {
+         const first = entries[0];
+         if (first?.isIntersecting) {
+           setIsRevealed(true);
+           observer.disconnect();
+         }
+       },
+       { root: null, threshold: 0.25 }
+     );
+
+     observer.observe(el);
+     return () => observer.disconnect();
+   }, []);
 
 
    const handleBookConsultation= () => {
@@ -54,11 +81,53 @@ const LandingHero: React.FC<LandingHeroProps> = ({
   const primaryLabel = primaryCtaLabel && primaryCtaLabel.trim().length > 0 ? primaryCtaLabel : 'Find Doctors';
   const secondaryLabel = secondaryCtaLabel && secondaryCtaLabel.trim().length > 0 ? secondaryCtaLabel : 'Login as Doctor';
 
-  return (
-    <section className='py-20 px-4 bg-gradient-to-b from-blue-50 to-white'>
+  const heroBgIcons = useMemo(() => {
+    const picks = healthcareCategories.slice(0, 6);
+    const placements = [
+      { top: "-6%", left: "6%", size: 96, opacity: 0.12, dur: "18s", delay: "-6s" },
+      { top: "10%", right: "8%", size: 72, opacity: 0.1, dur: "22s", delay: "-10s" },
+      { bottom: "14%", left: "10%", size: 88, opacity: 0.1, dur: "26s", delay: "-14s" },
+      { bottom: "-8%", right: "18%", size: 110, opacity: 0.12, dur: "30s", delay: "-18s" },
+      { top: "42%", left: "-2%", size: 64, opacity: 0.08, dur: "24s", delay: "-12s" },
+      { top: "46%", right: "-1%", size: 64, opacity: 0.08, dur: "20s", delay: "-8s" },
+    ];
 
-        <div className='container mx-auto text-center'>
-            <h1 className='text-5xl md:text-6xl font-bold text-blue-900 leading-tight mb-6'>
+    return picks.map((cat, i) => ({ cat, style: placements[i] }));
+  }, []);
+
+  return (
+    <section ref={sectionRef} className='relative overflow-hidden py-20 px-4 bg-gradient-to-b from-blue-50 to-white'>
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.10),transparent_55%)]" />
+          {heroBgIcons.map(({ cat, style }, idx) => (
+            <div
+              key={`${cat.id}-${idx}`}
+              className="absolute text-blue-600/30 mo-hero-float"
+              style={
+                {
+                  ...style,
+                  width: `${style.size}px`,
+                  height: `${style.size}px`,
+                  opacity: style.opacity,
+                  ["--mo-dur" as any]: style.dur,
+                  ["--mo-delay" as any]: style.delay,
+                } as React.CSSProperties
+              }
+            >
+              <svg className="h-full w-full" fill="currentColor" viewBox="0 0 24 24">
+                <path d={cat.icon} />
+              </svg>
+            </div>
+          ))}
+        </div>
+
+        <div className='container mx-auto text-center relative'>
+            <h1
+              className={`text-5xl md:text-6xl font-bold text-blue-900 leading-tight mb-6 mo-reveal ${
+                isRevealed ? "mo-reveal-in" : ""
+              }`}
+              style={{ ["--mo-delay" as any]: "0ms" } as React.CSSProperties}
+            >
                 <EditableElement
                    tag="span"
                    html={headingLine}
@@ -74,7 +143,12 @@ const LandingHero: React.FC<LandingHeroProps> = ({
                     />
                 </span>
             </h1>
-            <p className='text-xl text-gray-600 mb-8 max-w-2xl mx-auto'>
+            <p
+              className={`text-xl text-gray-600 mb-8 max-w-2xl mx-auto mo-reveal ${
+                isRevealed ? "mo-reveal-in" : ""
+              }`}
+              style={{ ["--mo-delay" as any]: "120ms" } as React.CSSProperties}
+            >
                 <EditableElement
                    tag="span"
                    html={heroDescription}
@@ -82,7 +156,12 @@ const LandingHero: React.FC<LandingHeroProps> = ({
                    onChange={(val: string) => onUpdate?.('heroDescription', val)}
                 />
             </p>
-            <div className='flex flex-col sm:flex-row gap-4 justify-center mb-12'>
+            <div
+              className={`flex flex-col sm:flex-row gap-4 justify-center mb-12 mo-reveal ${
+                isRevealed ? "mo-reveal-in" : ""
+              }`}
+              style={{ ["--mo-delay" as any]: "220ms" } as React.CSSProperties}
+            >
                      <Button onClick={handleBookConsultation} size='lg' className='bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-full px-8 py-3 text-lg'> 
                         {primaryLabel}
                      </Button>
@@ -95,7 +174,10 @@ const LandingHero: React.FC<LandingHeroProps> = ({
             </div>
 
             {/* Healgthcare categories */}
-            <section className='py-6'>
+            <section
+              className={`py-6 mo-reveal ${isRevealed ? "mo-reveal-in" : ""}`}
+              style={{ ["--mo-delay" as any]: "320ms" } as React.CSSProperties}
+            >
                  <div className='container mx-auto px-4'>
                  <div className='flex justify-center items-center overflow-x-auto gap-6 pb-2 scrollbar-hide mx-auto'>
                      {healthcareCategories.map((category) => (
@@ -121,7 +203,12 @@ const LandingHero: React.FC<LandingHeroProps> = ({
             </section>
 
             {/* Trust Indicator */}
-            <div className='flex flex-wrap justify-center items-center gap-8 text-sm text-gray-600'>
+            <div
+              className={`flex flex-wrap justify-center items-center gap-8 text-sm text-gray-600 mo-reveal ${
+                isRevealed ? "mo-reveal-in" : ""
+              }`}
+              style={{ ["--mo-delay" as any]: "420ms" } as React.CSSProperties}
+            >
                 <div className='flex items-center space-x-2'>
                      <div className='w-2 h-2 bg-green-500 rounded-full'>
                      </div>
