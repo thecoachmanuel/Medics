@@ -49,7 +49,8 @@ export async function GET(request: NextRequest) {
   const appointments = ((rows || []) as any[]);
   if (appointments.length === 0) {
     const statusUpdateResult = await updateExpiredAndMissedAppointments(supabase);
-    return NextResponse.json({ success: true, processed: 0, ...statusUpdateResult });
+    const inProgressUpdateResult = await updateStaleInProgressAppointments(supabase);
+    return NextResponse.json({ success: true, processed: 0, ...statusUpdateResult, ...inProgressUpdateResult });
   }
 
   const participantIds = Array.from(
@@ -175,6 +176,7 @@ export async function GET(request: NextRequest) {
       .eq("id", appt.id);
   }
   const statusUpdateResult = await updateExpiredAndMissedAppointments(supabase);
+  const inProgressUpdateResult = await updateStaleInProgressAppointments(supabase);
 
   return NextResponse.json({
     success: true,
@@ -182,7 +184,95 @@ export async function GET(request: NextRequest) {
     emailSent: emailSentCount,
     smsSent: smsSentCount,
     ...statusUpdateResult,
+    ...inProgressUpdateResult,
   });
+}
+
+async function updateStaleInProgressAppointments(supabase: ReturnType<typeof getServiceSupabase>) {
+  const now = new Date();
+
+  const { data: inProgressRows, error: inProgressError } = await supabase
+    .from("appointments")
+    .select("id,slot_start_iso,slot_end_iso")
+    .eq("status", "In Progress");
+
+  if (inProgressError || !inProgressRows || !inProgressRows.length) {
+    return { inProgressClosed: 0, inProgressCompleted: 0, inProgressExpired: 0 };
+  }
+
+  const staleIds: string[] = [];
+
+  for (const row of inProgressRows as any[]) {
+    const id = row.id as string;
+    const startIso = row.slot_start_iso as string | null;
+    const endIso = row.slot_end_iso as string | null;
+
+    let effectiveEnd: Date | null = null;
+    if (endIso) {
+      const end = new Date(endIso);
+      if (!Number.isNaN(end.getTime())) {
+        effectiveEnd = end;
+      }
+    }
+
+    if (!effectiveEnd && startIso) {
+      const start = new Date(startIso);
+      if (!Number.isNaN(start.getTime())) {
+        effectiveEnd = new Date(start.getTime() + 60 * 60 * 1000);
+      }
+    }
+
+    if (!effectiveEnd) continue;
+
+    const cutoff = new Date(effectiveEnd.getTime() + 2 * 60 * 60 * 1000);
+    if (now >= cutoff) {
+      staleIds.push(id);
+    }
+  }
+
+  if (!staleIds.length) {
+    return { inProgressClosed: 0, inProgressCompleted: 0, inProgressExpired: 0 };
+  }
+
+  const { data: payRows } = await supabase
+    .from("payments")
+    .select("appointment_id,status")
+    .in("appointment_id", staleIds)
+    .eq("status", "success");
+
+  const paidSet = new Set<string>((payRows || []).map((p: any) => p.appointment_id as string));
+
+  const completedIds = staleIds.filter((id) => paidSet.has(id));
+  const expiredIds = staleIds.filter((id) => !paidSet.has(id));
+
+  let inProgressCompleted = 0;
+  let inProgressExpired = 0;
+
+  if (completedIds.length) {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "Completed" })
+      .in("id", completedIds);
+    if (!error) {
+      inProgressCompleted = completedIds.length;
+    }
+  }
+
+  if (expiredIds.length) {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "Expired" })
+      .in("id", expiredIds);
+    if (!error) {
+      inProgressExpired = expiredIds.length;
+    }
+  }
+
+  return {
+    inProgressClosed: staleIds.length,
+    inProgressCompleted,
+    inProgressExpired,
+  };
 }
 
 async function updateExpiredAndMissedAppointments(supabase: ReturnType<typeof getServiceSupabase>) {

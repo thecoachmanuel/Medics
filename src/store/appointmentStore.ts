@@ -463,9 +463,20 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
   rateDoctor: async (appointmentId, rating, comment) => {
     set({ loading: true, error: null });
     try {
+      if (!appointmentId) throw new Error('Appointment ID is required');
       const { data: session } = await supabase.auth.getUser();
       const uid = session.user?.id;
       if (!uid) throw new Error('Not authenticated');
+
+      const { data: existingRating, error: existingErr } = await supabase
+        .from('doctor_ratings')
+        .select('appointment_id')
+        .eq('appointment_id', appointmentId)
+        .maybeSingle();
+      if (existingErr) throw existingErr;
+      if (existingRating) {
+        throw new Error('Review already submitted for this appointment');
+      }
 
       const { data: aptRow, error: aptErr } = await supabase
         .from('appointments')
@@ -492,12 +503,18 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         payload.comment = comment;
       }
 
-      const { data: upserted, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('doctor_ratings')
-        .upsert(payload, { onConflict: 'appointment_id' })
+        .insert(payload)
         .select('appointment_id,rating,comment')
         .single();
-      if (error) throw error;
+      if (error) {
+        const msg = String((error as any)?.message || 'Unable to submit review');
+        if (msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('conflict')) {
+          throw new Error('Review already submitted for this appointment');
+        }
+        throw error;
+      }
 
       try {
         await fetch('/api/admin/activity', {
@@ -513,8 +530,8 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
           apt._id === appointmentId
             ? {
                 ...apt,
-                rating: upserted.rating as number,
-                reviewComment: upserted.comment as string | undefined,
+                rating: inserted.rating as number,
+                reviewComment: inserted.comment as string | undefined,
               }
             : apt
         ),
@@ -522,8 +539,8 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
           state.currentAppointment?._id === appointmentId
             ? {
                 ...state.currentAppointment,
-                rating: upserted.rating as number,
-                reviewComment: upserted.comment as string | undefined,
+                rating: inserted.rating as number,
+                reviewComment: inserted.comment as string | undefined,
               }
             : state.currentAppointment,
       }));

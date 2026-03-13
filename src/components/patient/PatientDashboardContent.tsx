@@ -117,6 +117,7 @@ const PatientDashboardContentInner = () => {
     const [savingRating, setSavingRating] = useState(false);
     const [comment, setComment] = useState(appointment.reviewComment ?? "");
     const [localRating, setLocalRating] = useState<number | undefined>(appointment.rating);
+    const reviewLocked = typeof appointment.rating === "number" && !Number.isNaN(appointment.rating);
 
     useEffect(() => {
       setComment(appointment.reviewComment ?? "");
@@ -127,11 +128,13 @@ const PatientDashboardContentInner = () => {
     }, [appointment.rating]);
 
     const handleRate = (value: number) => {
+      if (reviewLocked) return;
       if (savingRating) return;
       setLocalRating(value);
     };
 
     const handleSaveReview = async () => {
+      if (reviewLocked) return;
       if (savingRating) return;
       if (localRating === undefined) return;
       
@@ -265,53 +268,76 @@ const PatientDashboardContentInner = () => {
 
             {appointment.status === 'Completed' && appointment.paymentStatus === 'success' && (
               <div className="mt-3 w-full">
-                <div className="flex items-center space-x-1">
-                  {[...Array(5)].map((_, i) => {
-                    const value = i + 1;
-                    const filled =
-                      localRating !== undefined
-                        ? value <= localRating
-                        : false;
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        disabled={savingRating}
-                        onClick={() => handleRate(value)}
-                        className="focus:outline-none"
-                      >
-                        <Star
-                          className={
-                            filled
-                              ? 'w-4 h-4 fill-yellow-400 text-yellow-400'
-                              : 'w-4 h-4 text-gray-300'
-                          }
-                        />
-                      </button>
-                    );
-                  })}
-                  <span className="ml-2 text-xs text-gray-500">
-                    {localRating !== undefined
-                      ? `${localRating.toFixed(1)} / 5`
-                      : 'Tap to rate your doctor'}
-                  </span>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center space-x-1">
+                    {[...Array(5)].map((_, i) => {
+                      const value = i + 1;
+                      const filled = localRating !== undefined ? value <= localRating : false;
+
+                      if (reviewLocked) {
+                        return (
+                          <Star
+                            key={value}
+                            className={
+                              filled
+                                ? 'w-4 h-4 fill-yellow-400 text-yellow-400'
+                                : 'w-4 h-4 text-gray-300'
+                            }
+                          />
+                        );
+                      }
+
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          disabled={savingRating}
+                          onClick={() => handleRate(value)}
+                          className="focus:outline-none"
+                        >
+                          <Star
+                            className={
+                              filled
+                                ? 'w-4 h-4 fill-yellow-400 text-yellow-400'
+                                : 'w-4 h-4 text-gray-300'
+                            }
+                          />
+                        </button>
+                      );
+                    })}
+                    <span className="ml-2 text-xs text-gray-500">
+                      {localRating !== undefined ? `${localRating.toFixed(1)} / 5` : 'Tap to rate your doctor'}
+                    </span>
+                  </div>
+
+                  {reviewLocked && (
+                    <Badge className="bg-green-100 text-green-700 border border-green-200">Review submitted</Badge>
+                  )}
                 </div>
+
                 <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0 w-full">
                   <Textarea
                     value={comment}
-                    onChange={(e) => setComment(e.target.value)}
+                    onChange={(e) => {
+                      if (reviewLocked) return;
+                      setComment(e.target.value);
+                    }}
                     placeholder="Share your experience with this doctor (optional)"
                     className="text-sm"
                     rows={2}
+                    readOnly={reviewLocked}
                     disabled={savingRating}
                   />
-                  <Button
-                    size="sm"
-                    disabled={savingRating || localRating === undefined}
-                    onClick={handleSaveReview}
-                  >
-                    {savingRating ? 'Saving...' : 'Save Review'}
-                  </Button>
+
+                  {!reviewLocked && (
+                    <Button
+                      size="sm"
+                      disabled={savingRating || localRating === undefined}
+                      onClick={handleSaveReview}
+                    >
+                      {savingRating ? 'Saving...' : 'Save Review'}
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
