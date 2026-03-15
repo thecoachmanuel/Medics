@@ -38,8 +38,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const brandName = siteName && siteName.trim().length > 0 ? siteName : "MedicsOnline";
-  const envLogo = (process.env.NEXT_PUBLIC_HEADER_LOGO_URL || "").trim();
-  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(logoUrl || (envLogo ? envLogo : null));
+  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(logoUrl || null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -66,7 +65,6 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
   useEffect(() => {
     if (isApp) return;
     if (logoUrl !== undefined && logoUrl !== null) return;
-    if (envLogo) return;
     let mounted = true;
     const loadBrand = async () => {
       try {
@@ -80,7 +78,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
     return () => {
       mounted = false;
     };
-  }, [isApp, logoUrl, envLogo]);
+  }, [isApp, logoUrl]);
 
   useEffect(() => {
     if (isApp) return;
