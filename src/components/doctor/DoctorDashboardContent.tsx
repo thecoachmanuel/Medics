@@ -38,8 +38,14 @@ const DoctorDashboardContent = () => {
   const isApp = useAppDetection();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user, isAuthenticated } = userAuthStore();
-  const { dashboard: dashboardData, fetchDashboard, loading } = useDoctorStore();
+  const { user, isAuthenticated, loading: authLoading, error: authError } = userAuthStore();
+  const {
+    dashboard: dashboardData,
+    fetchDashboard,
+    loading,
+    error: dashboardError,
+    clearError: clearDashboardError,
+  } = useDoctorStore();
   const [commissionPercent, setCommissionPercent] = useState<number | null>(null);
 
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
@@ -166,7 +172,71 @@ const DoctorDashboardContent = () => {
     );
   };
 
-  if (loading || !dashboardData) {
+  const hasDashboard =
+    !!dashboardData &&
+    !Array.isArray(dashboardData) &&
+    typeof dashboardData === "object" &&
+    (Boolean((dashboardData as any).stats) || Boolean((dashboardData as any).user));
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-sm text-gray-600">Loading your dashboard…</div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-lg">
+          <CardContent className="p-6 space-y-4">
+            <div className="text-lg font-semibold text-gray-900">Unable to load dashboard</div>
+            <div className="text-sm text-gray-600">{authError}</div>
+            <div className="flex gap-2">
+              <Button onClick={() => router.refresh()}>Retry</Button>
+              <Button variant="outline" onClick={() => router.push("/login/doctor")}>Go to login</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (dashboardError && !hasDashboard) {
+    return (
+      <>
+        <Header showDashboardNav={true} />
+        <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
+          <div className="container mx-auto px-4 py-12 max-w-xl">
+            <Card className="border border-red-200 bg-red-50/70">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold text-red-900">Dashboard unavailable</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-red-800">{dashboardError}</div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      clearDashboardError();
+                      fetchDashboard();
+                    }}
+                  >
+                    Retry
+                  </Button>
+                  <Button variant="outline" onClick={() => router.refresh()}>
+                    Refresh page
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (loading && !hasDashboard) {
     return (
       <>
         <Header showDashboardNav={true} />
@@ -304,6 +374,31 @@ const DoctorDashboardContent = () => {
 
       <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
         <div className="container mx-auto px-4 py-8">
+          {dashboardError && (
+            <Card className="mb-6 border border-red-200 bg-red-50/70">
+              <CardContent className="p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-red-900">Some data may be out of date</div>
+                  <div className="text-sm text-red-800">{dashboardError}</div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      clearDashboardError();
+                      fetchDashboard();
+                    }}
+                  >
+                    Retry
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => clearDashboardError()}>
+                    Dismiss
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4 ">

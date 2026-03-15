@@ -85,13 +85,17 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
             <div className="lg:col-span-4">
               <div className="flex items-center space-x-2 mb-6">
                 {resolvedFooterLogoUrl ? (
-                  <img src={resolvedFooterLogoUrl} alt="MedicsOnline" className="h-12 w-auto" />
+                  <img
+                    src={resolvedFooterLogoUrl}
+                    alt="MedicsOnline"
+                    className="h-10 sm:h-12 md:h-14 w-auto max-w-[240px] object-contain"
+                  />
                 ) : (
                   <>
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600  rounded-lg flex items-center justify-center">
-                      <Stethoscope className="w-7 h-7 text-white" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                      <Stethoscope className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" />
                     </div>
-                    <div className="text-4xl font-bold bg-gradient-to-br from-white to-blue-100  bg-clip-text text-transparent">
+                    <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-br from-white to-blue-100 bg-clip-text text-transparent whitespace-nowrap">
                       MedicsOnline
                     </div>
                   </>

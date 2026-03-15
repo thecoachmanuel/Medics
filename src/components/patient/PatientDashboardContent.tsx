@@ -20,9 +20,18 @@ import { useAppDetection } from "@/hooks/use-app-detection";
 
 const PatientDashboardContentInner = () => {
   const isApp = useAppDetection();
-  const { user, isAuthenticated } = userAuthStore();
+  const { user, isAuthenticated, loading: authLoading, error: authError } = userAuthStore();
   const router = useRouter();
-  const { appointments, fetchAppointments, loading, rateDoctor, subscribeToAppointments, unsubscribeFromAppointments } = useAppointmentStore();
+  const {
+    appointments,
+    fetchAppointments,
+    loading,
+    error: appointmentError,
+    clearError: clearAppointmentError,
+    rateDoctor,
+    subscribeToAppointments,
+    unsubscribeFromAppointments,
+  } = useAppointmentStore();
   const [activeTab, setActiveTab] = useState("upcoming");
 
   useEffect(() => {
@@ -89,11 +98,42 @@ const PatientDashboardContentInner = () => {
     );
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-sm text-gray-600">Loading your dashboard…</div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-lg">
+          <CardContent className="p-6 space-y-4">
+            <div className="text-lg font-semibold text-gray-900">Unable to load dashboard</div>
+            <div className="text-sm text-gray-600">{authError}</div>
+            <div className="flex gap-2">
+              <Button onClick={() => router.refresh()}>Retry</Button>
+              <Button variant="outline" onClick={() => router.push("/login/patient")}>Go to login</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-sm text-gray-600">Loading…</div>
+      </div>
+    );
   }
 
   const now = new Date();
+  const showAppointmentsSkeleton = loading && appointments.length === 0;
+  const isRefreshing = loading && appointments.length > 0;
   const upcomingAppointments = appointments.filter((apt) => {
     const aptDate = new Date(apt.slotStartIso);
     return (
@@ -311,7 +351,12 @@ const PatientDashboardContentInner = () => {
                   </div>
 
                   {reviewLocked && (
-                    <Badge className="bg-green-100 text-green-700 border border-green-200">Review submitted</Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge className="bg-green-100 text-green-700 border border-green-200">Review submitted</Badge>
+                      {appointment.reviewCreatedAt && (
+                        <span className="text-xs text-gray-500">Reviewed on {formatDateTimeNG(appointment.reviewCreatedAt)}</span>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -429,6 +474,35 @@ const PatientDashboardContentInner = () => {
             onValueChange={setActiveTab}
             className="space-y-6"
           >
+            {appointmentError && (
+              <Card className="border border-red-200 bg-red-50/70">
+                <CardContent className="p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-red-900">Something went wrong</div>
+                    <div className="text-sm text-red-800">{appointmentError}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        clearAppointmentError();
+                        fetchAppointments("patient");
+                      }}
+                    >
+                      Retry
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => clearAppointmentError()}>
+                      Dismiss
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {isRefreshing && (
+              <div className="text-xs text-gray-500">Refreshing…</div>
+            )}
+
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger
                 value="upcoming"
@@ -444,7 +518,7 @@ const PatientDashboardContentInner = () => {
             </TabsList>
 
             <TabsContent value="upcoming" className="space-y-4">
-              {loading ? (
+              {showAppointmentsSkeleton ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 ">
                   {[...Array(4)].map((_, i) => (
                     <Card key={i} className="animate-pulse">
@@ -475,7 +549,7 @@ const PatientDashboardContentInner = () => {
               )}
             </TabsContent>
             <TabsContent value="past" className="space-y-4">
-              {loading ? (
+              {showAppointmentsSkeleton ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 ">
                   {[...Array(4)].map((_, i) => (
                     <Card key={i} className="animate-pulse">

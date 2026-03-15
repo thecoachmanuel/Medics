@@ -35,6 +35,7 @@ export interface Appointment {
   paidAmount?: number;
   rating?: number;
   reviewComment?: string;
+  reviewCreatedAt?: string;
 }
 
 interface AppointmentFilters {
@@ -172,14 +173,14 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
       const { data: ratings } = aptIds.length
         ? await supabase
             .from('doctor_ratings')
-            .select('appointment_id,rating,comment')
+            .select('appointment_id,rating,comment,created_at')
             .in('appointment_id', aptIds)
         : { data: [], error: null } as any;
 
-      const ratingMap: Map<string, { rating: number | null; comment: string | null }> = new Map(
-        ((ratings as { appointment_id: string; rating: number | null; comment: string | null }[] | null) || []).map((r) => [
+      const ratingMap: Map<string, { rating: number | null; comment: string | null; createdAt: string | null }> = new Map(
+        ((ratings as { appointment_id: string; rating: number | null; comment: string | null; created_at: string | null }[] | null) || []).map((r) => [
           r.appointment_id,
-          { rating: r.rating, comment: r.comment },
+          { rating: r.rating, comment: r.comment, createdAt: r.created_at },
         ])
       );
       const docIds = Array.from(new Set(rows.map((r: any) => r.doctor_id)));
@@ -220,6 +221,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         paidAmount: p ? p.amount : undefined,
         rating: ratingEntry?.rating ?? undefined,
         reviewComment: ratingEntry?.comment ?? undefined,
+        reviewCreatedAt: ratingEntry?.createdAt ?? undefined,
       } as Appointment});
 
       appointments.sort((a, b) => {
@@ -261,7 +263,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
 
       const { data: ratingRow } = await supabase
         .from('doctor_ratings')
-        .select('rating,comment')
+        .select('rating,comment,created_at')
         .eq('appointment_id', r.id)
         .maybeSingle();
       const apt = {
@@ -284,6 +286,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
         paidAmount: (pay?.amount as number | undefined),
         rating: (ratingRow?.rating as number | undefined),
         reviewComment: (ratingRow?.comment as string | undefined),
+        reviewCreatedAt: (ratingRow?.created_at as string | undefined),
       } as any;
       set({ currentAppointment: apt });
       return apt;
@@ -506,7 +509,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
       const { data: inserted, error } = await supabase
         .from('doctor_ratings')
         .insert(payload)
-        .select('appointment_id,rating,comment')
+        .select('appointment_id,rating,comment,created_at')
         .single();
       if (error) {
         const msg = String((error as any)?.message || 'Unable to submit review');
@@ -532,6 +535,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
                 ...apt,
                 rating: inserted.rating as number,
                 reviewComment: inserted.comment as string | undefined,
+                reviewCreatedAt: (inserted as any).created_at as string | undefined,
               }
             : apt
         ),
@@ -541,6 +545,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
                 ...state.currentAppointment,
                 rating: inserted.rating as number,
                 reviewComment: inserted.comment as string | undefined,
+                reviewCreatedAt: (inserted as any).created_at as string | undefined,
               }
             : state.currentAppointment,
       }));
