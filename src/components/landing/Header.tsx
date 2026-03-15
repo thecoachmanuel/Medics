@@ -38,7 +38,8 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const brandName = siteName && siteName.trim().length > 0 ? siteName : "MedicsOnline";
-  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(logoUrl || null);
+  const envLogo = (process.env.NEXT_PUBLIC_HEADER_LOGO_URL || "").trim();
+  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(logoUrl || (envLogo ? envLogo : null));
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -65,6 +66,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
   useEffect(() => {
     if (isApp) return;
     if (logoUrl !== undefined && logoUrl !== null) return;
+    if (envLogo) return;
     let mounted = true;
     const loadBrand = async () => {
       try {
@@ -78,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
     return () => {
       mounted = false;
     };
-  }, [isApp, logoUrl]);
+  }, [isApp, logoUrl, envLogo]);
 
   useEffect(() => {
     if (isApp) return;
@@ -219,13 +221,13 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
             className="flex items-center space-x-2 focus:outline-none"
           >
             {headerLogoUrl ? (
-              <img src={headerLogoUrl} alt="MedicsOnline" className="h-8 w-auto" />
+              <img src={headerLogoUrl} alt="MedicsOnline" className="h-10 w-auto" />
             ) : (
               <>
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                  <Stethoscope className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+                  <Stethoscope className="w-6 h-6 text-white" />
                 </div>
-                <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800  bg-clip-text text-transparent">
+                <div className="text-3xl font-bold bg-gradient-to-br from-blue-600 to-blue-800  bg-clip-text text-transparent">
                   {brandName}
                 </div>
               </>

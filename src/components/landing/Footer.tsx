@@ -16,6 +16,7 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, contactLocation, socialLinks, footerLogoUrl }) => {
   const isApp = useAppDetection();
+  const envFooterLogo = (process.env.NEXT_PUBLIC_FOOTER_LOGO_URL || "").trim();
   const resolvedIntro =
     introText && introText.trim().length > 0
       ? introText
@@ -48,6 +49,7 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const resolvedFooterLogoUrl = footerLogoUrl || (envFooterLogo ? envFooterLogo : null);
 
   if (isApp) return null; // Hide footer in app mode
 
@@ -82,14 +84,14 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4">
               <div className="flex items-center space-x-2 mb-6">
-                {footerLogoUrl ? (
-                  <img src={footerLogoUrl} alt="MedicsOnline" className="h-10 w-auto" />
+                {resolvedFooterLogoUrl ? (
+                  <img src={resolvedFooterLogoUrl} alt="MedicsOnline" className="h-12 w-auto" />
                 ) : (
                   <>
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600  rounded-lg flex items-center justify-center">
-                      <Stethoscope className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600  rounded-lg flex items-center justify-center">
+                      <Stethoscope className="w-7 h-7 text-white" />
                     </div>
-                    <div className="text-3xl font-bold bg-gradient-to-br from-white to-blue-100  bg-clip-text text-transparent">
+                    <div className="text-4xl font-bold bg-gradient-to-br from-white to-blue-100  bg-clip-text text-transparent">
                       MedicsOnline
                     </div>
                   </>
