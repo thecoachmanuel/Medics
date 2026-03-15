@@ -221,17 +221,13 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
             className="flex items-center space-x-2 focus:outline-none"
           >
             {headerLogoUrl ? (
-              <img
-                src={headerLogoUrl}
-                alt="MedicsOnline"
-                className="h-8 sm:h-10 md:h-11 w-auto max-w-[180px] sm:max-w-none object-contain"
-              />
+              <img src={headerLogoUrl} alt="MedicsOnline" className="h-8 w-auto" />
             ) : (
               <>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                  <Stethoscope className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+                  <Stethoscope className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-xl sm:text-3xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent whitespace-nowrap">
+                <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800  bg-clip-text text-transparent">
                   {brandName}
                 </div>
               </>
