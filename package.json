@@ -30,12 +30,14 @@
     "lucide-react": "^0.542.0",
     "next": "^15.5.12",
     "nodemailer": "^6.9.15",
+    "phosphor-react": "^1.4.1",
     "react": "19.1.0",
     "react-day-picker": "^9.9.0",
     "react-dom": "19.1.0",
     "recharts": "^2.12.7",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
+    "zod": "^4.3.6",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
