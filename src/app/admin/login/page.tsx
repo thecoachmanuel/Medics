@@ -5,7 +5,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { loginAdmin } from "@/actions/admin-actions";
-import { Stethoscope } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -88,29 +87,10 @@ export default function AdminLoginPage() {
 }
 
 function AdminBrandLogo() {
-  const [logo, setLogo] = React.useState<string | null>(null);
-  React.useEffect(() => {
-    let mounted = true;
-    const run = async () => {
-      try {
-        const res = await fetch('/api/homepage');
-        if (!res.ok) return;
-        const json = (await res.json()) as { config?: { headerLogoUrl?: string | null } };
-        if (mounted) setLogo(json?.config?.headerLogoUrl ?? null);
-      } catch {}
-    };
-    run();
-    return () => { mounted = false; };
-  }, []);
+  const logo = "/MedicsOnline_logo.png";
   return (
     <Link href="/" className="flex items-center justify-center mb-2">
-      {logo ? (
-        <img src={logo} alt="MedicsOnline" className="h-10 w-auto" />
-      ) : (
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
-          <Stethoscope className="w-5 h-5 text-white" />
-        </div>
-      )}
+      <img src={logo} alt="MedicsOnline" className="h-10 w-auto" loading="eager" fetchPriority="high" decoding="async" />
     </Link>
   );
 }

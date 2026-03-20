@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase/client";
-import { ArrowLeft, Bell, LogOut, Stethoscope, User } from "lucide-react";
+import { ArrowLeft, Bell, LogOut, User } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -24,30 +24,12 @@ function NativeTopBarContent() {
   const router = useRouter();
   const { user, logout } = userAuthStore();
   const [mounted, setMounted] = useState(false);
-  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
+  const headerLogoUrl = "/MedicsOnline_logo.png";
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const initialNotificationsLoadedRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    const loadBrand = async () => {
-      try {
-        const res = await fetch("/api/homepage");
-        if (!res.ok) return;
-        const json = (await res.json()) as { config?: { headerLogoUrl?: string | null } };
-        if (alive) setHeaderLogoUrl(json?.config?.headerLogoUrl ?? null);
-      } catch {
-        if (alive) setHeaderLogoUrl(null);
-      }
-    };
-    loadBrand();
-    return () => {
-      alive = false;
-    };
   }, []);
 
   const shouldRender = useMemo(() => {
@@ -182,13 +164,14 @@ function NativeTopBarContent() {
           )}
 
           <button type="button" onClick={handleLogo} className="flex items-center gap-2">
-            {headerLogoUrl ? (
-              <img src={headerLogoUrl} alt="MedicsOnline" className="h-7 w-auto" />
-            ) : (
-              <div className="w-7 h-7 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                <Stethoscope className="w-4 h-4 text-white" />
-              </div>
-            )}
+            <img
+              src={headerLogoUrl}
+              alt="MedicsOnline"
+              className="h-7 w-auto"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
             <div className="text-sm font-semibold text-gray-900">MedicsOnline</div>
           </button>
         </div>

@@ -11,34 +11,10 @@ import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 
 function BrandLogoLink() {
-  const [logo, setLogo] = React.useState<string | null>(null);
-  React.useEffect(() => {
-    let mounted = true;
-    const run = async () => {
-      try {
-        const res = await fetch('/api/homepage');
-        if (!res.ok) return;
-        const json = (await res.json()) as { config?: { headerLogoUrl?: string | null } };
-        if (mounted) setLogo(json?.config?.headerLogoUrl ?? null);
-      } catch {}
-    };
-    run();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const logo = "/MedicsOnline_logo.png";
   return (
     <Link href="/" className="inline-flex items-center justify-center gap-2 transition-transform hover:scale-105">
-      {logo ? (
-        <img src={logo} alt="MedicsOnline" className="h-10 w-auto" />
-      ) : (
-        <>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-md">
-            <Stethoscope className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">MedicsOnline</span>
-        </>
-      )}
+      <img src={logo} alt="MedicsOnline" className="h-10 w-auto" loading="eager" fetchPriority="high" decoding="async" />
     </Link>
   );
 }

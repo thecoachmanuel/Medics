@@ -9,34 +9,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function BrandLogoLink() {
-  const [logo, setLogo] = React.useState<string | null>(null);
-  React.useEffect(() => {
-    let mounted = true;
-    const run = async () => {
-      try {
-        const res = await fetch('/api/homepage');
-        if (!res.ok) return;
-        const json = (await res.json()) as { config?: { headerLogoUrl?: string | null } };
-        if (mounted) setLogo(json?.config?.headerLogoUrl ?? null);
-      } catch {}
-    };
-    run();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const logo = "/MedicsOnline_logo.png";
   return (
     <Link href="/" className="inline-flex items-center justify-center gap-2">
-      {logo ? (
-        <img src={logo} alt="MedicsOnline" className="h-9 w-auto" />
-      ) : (
-        <>
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
-            <Stethoscope className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">MedicsOnline</span>
-        </>
-      )}
+      <img src={logo} alt="MedicsOnline" className="h-9 w-auto" loading="eager" fetchPriority="high" decoding="async" />
     </Link>
   );
 }

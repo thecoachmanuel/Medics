@@ -24,7 +24,7 @@ const items = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
+  const headerLogoUrl = "/MedicsOnline_logo.png";
   const [pendingPayouts, setPendingPayouts] = useState<number>(0);
   const pathname = usePathname();
   const router = useRouter();
@@ -46,20 +46,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.prefetch(item.href);
     });
   }, [router]);
-
-  useEffect(() => {
-    let mounted = true;
-    const loadBrand = async () => {
-      try {
-        const res = await fetch('/api/homepage');
-        if (!res.ok) return;
-        const json = (await res.json()) as { config?: { headerLogoUrl?: string | null } };
-        if (mounted) setHeaderLogoUrl(json?.config?.headerLogoUrl ?? null);
-      } catch {}
-    };
-    loadBrand();
-    return () => { mounted = false; };
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -137,19 +123,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }}
             className="flex items-center gap-2 focus:outline-none"
           >
-            {headerLogoUrl ? (
-              <img src={headerLogoUrl} alt="MedicsOnline" className={`h-8 w-auto ${collapsed ? '' : 'mr-2'}`} />
-            ) : (
-              <>
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                  <Stethoscope className="w-5 h-5 text-white" />
-                </div>
-                {!collapsed && (
-                  <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                    MedicsOnline
-                  </div>
-                )}
-              </>
+            <img
+              src={headerLogoUrl}
+              alt="MedicsOnline"
+              className={`h-8 w-auto ${collapsed ? "" : "mr-2"}`}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
+            {!collapsed && (
+              <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                MedicsOnline
+              </div>
             )}
           </button>
           <Button variant="ghost" size="sm" className="hidden lg:inline-flex" onClick={() => setCollapsed(!collapsed)}>

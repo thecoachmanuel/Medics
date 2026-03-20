@@ -1,5 +1,5 @@
 "use client";
-import { Bell, Calendar, CreditCard, DollarSign, LogOut, Settings, Stethoscope, User } from "lucide-react";
+import { Bell, Calendar, CreditCard, DollarSign, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -38,14 +38,8 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const brandName = siteName && siteName.trim().length > 0 ? siteName : "MedicsOnline";
-  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(logoUrl || null);
+  const headerLogoUrl = "/MedicsOnline_logo.png";
   const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-      if (logoUrl !== undefined) {
-          setHeaderLogoUrl(logoUrl);
-      }
-  }, [logoUrl]);
 
   useEffect(() => {
     const checkAdmin = () => {
@@ -62,23 +56,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
     router.push("/");
   };
 
-  useEffect(() => {
-    if (isApp) return;
-    if (logoUrl !== undefined && logoUrl !== null) return;
-    let mounted = true;
-    const loadBrand = async () => {
-      try {
-        const res = await fetch("/api/homepage");
-        if (!res.ok) return;
-        const json = (await res.json()) as { config?: { headerLogoUrl?: string | null } };
-        if (mounted) setHeaderLogoUrl(json?.config?.headerLogoUrl ?? null);
-      } catch {}
-    };
-    loadBrand();
-    return () => {
-      mounted = false;
-    };
-  }, [isApp, logoUrl]);
+  void logoUrl;
 
   useEffect(() => {
     if (isApp) return;
@@ -218,18 +196,14 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
             }}
             className="flex items-center space-x-2 focus:outline-none"
           >
-            {headerLogoUrl ? (
-              <img src={headerLogoUrl} alt="MedicsOnline" className="h-8 w-auto" />
-            ) : (
-              <>
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                  <Stethoscope className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800  bg-clip-text text-transparent">
-                  {brandName}
-                </div>
-              </>
-            )}
+            <img
+              src={headerLogoUrl}
+              alt={brandName}
+              className="h-8 w-auto"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
           </button>
 
           {/* Dashboard navigation */}
