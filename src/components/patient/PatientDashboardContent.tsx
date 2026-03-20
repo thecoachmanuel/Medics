@@ -456,11 +456,6 @@ const PatientDashboardContentInner = () => {
                 Book <span className="hidden md:block">New Appointment</span>
               </Button>
             </Link>
-            <Link href="/pharmacy">
-              <Button variant="outline">
-                Pharmacy
-              </Button>
-            </Link>
             <Link href="/patient/payments" className="md:hidden">
               <Button variant="outline">
                 <CreditCard className="w-4 h-4 mr-2" />

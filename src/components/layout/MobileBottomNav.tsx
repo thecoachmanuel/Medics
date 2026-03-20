@@ -3,7 +3,15 @@
 import { useAppDetection } from "@/hooks/use-app-detection";
 import { userAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
-import { House, Chat, Calendar, User } from "phosphor-react";
+import { 
+  LayoutGrid, 
+  Calendar, 
+  User, 
+  CreditCard, 
+  Stethoscope, 
+  Home,
+  Search
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -13,71 +21,163 @@ function MobileBottomNavContent() {
   const pathname = usePathname();
   const { user } = userAuthStore();
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted || !user) return null;
-  if (!isApp) return null;
+  useEffect(() => {
+    const update = () => {
+      try {
+        if (typeof window === "undefined") return;
+        const mq = window.matchMedia?.("(max-width: 768px)");
+        if (mq) {
+          setIsMobile(mq.matches);
+          return;
+        }
+        setIsMobile(window.innerWidth <= 768);
+      } catch {
+        setIsMobile(false);
+      }
+    };
 
-  const links = [
+    update();
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  // Only render on client and when we have a user
+  if (!mounted || !user) return null;
+
+  // Show on app wrapper and also for all mobile screens
+  if (!isApp && !isMobile) return null;
+
+  const patientLinks = [
     {
-      href: user.type === "doctor" ? "/doctor/dashboard" : "/patient/dashboard",
-      label: "Home",
-      icon: House,
-      activePattern: /^\/(patient|doctor)\/dashboard/,
+      href: "/patient/dashboard",
+      label: "Dashboard",
+      icon: Home,
+      activePattern: /^\/patient\/dashboard/,
     },
     {
-      href: "/messages",
-      label: "Message",
-      icon: Chat,
-      activePattern: /^\/messages/,
+      href: "/doctor-list",
+      label: "Find Doctor",
+      icon: Search, // or Stethoscope
+      activePattern: /^\/doctor-list/,
     },
     {
-      href: "/appointments",
-      label: "Booking",
-      icon: Calendar,
-      activePattern: /^\/appointments/,
+      href: "/patient/payments",
+      label: "Payments",
+      icon: CreditCard,
+      activePattern: /^\/patient\/payments/,
     },
     {
-      href: user.type === "doctor" ? "/doctor/profile" : "/patient/profile",
+      href: "/patient/profile",
       label: "Profile",
       icon: User,
-      activePattern: /^\/(patient|doctor)\/profile/,
+      activePattern: /^\/patient\/profile/,
     },
   ];
 
+  const doctorLinks = [
+    {
+      href: "/doctor/dashboard",
+      label: "Dashboard",
+      icon: LayoutGrid,
+      activePattern: /^\/doctor\/dashboard/,
+    },
+    {
+      href: "/doctor/appointments",
+      label: "Appointments",
+      icon: Calendar,
+      activePattern: /^\/doctor\/appointments/,
+    },
+    {
+      href: "/doctor/payments",
+      label: "Payments",
+      icon: CreditCard,
+      activePattern: /^\/doctor\/payments/,
+    },
+    {
+      href: "/doctor/profile",
+      label: "Profile",
+      icon: User,
+      activePattern: /^\/doctor\/profile/,
+    },
+  ];
+
+  const links = user.type === "doctor" ? doctorLinks : patientLinks;
+
+  const activeIndex = (() => {
+    const idx = links.findIndex((link) => link.activePattern.test(pathname));
+    return idx >= 0 ? idx : 0;
+  })();
+
+  // Don't show on login/signup pages even if in app (unlikely if we have user, but good safety)
   if (pathname.includes("/login") || pathname.includes("/signup") || pathname.includes("/call/")) return null;
 
   return (
     <>
-      <div className="h-20" />
-      <div className="fixed inset-x-0 bottom-0 z-50 bg-white/80 backdrop-blur-lg border-t border-gray-200 pb-safe">
-        <div className="flex justify-around items-center h-20">
-          {links.map((link) => {
-            const Icon = link.icon;
-            const isActive = link.activePattern.test(pathname);
+      {/* Spacer to prevent content from being hidden behind the nav */}
+      <div className="h-24 md:hidden" />
+      
+      <div className="fixed inset-x-0 bottom-0 z-50 md:hidden pb-[env(safe-area-inset-bottom,16px)]">
+        <div className="mx-auto w-[calc(100%-1.25rem)] max-w-md">
+          <div className="rounded-[28px] bg-white/75 backdrop-blur-xl ring-1 ring-black/5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] px-2 py-2">
+            <div className="relative grid grid-cols-4 gap-1">
+              <div
+                className="pointer-events-none absolute inset-y-0 left-0 w-[calc((100%-12px)/4)] rounded-2xl bg-gradient-to-b from-blue-50 to-white transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]"
+                style={{
+                  transform: `translateX(calc(${activeIndex} * (100% + 4px)))`,
+                }}
+              />
+              {links.map((link) => {
+                const Icon = link.icon;
+                const isActive = link.activePattern.test(pathname);
 
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="flex flex-col items-center justify-center text-xs font-medium gap-1"
-              >
-                <Icon
-                  weight={isActive ? "fill" : "regular"}
-                  className={cn(
-                    "w-7 h-7 transition-colors",
-                    isActive ? "text-primary" : "text-gray-500"
-                  )}
-                />
-                <span className={cn(isActive ? "text-primary" : "text-gray-600")}>
-                  {link.label}
-                </span>
-              </Link>
-            );
-          })}
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="relative"
+                  >
+                    <div
+                      className={cn(
+                        "relative flex h-16 w-full flex-col items-center justify-center rounded-2xl text-[10px] font-semibold tracking-wide transition-transform duration-200 active:scale-[0.96]",
+                        isActive ? "text-blue-700" : "text-gray-500"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "relative z-10 transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]",
+                          isActive ? "-translate-y-[1px] scale-[1.08]" : "translate-y-0 scale-100"
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-6 w-6 transition-colors duration-200",
+                            isActive ? "text-blue-700" : "text-gray-500"
+                          )}
+                          strokeWidth={isActive ? 2.5 : 2}
+                        />
+                      </div>
+                      <span
+                        className={cn(
+                          "relative z-10 mt-1 transition-opacity duration-200",
+                          isActive ? "opacity-100" : "opacity-90"
+                        )}
+                      >
+                        {link.label}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </>
