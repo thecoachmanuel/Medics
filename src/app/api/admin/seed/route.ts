@@ -79,6 +79,190 @@ async function ensureUser(supabase: any, email: string, password: string, type: 
   return id;
 }
 
+async function seedPharmacy(supabase: any) {
+  const categories = [
+    { name: "Pain Relief", slug: "pain-relief", description: "Analgesics and anti-inflammatory medicines" },
+    { name: "Cold & Flu", slug: "cold-flu", description: "Flu, cough, and cold remedies" },
+    { name: "Vitamins", slug: "vitamins", description: "Vitamins and supplements" },
+    { name: "Antibiotics", slug: "antibiotics", description: "Prescription antibiotics (demo data)" },
+    { name: "Diabetes Care", slug: "diabetes-care", description: "Glucose management and supplies" },
+    { name: "Skin Care", slug: "skin-care", description: "Skin, hair, and personal care" },
+  ];
+
+  await supabase
+    .from("pharmacy_categories")
+    .upsert(
+      categories.map((c) => ({
+        name: c.name,
+        slug: c.slug,
+        description: c.description,
+        image_url: null,
+      })),
+      { onConflict: "slug" }
+    );
+
+  const { data: categoryRows, error: categoriesError } = await supabase
+    .from("pharmacy_categories")
+    .select("id,slug");
+  if (categoriesError) throw new Error(categoriesError.message);
+  const categoryIdBySlug = new Map<string, number>();
+  (categoryRows || []).forEach((r: any) => categoryIdBySlug.set(String(r.slug), Number(r.id)));
+
+  const owner1 = await ensureUser(supabase, "pharmacyowner1@medicsonline.com", "111111", "patient", "Pharmacy Owner 1");
+  const owner2 = await ensureUser(supabase, "pharmacyowner2@medicsonline.com", "111111", "patient", "Pharmacy Owner 2");
+  const owner3 = await ensureUser(supabase, "pharmacyowner3@medicsonline.com", "111111", "patient", "Pharmacy Owner 3");
+
+  const storeSeeds = [
+    {
+      owner_id: owner1,
+      name: "Lagos Central Pharmacy",
+      slug: "lagos-central-pharmacy",
+      description: "Trusted community pharmacy in Lagos",
+      contact_phone: "+2348010000001",
+      address: { city: "Lagos", state: "Lagos", country: "Nigeria" },
+      is_approved: true,
+      is_active: true,
+    },
+    {
+      owner_id: owner2,
+      name: "Abuja Family Pharmacy",
+      slug: "abuja-family-pharmacy",
+      description: "Family-focused pharmacy in Abuja",
+      contact_phone: "+2348010000002",
+      address: { city: "Abuja", state: "FCT", country: "Nigeria" },
+      is_approved: true,
+      is_active: true,
+    },
+    {
+      owner_id: owner3,
+      name: "Port Harcourt Health Mart",
+      slug: "ph-health-mart",
+      description: "Everyday health essentials and supplements",
+      contact_phone: "+2348010000003",
+      address: { city: "Port Harcourt", state: "Rivers", country: "Nigeria" },
+      is_approved: true,
+      is_active: true,
+    },
+  ];
+
+  const { data: storeRows, error: storeError } = await supabase
+    .from("pharmacy_stores")
+    .upsert(storeSeeds, { onConflict: "slug" })
+    .select("id,slug");
+  if (storeError) throw new Error(storeError.message);
+  const storeIdBySlug = new Map<string, string>();
+  (storeRows || []).forEach((r: any) => storeIdBySlug.set(String(r.slug), String(r.id)));
+
+  const products = [
+    {
+      storeSlug: "lagos-central-pharmacy",
+      name: "Paracetamol 500mg",
+      sku: "PCM-500",
+      price: 800,
+      currency: "NGN",
+      stock_quantity: 120,
+      category_slug: "pain-relief",
+      description: "Pain relief and fever reducer",
+      image_urls: ["/placeholder.svg"],
+      is_active: true,
+    },
+    {
+      storeSlug: "lagos-central-pharmacy",
+      name: "Ibuprofen 200mg",
+      sku: "IBU-200",
+      price: 1500,
+      currency: "NGN",
+      stock_quantity: 80,
+      category_slug: "pain-relief",
+      description: "Anti-inflammatory pain relief",
+      image_urls: ["/placeholder.svg"],
+      is_active: true,
+    },
+    {
+      storeSlug: "abuja-family-pharmacy",
+      name: "Vitamin C 1000mg",
+      sku: "VITC-1000",
+      price: 3500,
+      currency: "NGN",
+      stock_quantity: 60,
+      category_slug: "vitamins",
+      description: "Immune support supplement",
+      image_urls: ["/placeholder.svg"],
+      is_active: true,
+    },
+    {
+      storeSlug: "abuja-family-pharmacy",
+      name: "Cough Syrup 100ml",
+      sku: "CFS-100",
+      price: 2400,
+      currency: "NGN",
+      stock_quantity: 40,
+      category_slug: "cold-flu",
+      description: "Cough relief syrup",
+      image_urls: ["/placeholder.svg"],
+      is_active: true,
+    },
+    {
+      storeSlug: "ph-health-mart",
+      name: "Multivitamin Tablets",
+      sku: "MVT-60",
+      price: 5200,
+      currency: "NGN",
+      stock_quantity: 70,
+      category_slug: "vitamins",
+      description: "Daily multivitamin",
+      image_urls: ["/placeholder.svg"],
+      is_active: true,
+    },
+    {
+      storeSlug: "ph-health-mart",
+      name: "Glucose Test Strips",
+      sku: "GLU-STRIP",
+      price: 9800,
+      currency: "NGN",
+      stock_quantity: 25,
+      category_slug: "diabetes-care",
+      description: "Blood glucose test strips",
+      image_urls: ["/placeholder.svg"],
+      is_active: true,
+    },
+  ];
+
+  const productRows = products
+    .map((p) => {
+      const storeId = storeIdBySlug.get(p.storeSlug);
+      const categoryId = categoryIdBySlug.get(p.category_slug) ?? null;
+      if (!storeId) return null;
+      return {
+        store_id: storeId,
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        currency: p.currency,
+        sku: p.sku,
+        stock_quantity: p.stock_quantity,
+        category_id: categoryId,
+        image_urls: p.image_urls,
+        is_active: p.is_active,
+      };
+    })
+    .filter(Boolean);
+
+  if (productRows.length) {
+    const { error: productError } = await supabase
+      .from("pharmacy_products")
+      .upsert(productRows, { onConflict: "store_id,sku" });
+    if (productError) throw new Error(productError.message);
+  }
+
+  return {
+    categories: categories.length,
+    stores: storeSeeds.length,
+    products: productRows.length,
+    owners: 3,
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -192,7 +376,9 @@ export async function GET(request: Request) {
       await supabase.from("payments").insert(payments);
     }
 
-    return NextResponse.json({ ok: true, doctors: doctorIds.length, patients: patientIds.length, appointments: appts.length, payments: payments.length });
+    const pharmacy = await seedPharmacy(supabase);
+
+    return NextResponse.json({ ok: true, doctors: doctorIds.length, patients: patientIds.length, appointments: appts.length, payments: payments.length, pharmacy });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || "seed failed" }, { status: 500 });
   }

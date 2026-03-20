@@ -1,5 +1,6 @@
 import { getPharmacyProductById } from "@/actions/pharmacy-actions";
 import Link from "next/link";
+import { ProductActions } from "@/components/pharmacy/ProductActions";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -33,18 +34,11 @@ export default async function ProductDetailPage({ params }: Params) {
               {(product as any).pharmacy_categories.name}
             </p>
           )}
-          <p className="mt-4 text-lg font-semibold">${String(product.price)}</p>
+          <p className="mt-4 text-lg font-semibold">{(product as any).currency || "NGN"} {String(product.price)}</p>
           {product.description && (
             <p className="mt-4 text-sm leading-6">{product.description}</p>
           )}
-          <div className="mt-6 flex gap-3">
-            <button className="px-4 py-2 rounded-md border bg-white text-gray-900 dark:bg-transparent dark:text-foreground">
-              Add to Cart
-            </button>
-            <button className="px-4 py-2 rounded-md bg-primary text-primary-foreground">
-              Buy Now
-            </button>
-          </div>
+          <ProductActions product={product as any} />
         </div>
       </div>
     </div>
