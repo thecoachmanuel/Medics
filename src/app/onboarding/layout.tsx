@@ -29,8 +29,15 @@ const layout = ({children}:{children:React.ReactNode}) => {
     <div className='min-h-screen bg-gray-50 flex flex-col'>
 			<header className='bg-white border-b px-6 py-4'>
 					<div className='max-w-4xl mx-auto flex items-center justify-between'>
-						<Link href="/" className='text-2xl font-bold text-blue-900 inline-block'>
-						MedicsOnline
+						<Link href="/" className='inline-block'>
+							<img
+								src="/MedicsOnline_logo.png"
+								alt="MedicsOnline"
+								className="h-8 w-auto"
+								loading="eager"
+								fetchPriority="high"
+								decoding="async"
+							/>
 						</Link>
 						<Button
 							variant="ghost"
