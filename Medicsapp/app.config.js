@@ -5,9 +5,9 @@ module.exports = ({ config }) => {
     slug: "medicsapp-webview",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "../public/MedicsOnline_logo.png",
+    icon: "./assets/icon.png",
     splash: {
-      image: "../public/MedicsOnline_logo.png",
+      image: "./assets/splash.png",
       backgroundColor: "#ffffff",
       resizeMode: "contain"
     },
@@ -25,7 +25,7 @@ module.exports = ({ config }) => {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "../public/MedicsOnline_logo.png",
+        foregroundImage: "./assets/icon.png",
         backgroundColor: "#ffffff"
       },
       permissions: [
