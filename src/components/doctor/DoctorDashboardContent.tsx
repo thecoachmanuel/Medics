@@ -33,6 +33,7 @@ import { Badge } from "../ui/badge";
 import { getStatusColor } from "@/lib/constant";
 import { formatDateTimeNG } from "@/lib/datetime";
 import { useAppDetection } from "@/hooks/use-app-detection";
+import { supabase } from "@/lib/supabase/client";
 
 const DoctorDashboardContent = () => {
   const isApp = useAppDetection();
@@ -79,6 +80,38 @@ const DoctorDashboardContent = () => {
       router.push("/appeal");
       return;
     }
+  }, [isAuthenticated, user, router]);
+
+  useEffect(() => {
+    let active = true;
+
+    const enforceCredentials = async () => {
+      if (!isAuthenticated || !user || user.type !== "doctor") return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+
+      const response = await fetch("/api/doctor/credentials", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!active || !response.ok) return;
+      const json = (await response.json().catch(() => null)) as { credentials?: unknown } | null;
+      const hasCredentials = Array.isArray(json?.credentials) && json.credentials.length > 0;
+      if (!hasCredentials) {
+        router.replace("/onboarding/doctor");
+      }
+    };
+
+    void enforceCredentials();
+
+    return () => {
+      active = false;
+    };
   }, [isAuthenticated, user, router]);
 
   useEffect(() => {

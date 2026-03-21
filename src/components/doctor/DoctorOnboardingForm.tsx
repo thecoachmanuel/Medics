@@ -49,6 +49,7 @@ const DoctorOnboardingForm = () => {
 
   const [credentials, setCredentials] = useState<{ url: string; label: string }[]>([]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [newCredentialLink, setNewCredentialLink] = useState("");
   const [newCredentialLabel, setNewCredentialLabel] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -173,7 +174,13 @@ const DoctorOnboardingForm = () => {
 
   const handleSubmit = async (): Promise<void> => {
     try {
+      setSubmitError(null);
       if (formData.categories.length === 0) {
+        return;
+      }
+
+      if (credentials.length === 0) {
+        setSubmitError("Please upload at least one credential document or link.");
         return;
       }
       
@@ -655,6 +662,9 @@ const DoctorOnboardingForm = () => {
               </div>
 
               <div className="space-y-4">
+                {submitError && (
+                  <p className="text-sm text-red-600">{submitError}</p>
+                )}
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
                   <Input
                     type="file"
@@ -780,7 +790,7 @@ const DoctorOnboardingForm = () => {
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={loading || !acceptedTerms}
+                disabled={loading || isUploading || !acceptedTerms || credentials.length === 0}
                 className="bg-green-600 hover:bg-green-700"
               >
                 {loading ? "Completing Setup..." : "Complete Profile"}

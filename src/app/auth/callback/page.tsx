@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { userAuthStore } from '@/store/authStore'
+import type { User } from '@/lib/types'
 import { Loader2 } from 'lucide-react'
 
 function AuthCallbackContent() {
@@ -11,6 +12,52 @@ function AuthCallbackContent() {
   const searchParams = useSearchParams()
   const { fetchProfile } = userAuthStore()
   const [error, setError] = useState<string | null>(null)
+
+  const isDoctorProfileComplete = (user: User): boolean => {
+    const specializationOk = typeof user.specialization === 'string' && user.specialization.trim().length > 0;
+    const qualificationOk = typeof user.qualification === 'string' && user.qualification.trim().length > 0;
+    const aboutOk = typeof user.about === 'string' && user.about.trim().length > 0;
+
+    const feesNumber = typeof user.fees === 'number' ? user.fees : Number(user.fees);
+    const feesOk = Number.isFinite(feesNumber) && feesNumber > 0;
+
+    const categoryOk = Array.isArray(user.category) && user.category.length > 0;
+
+    const hospitalName = user.hospitalInfo?.name;
+    const hospitalOk = typeof hospitalName === 'string' && hospitalName.trim().length > 0;
+
+    return specializationOk && qualificationOk && aboutOk && feesOk && categoryOk && hospitalOk;
+  };
+
+  const doctorHasSubmittedCredentials = async (): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return false;
+
+    const response = await fetch('/api/doctor/credentials', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) return false;
+    const json = (await response.json().catch(() => null)) as { credentials?: unknown } | null;
+    return Array.isArray(json?.credentials) && json.credentials.length > 0;
+  };
+
+  const getPostVerifyPath = async (user: User, next: string | null): Promise<string> => {
+    if (user.type === 'doctor') {
+      const profileComplete = isDoctorProfileComplete(user);
+      const hasCredentials = await doctorHasSubmittedCredentials();
+      if (!profileComplete || !hasCredentials) return '/onboarding/doctor';
+      const safeNext = next && next.startsWith('/doctor/') ? next : null;
+      return safeNext || '/doctor/dashboard';
+    }
+    if (!user.isVerified) return '/onboarding/patient';
+    const safeNext = next && next.startsWith('/patient/') ? next : null;
+    return safeNext || '/patient/dashboard';
+  };
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -56,11 +103,14 @@ function AuthCallbackContent() {
           }
 
           // Refresh profile
-          await fetchProfile()
-          
-          // Redirect to dashboard or next page
-          const redirectPath = next && next.startsWith('/') ? next : '/dashboard';
-          router.push(redirectPath) 
+          const profile = await fetchProfile()
+          if (!profile) {
+            router.replace('/login/patient')
+            return
+          }
+
+          const redirectPath = await getPostVerifyPath(profile, next)
+          router.replace(redirectPath)
           
           // Clean up subscription
           setTimeout(() => {
@@ -79,8 +129,14 @@ function AuthCallbackContent() {
          if (hash && hash.includes('access_token')) {
             const { error } = await supabase.auth.getSession()
             if (!error) {
-                await fetchProfile()
-                router.push('/dashboard')
+                const profile = await fetchProfile()
+                if (!profile) {
+                  router.replace('/login/patient')
+                  return
+                }
+
+                const redirectPath = await getPostVerifyPath(profile, next)
+                router.replace(redirectPath)
                 return
             }
          }
