@@ -6,9 +6,7 @@ import {
   CallControls,
   CallStatsButton,
   CallingState,
-  PaginatedGridLayout,
   ParticipantView,
-  SpeakerLayout,
   StreamCall,
   StreamTheme,
   StreamVideo,
@@ -594,116 +592,75 @@ function MyCallUI({
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-slate-950 text-white">
+    <div className="flex h-screen w-full flex-col bg-slate-950 text-white relative">
       <style>{`
         .str-video__notification { display: none !important; }
+        /* Stream UI Overrides to make ParticipantView cover fully without gaps */
+        .str-video__participant-view { height: 100% !important; width: 100% !important; border-radius: 0 !important; }
+        .str-video__participant-details { display: none !important; } /* Hide default stream name badges as we use custom ones */
       `}</style>
-      <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 p-2 sm:p-4">
-        <div>
-          <h1 className="text-base sm:text-lg font-semibold">
-            {appointment.consultationType}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400">{otherPartyLabel}</p>
+      
+      {/* Top right badges/stats */}
+      <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2 pointer-events-none">
+        <div className="pointer-events-auto bg-black/40 backdrop-blur-md rounded-full px-4 py-1.5 text-sm font-medium border border-white/10 flex items-center gap-2">
+           <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+           <span className="text-white">Live</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:block">
-            <CallStatsButton />
+        <button
+          onClick={() => setParticipantsOpen(!participantsOpen)}
+          className="pointer-events-auto bg-black/40 backdrop-blur-md hover:bg-black/60 rounded-full p-2.5 border border-white/10 transition-colors"
+        >
+          <Users className="h-5 w-5 text-white" />
+        </button>
+      </div>
+
+      {/* Main Video Area */}
+      <div className="flex flex-1 overflow-hidden w-full relative">
+        <div className="flex-1 relative min-h-0 overflow-hidden bg-slate-950">
+        <ModernCallLayout 
+          participants={participants} 
+          localParticipantSessionId={localParticipant?.sessionId} 
+          otherPartyLabel={otherPartyLabel} 
+        />
+        
+        {/* Floating Controls Bar */}
+        <div className="absolute bottom-6 sm:bottom-8 inset-x-0 flex justify-center z-20 pointer-events-none px-4">
+          <div className="flex items-center gap-4 sm:gap-6 bg-[#2A3B32]/95 backdrop-blur-md px-6 py-4 rounded-[2.5rem] shadow-2xl border border-white/10 pointer-events-auto">
+            <button
+                onClick={async () => {
+                    await microphone.toggle();
+                    toast.info(isMicEnabled ? "Microphone Off" : "Microphone On", { duration: 1000 });
+                }}
+                className={cn(
+                    "flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-colors",
+                    isMicEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500 hover:bg-red-600 text-white"
+                )}
+            >
+                {isMicEnabled ? <Mic className="h-5 w-5 sm:h-6 sm:w-6" /> : <MicOff className="h-5 w-5 sm:h-6 sm:w-6" />}
+            </button>
+
+            <CancelCallButton 
+              onLeave={requestLeave} 
+            />
+
+            <button
+                onClick={() => setChatOpen(!chatOpen)}
+                className={cn(
+                    "relative flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-colors",
+                    chatOpen ? "bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white"
+                )}
+            >
+                <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
+                {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold shadow-md ring-2 ring-[#2A3B32]">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                )}
+            </button>
           </div>
-          
-          <button
-            onClick={() => setParticipantsOpen(!participantsOpen)}
-            className={cn(
-                "inline-flex items-center gap-2 rounded px-2 sm:px-4 py-2 text-sm font-medium transition-colors",
-                participantsOpen ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-800 hover:bg-slate-700"
-            )}
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">People</span>
-          </button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-2 rounded bg-slate-800 px-2 sm:px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors">
-                <LayoutGrid className="h-4 w-4" />
-                <span className="hidden sm:inline">Layout</span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>Video layout</DropdownMenuLabel>
-              <DropdownMenuRadioGroup value={layout} onValueChange={(v) => setLayout(v as LayoutKey)}>
-                <DropdownMenuRadioItem value="speaker">Speaker</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="grid">Grid</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="stacked">Stacked</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-
-              {layout === "stacked" ? (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Stack options</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup value={stackedOrientation} onValueChange={(v) => setStackedOrientation(v as StackedOrientation)}>
-                    <DropdownMenuRadioItem value="vertical">Vertical</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="horizontal">Horizontal</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Stack order</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup value={stackedOrder} onValueChange={(v) => setStackedOrder(v as StackedOrder)}>
-                    <DropdownMenuRadioItem value="remote-first">Doctor/Patient first</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="self-first">You first</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-
-                  <div className="px-2 py-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm">Split</p>
-                      <p className="text-xs text-muted-foreground">{stackedSplit}%</p>
-                    </div>
-                    <input
-                      type="range"
-                      min={30}
-                      max={70}
-                      value={stackedSplit}
-                      onChange={(e) => setStackedSplit(Math.max(30, Math.min(70, Number(e.target.value))))}
-                      className="mt-2 w-full"
-                    />
-                  </div>
-                </>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <button
-            onClick={() => setChatOpen(!chatOpen)}
-            className={cn(
-                "relative inline-flex items-center gap-2 rounded px-2 sm:px-4 py-2 text-sm font-medium transition-colors",
-                chatOpen ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-800 hover:bg-slate-700"
-            )}
-          >
-            {chatOpen ? "Close chat" : "Chat"}
-            {!chatOpen && unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] text-white">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-hidden p-3 sm:p-4">
-          <div className="h-full min-h-0 overflow-hidden rounded-xl bg-slate-900 ring-1 ring-slate-800">
-            {layout === "speaker" ? <SpeakerLayout participantsBarPosition="bottom" /> : null}
-            {layout === "grid" ? <PaginatedGridLayout groupSize={6} /> : null}
-            {layout === "stacked" ? (
-              <TwoUpStackedLayout
-                participants={participants}
-                localParticipantSessionId={localParticipant?.sessionId}
-                orientation={stackedOrientation}
-                order={stackedOrder}
-                split={stackedSplit}
-              />
-            ) : null}
-          </div>
-        </div>
 
         {/* Persistent Chat (Desktop) */}
         <div className={cn(
@@ -799,59 +756,7 @@ function MyCallUI({
         </div>
       )}
 
-      <div className="border-t border-slate-800 bg-slate-900 p-2 sm:p-4">
-        <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
-            <button
-                onClick={async () => {
-                    await microphone.toggle();
-                    toast.info(isMicEnabled ? "Microphone Off" : "Microphone On", { duration: 1000 });
-                }}
-                className={cn(
-                    "flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-colors",
-                    isMicEnabled ? "bg-slate-800 hover:bg-slate-700" : "bg-red-600 hover:bg-red-700"
-                )}
-                title="Toggle Microphone"
-            >
-                {isMicEnabled ? <Mic className="h-4 w-4 sm:h-5 sm:w-5" /> : <MicOff className="h-4 w-4 sm:h-5 sm:w-5" />}
-            </button>
 
-            <button
-                onClick={async () => {
-                    await camera.toggle();
-                    toast.info(isCamEnabled ? "Camera Off" : "Camera On", { duration: 1000 });
-                }}
-                className={cn(
-                    "flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-colors",
-                    isCamEnabled ? "bg-slate-800 hover:bg-slate-700" : "bg-red-600 hover:bg-red-700"
-                )}
-                title="Toggle Camera"
-            >
-                {isCamEnabled ? <Video className="h-4 w-4 sm:h-5 sm:w-5" /> : <VideoOff className="h-4 w-4 sm:h-5 sm:w-5" />}
-            </button>
-            
-            <ReactionsButton />
-            <div className="hidden sm:block">
-              <ScreenShareButton />
-            </div>
-            <button
-                onClick={() => setChatOpen(!chatOpen)}
-                className={cn(
-                    "relative flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-colors",
-                    chatOpen ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-800 hover:bg-slate-700"
-                )}
-                title="Chat"
-            >
-                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
-                {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold shadow-sm">
-                        {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                )}
-            </button>
-            <RecordCallButton />
-            <CancelCallButton onLeave={requestLeave} />
-        </div>
-      </div>
 
       <Dialog
         open={ratingOpen}
@@ -976,18 +881,14 @@ function MyCallUI({
   );
 }
 
-function TwoUpStackedLayout({
+function ModernCallLayout({
   participants,
   localParticipantSessionId,
-  orientation,
-  order,
-  split,
+  otherPartyLabel,
 }: {
   participants: StreamVideoParticipant[];
   localParticipantSessionId?: string;
-  orientation: "vertical" | "horizontal";
-  order: "remote-first" | "self-first";
-  split: number;
+  otherPartyLabel: string;
 }) {
   const local = localParticipantSessionId
     ? participants.find((p) => p.sessionId === localParticipantSessionId)
@@ -996,59 +897,45 @@ function TwoUpStackedLayout({
     ? participants.find((p) => p.sessionId !== localParticipantSessionId)
     : participants.find((p) => p.sessionId !== local?.sessionId);
 
-  const primary = order === "remote-first" ? remote ?? local : local;
-  const secondary = order === "remote-first" ? (remote ? local : null) : remote ?? null;
-
-  const dir = orientation === "vertical" ? "flex-col" : "flex-row";
-  const firstPct = Math.max(30, Math.min(70, Math.round(split)));
-  const secondPct = 100 - firstPct;
-
-  // If there's no secondary participant (only one person in call),
-  // show the primary participant in full screen.
-  if (!secondary) {
-    if (!primary) {
-      return (
-        <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
-          Waiting for participant...
-        </div>
-      );
-    }
-    return (
-      <div className="h-full w-full overflow-hidden">
-        <ParticipantView participant={primary} />
-      </div>
-    );
-  }
+  const primary = remote || local;
+  const pip = remote ? local : null;
 
   return (
-    <div className={`flex h-full min-h-0 w-full ${dir}`}>
+    <div className="relative h-full w-full bg-slate-900 overflow-hidden">
+      {/* Primary Video */}
       {primary ? (
-        <div
-          className={
-            orientation === "vertical"
-              ? "min-h-0 min-w-0 flex-none border-b border-slate-800/70"
-              : "min-h-0 min-w-0 flex-none border-r border-slate-800/70"
-          }
-          style={orientation === "vertical" ? { height: `${firstPct}%` } : { width: `${firstPct}%` }}
-        >
-          <div className="h-full w-full overflow-hidden">
-            <ParticipantView participant={primary} />
-          </div>
+        <div className="absolute inset-0">
+          <ParticipantView
+            participant={primary}
+          />
+          <div className="absolute inset-x-0 bottom-0 h-[40%] bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
         </div>
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+        <div className="flex h-full w-full items-center justify-center text-slate-400">
           Waiting for participant...
         </div>
       )}
 
-      <div
-        className="min-h-0 min-w-0 flex-auto"
-        style={orientation === "vertical" ? { height: `${secondPct}%` } : { width: `${secondPct}%` }}
-      >
-        <div className="h-full w-full overflow-hidden">
-          <ParticipantView participant={secondary} />
+      {/* Info Overlay */}
+      {primary && (
+        <div className="absolute bottom-32 left-4 sm:bottom-36 sm:left-8 z-10 max-w-[50%] sm:max-w-[60%] pointer-events-none">
+          <h2 className="text-xl sm:text-3xl font-bold text-white drop-shadow-md">
+            {remote ? otherPartyLabel : "Waiting for others..."}
+          </h2>
+          {remote && (
+            <p className="text-xs sm:text-sm text-gray-300 drop-shadow mt-1 sm:mt-2 font-medium">
+              Medical Consultation
+            </p>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* PiP Local Video */}
+      {pip && (
+        <div className="absolute bottom-28 right-4 sm:bottom-32 sm:right-8 w-24 h-36 sm:w-36 sm:h-48 rounded-[1.5rem] overflow-hidden shadow-2xl border-[3px] border-white/20 bg-slate-800 z-10 transition-all">
+          <ParticipantView participant={pip} />
+        </div>
+      )}
     </div>
   );
 }
