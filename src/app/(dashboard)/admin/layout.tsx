@@ -1,0 +1,212 @@
+"use client";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { BarChart3, Bell, ClipboardList, CreditCard, LayoutDashboard, LogOut, Mail, Settings, Stethoscope, Users2, Megaphone, Landmark } from "lucide-react";
+import AdminNotificationsBell from "@/components/admin/AdminNotificationsBell";
+
+const items = [
+  { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/admin/users", icon: Users2, label: "Users" },
+  { href: "/admin/doctors", icon: Stethoscope, label: "Doctors" },
+  { href: "/admin/appointments", icon: ClipboardList, label: "Appointments" },
+  { href: "/admin/payments", icon: CreditCard, label: "Payments" },
+  { href: "/admin/finance", icon: Landmark, label: "Finance" },
+  { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
+  { href: "/admin/marketing", icon: Megaphone, label: "Email Marketing" },
+  { href: "/admin/messages", icon: Mail, label: "Messages" },
+  { href: "/admin/announcements", icon: Bell, label: "Announcements" },
+  { href: "/admin/settings", icon: Settings, label: "Settings" },
+];
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const headerLogoUrl = "/MedicsOnline_logo.png";
+  const [pendingPayouts, setPendingPayouts] = useState<number>(0);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const logout = () => {
+    document.cookie = "medics_admin=; path=/; max-age=0";
+    router.push("/admin/login");
+  };
+
+  useEffect(() => {
+    const hasSession = document.cookie.includes("medics_admin=1");
+    if (!hasSession) {
+      router.replace("/admin/login");
+    }
+  }, [router]);
+
+  useEffect(() => {
+    items.forEach((item) => {
+      router.prefetch(item.href);
+    });
+  }, [router]);
+
+  useEffect(() => {
+    let active = true;
+    let intervalId: number | null = null;
+
+    const parse = (v: string | null): { enabled: boolean; ms: number } => {
+      if (!v || v === "off") return { enabled: false, ms: 60000 };
+      if (v.startsWith("on:")) {
+        const ms = parseInt(v.slice(3), 10);
+        return { enabled: true, ms: Number.isFinite(ms) && ms > 0 ? ms : 60000 };
+      }
+      return { enabled: false, ms: 60000 };
+    };
+
+    const loadPending = async () => {
+      try {
+        const res = await fetch('/api/admin/payouts/summary', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = (await res.json()) as { pendingCount?: number };
+        if (active) setPendingPayouts(Math.max(0, Number(json?.pendingCount || 0)));
+      } catch {}
+    };
+
+    const start = () => {
+      loadPending();
+      try {
+        const conf = parse(window.localStorage.getItem("admin_auto_refresh:/admin/layout"));
+        if (!conf.enabled) return;
+        intervalId = window.setInterval(loadPending, conf.ms) as unknown as number;
+      } catch {}
+    };
+
+    const stop = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const reconfigure = () => {
+      stop();
+      start();
+    };
+
+    start();
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "admin_auto_refresh:/admin/layout") reconfigure();
+    };
+    const onCustom = () => reconfigure();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("admin:autoRefresh:changed", onCustom as any);
+
+    return () => {
+      active = false;
+      stop();
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("admin:autoRefresh:changed", onCustom as any);
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <aside
+        className={`bg-white border-r transition-all duration-200 z-40 h-screen lg:h-screen overflow-y-auto lg:overflow-y-auto fixed lg:sticky top-0 lg:top-0 left-0 ${
+          collapsed ? "lg:w-16" : "lg:w-64"
+        } w-64 transform ${mobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+      >
+        <div className="h-16 flex items-center justify-between px-3">
+          <button
+            type="button"
+            onClick={() => {
+              router.push("/admin");
+              setMobileOpen(false);
+            }}
+            className="flex items-center gap-2 focus:outline-none"
+          >
+            <img
+              src={headerLogoUrl}
+              alt="MedicsOnline"
+              className={`h-8 w-auto ${collapsed ? "" : "mr-2"}`}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
+          </button>
+          <Button variant="ghost" size="sm" className="hidden lg:inline-flex" onClick={() => setCollapsed(!collapsed)}>
+            <BarChart3 className="h-4 w-4 rotate-90" />
+          </Button>
+        </div>
+        <Separator />
+        <nav className="p-2 space-y-1">
+          {items.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMobileOpen(false);
+                  router.push(item.href);
+                }}
+                prefetch
+              >
+                <div
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 cursor-pointer hover:bg-accent/50 ${
+                    active ? "bg-accent/70" : ""
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+        />
+      )}
+      <main className="flex-1 min-w-0">
+        <header className="h-16 bg-white border-b flex items-center justify-between px-4 sm:px-6">
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">Admin Dashboard</h1>
+            <p className="text-xs text-gray-500">Manage doctors, patients, appointments, and payments.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <AdminNotificationsBell />
+            {pendingPayouts > 0 && (
+              <Link href="/admin/payments" className="hidden sm:inline-flex" prefetch>
+                <span className="inline-flex items-center rounded-full bg-yellow-100 text-yellow-800 text-xs px-3 py-1">
+                  Pending payouts: {pendingPayouts}
+                </span>
+              </Link>
+            )}
+            {pendingPayouts > 0 && (
+              <Link href="/admin/payments" className="sm:hidden" prefetch>
+                <Button variant="outline" size="sm">
+                  <CreditCard className="h-4 w-4 mr-2" /> {pendingPayouts}
+                </Button>
+              </Link>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={logout} className="cursor-pointer">
+              <LogOut className="h-4 w-4 mr-2" /> Logout
+            </Button>
+          </div>
+        </header>
+        <div className="p-4 sm:p-6 overflow-x-hidden">{children}</div>
+      </main>
+    </div>
+  );
+}

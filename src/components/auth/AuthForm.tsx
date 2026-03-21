@@ -1,0 +1,389 @@
+// src/components/auth/AuthForm.tsx
+'use client';
+import React, { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Eye, EyeOff } from 'lucide-react';
+import { userAuthStore } from '@/store/authStore';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Stethoscope } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
+import type { User } from '@/lib/types';
+
+interface AuthFormProps {
+  type: 'login' | 'signup';
+  userRole: 'doctor' | 'patient';
+}
+
+ const AuthForm = ({ type, userRole }: AuthFormProps) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  
+  const {
+    registerPatient,
+    registerDoctor,
+    loginPatient,
+    loginDoctor,
+    loading,
+    error: authError,
+  } = userAuthStore();
+  
+  // Local error state to handle UI-specific errors or override store errors
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const router = useRouter();
+
+  const isDoctorOnboardingComplete = (user: User): boolean => {
+    const specializationOk = typeof user.specialization === 'string' && user.specialization.trim().length > 0;
+    const qualificationOk = typeof user.qualification === 'string' && user.qualification.trim().length > 0;
+    const aboutOk = typeof user.about === 'string' && user.about.trim().length > 0;
+
+    const feesNumber = typeof user.fees === 'number' ? user.fees : Number(user.fees);
+    const feesOk = Number.isFinite(feesNumber) && feesNumber > 0;
+
+    const categoryOk = Array.isArray(user.category) && user.category.length > 0;
+
+    const hospitalName = user.hospitalInfo?.name;
+    const hospitalOk = typeof hospitalName === 'string' && hospitalName.trim().length > 0;
+
+    return specializationOk && qualificationOk && aboutOk && feesOk && categoryOk && hospitalOk;
+  };
+
+  const isPatientOnboardingComplete = (user: User): boolean => {
+    const phoneOk = typeof user.phone === 'string' && user.phone.trim().length > 0;
+    const dobOk = typeof user.dob === 'string' && user.dob.trim().length > 0;
+    const genderOk = typeof user.gender === 'string' && user.gender.trim().length > 0;
+
+    const emergency =
+      typeof user.emergencyContact === 'object' && user.emergencyContact !== null
+        ? (user.emergencyContact as Record<string, unknown>)
+        : null;
+    const emergencyName =
+      typeof emergency?.name === 'string' ? emergency.name : typeof emergency?.emergency_name === 'string' ? emergency.emergency_name : '';
+    const emergencyPhone =
+      typeof emergency?.phone === 'string' ? emergency.phone : typeof emergency?.emergency_phone === 'string' ? emergency.emergency_phone : '';
+    const emergencyRelationship =
+      typeof emergency?.relationship === 'string'
+        ? emergency.relationship
+        : typeof emergency?.emergency_relationship === 'string'
+          ? emergency.emergency_relationship
+          : '';
+
+    const emergencyNameOk = emergencyName.trim().length > 0;
+    const emergencyPhoneOk = emergencyPhone.trim().length > 0;
+    const emergencyRelationshipOk = emergencyRelationship.trim().length > 0;
+
+    const medical =
+      typeof user.medicalHistory === 'object' && user.medicalHistory !== null
+        ? (user.medicalHistory as Record<string, unknown>)
+        : null;
+    const allergies =
+      typeof medical?.allergies === 'string' ? medical.allergies : typeof medical?.allergy === 'string' ? medical.allergy : '';
+    const currentMedications =
+      typeof medical?.currentMedications === 'string'
+        ? medical.currentMedications
+        : typeof medical?.current_medications === 'string'
+          ? medical.current_medications
+          : '';
+    const chronicConditions =
+      typeof medical?.chronicConditions === 'string'
+        ? medical.chronicConditions
+        : typeof medical?.chronic_conditions === 'string'
+          ? medical.chronic_conditions
+          : '';
+
+    const allergiesOk = allergies.trim().length > 0;
+    const currentMedicationsOk = currentMedications.trim().length > 0;
+    const chronicConditionsOk = chronicConditions.trim().length > 0;
+
+    return (
+      phoneOk &&
+      dobOk &&
+      genderOk &&
+      emergencyNameOk &&
+      emergencyPhoneOk &&
+      emergencyRelationshipOk &&
+      allergiesOk &&
+      currentMedicationsOk &&
+      chronicConditionsOk
+    );
+  };
+
+  const getPostLoginPath = (user: User): string => {
+    if (user.type === 'doctor') {
+      return isDoctorOnboardingComplete(user) ? '/doctor/dashboard' : '/onboarding/doctor';
+    }
+    return isPatientOnboardingComplete(user) ? '/patient/dashboard' : '/onboarding/patient';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+    
+    if (type === 'signup' && !agreeToTerms) return;
+
+    try {
+      if (type === 'signup') {
+        if (userRole === 'doctor') {
+          await registerDoctor({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+          });
+        } else {
+          await registerPatient({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+          });
+        }
+        // If we reach here, signup was successful (store didn't throw)
+        setSignupSuccess(true);
+        // Do NOT redirect. Show success message.
+      } else {
+        // LOGIN FLOW
+        try {
+            if (userRole === 'doctor') {
+            await loginDoctor(formData.email, formData.password);
+            } else {
+            await loginPatient(formData.email, formData.password);
+            }
+    
+            const { user } = userAuthStore.getState();
+            if (user) {
+              router.push(getPostLoginPath(user));
+            }
+        } catch (loginErr: unknown) {
+             const loginMessage = loginErr instanceof Error ? loginErr.message : String(loginErr ?? '');
+             // Check for specific Supabase errors
+             if (loginMessage.includes("Email not confirmed")) {
+                 setLocalError("Please confirm your email address before logging in. Check your inbox (and spam folder) for the confirmation link.");
+             } else if (loginMessage.includes("Invalid login credentials")) {
+                 setLocalError("Invalid email or password. Please try again.");
+             } else {
+                 setLocalError(loginMessage || "Login failed");
+             }
+             // Re-throw if you want the store error to persist, but we have local state now
+        }
+      }
+    } catch (err: unknown) {
+      console.error(`${type} failed:`, err);
+      // Fallback for signup errors
+      setLocalError(err instanceof Error ? err.message : "An error occurred");
+    }
+  };
+
+  if (signupSuccess) {
+      return (
+        <Card className="w-full max-w-md mx-auto shadow-lg border-t-4 border-t-blue-600">
+            <CardContent className="pt-6 pb-8 px-8 text-center space-y-4">
+                <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                    <Stethoscope className="w-6 h-6 text-blue-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Check your email</h2>
+                <p className="text-gray-600">
+                    We've sent a confirmation link to <span className="font-semibold text-gray-900">{formData.email}</span>.
+                </p>
+                <p className="text-sm text-gray-500">
+                    Please click the link in the email to verify your account and start using MedicsOnline.
+                </p>
+                <div className="pt-4">
+                    <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
+                        Back to Login
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+      );
+  }
+
+  const displayedError = localError || authError;
+
+  const handleGoogleAuth = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+      },
+    })
+  };
+
+  const isSignup = type === 'signup';
+  const title = isSignup ? 'Create a secure account' : 'Welcome back';
+  const buttonText = isSignup ? 'Create account' : 'Sign in';
+  const altLinkText = isSignup ? 'Already a member?' : "Don't have an account?";
+  const altLinkAction = isSignup ? 'Sign in' : 'Sign up';
+  const altLinkPath = isSignup ? `/login/${userRole}` : `/signup/${userRole}`;
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <div className="text-center mb-8">
+        <BrandLogoLink />
+      </div>
+
+      <Card className="border-0 shadow-xl">
+        <CardContent className="p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">{title}</h2>
+          
+          {displayedError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {displayedError}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name field for signup */}
+            {isSignup && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="border-0 border-b-2 border-gray-300 rounded-none focus:border-blue-600 focus-visible:ring-0"
+                  required
+                />
+              </div>
+            )}
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="border-0 border-b-2 border-gray-300 rounded-none focus:border-blue-600 focus-visible:ring-0"
+                required
+              />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="border-0 border-b-2 border-gray-300 rounded-none focus:border-blue-600 focus-visible:ring-0 pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
+              {!isSignup && (
+                <div className="flex justify-end pt-1">
+                  <Link 
+                    href={`/forgot-password?role=${userRole}`} 
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Terms checkbox for signup */}
+            {isSignup && (
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="terms"
+                  checked={agreeToTerms}
+                  onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+                />
+                <label htmlFor="terms" className="text-sm text-gray-600 leading-5">
+                  I confirm that I am over 18 years old and agree to MedicsOnline's{' '}
+                  <Link href="#" className="text-blue-600 hover:underline">Terms</Link> and{' '}
+                  <Link href="#" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+                </label>
+              </div>
+            )}
+
+            <Button 
+              type="submit" 
+              className="w-full bg-blue-600 hover:bg-blue-700 rounded-full py-3"
+              disabled={loading || (isSignup && !agreeToTerms)}
+            >
+              {loading ? `${type === 'signup' ? 'Creating' : 'Signing'} in...` : buttonText}
+            </Button>
+          </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <Separator />
+              <div className="absolute inset-0 flex justify-center">
+                <span className="bg-white px-2 text-gray-500 text-sm">OR</span>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full rounded-full border-gray-300"
+                onClick={handleGoogleAuth}
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                {isSignup ? 'Sign up' : 'Sign in'} with Google
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
+            <span className="text-gray-600">{altLinkText} </span>
+            <Link 
+              href={altLinkPath}
+              className="text-blue-600 hover:underline font-medium"
+            >
+              {altLinkAction}
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+function BrandLogoLink() {
+  const logo = "/MedicsOnline_logo.png";
+  return (
+    <Link href="/" className="inline-flex items-center justify-center gap-2">
+      <img src={logo} alt="MedicsOnline" className="h-9 w-auto" loading="eager" fetchPriority="high" decoding="async" />
+    </Link>
+  );
+}
+
+export default AuthForm;
