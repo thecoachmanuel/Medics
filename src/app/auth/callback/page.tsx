@@ -14,19 +14,7 @@ function AuthCallbackContent() {
   const [error, setError] = useState<string | null>(null)
 
   const isDoctorProfileComplete = (user: User): boolean => {
-    const specializationOk = typeof user.specialization === 'string' && user.specialization.trim().length > 0;
-    const qualificationOk = typeof user.qualification === 'string' && user.qualification.trim().length > 0;
-    const aboutOk = typeof user.about === 'string' && user.about.trim().length > 0;
-
-    const feesNumber = typeof user.fees === 'number' ? user.fees : Number(user.fees);
-    const feesOk = Number.isFinite(feesNumber) && feesNumber > 0;
-
-    const categoryOk = Array.isArray(user.category) && user.category.length > 0;
-
-    const hospitalName = user.hospitalInfo?.name;
-    const hospitalOk = typeof hospitalName === 'string' && hospitalName.trim().length > 0;
-
-    return specializationOk && qualificationOk && aboutOk && feesOk && categoryOk && hospitalOk;
+    return !!user.isVerified;
   };
 
   const isPatientProfileComplete = (user: User): boolean => {

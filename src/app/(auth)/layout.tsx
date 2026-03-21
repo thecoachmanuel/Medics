@@ -3,83 +3,12 @@ import { userAuthStore } from '@/store/authStore';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect } from 'react'
 
-const isDoctorOnboardingComplete = (user: { specialization?: string; category?: unknown; qualification?: string; fees?: unknown; about?: string; hospitalInfo?: unknown }): boolean => {
-  const specializationOk = typeof user.specialization === 'string' && user.specialization.trim().length > 0;
-  const qualificationOk = typeof user.qualification === 'string' && user.qualification.trim().length > 0;
-  const aboutOk = typeof user.about === 'string' && user.about.trim().length > 0;
-
-  const feesNumber = typeof user.fees === 'number' ? user.fees : typeof user.fees === 'string' ? Number(user.fees) : NaN;
-  const feesOk = Number.isFinite(feesNumber) && feesNumber > 0;
-
-  const categoryOk = Array.isArray(user.category) && user.category.length > 0;
-
-  const hospitalName =
-    typeof user.hospitalInfo === 'object' && user.hospitalInfo !== null
-      ? (user.hospitalInfo as { name?: unknown }).name
-      : undefined;
-  const hospitalOk = typeof hospitalName === 'string' && hospitalName.trim().length > 0;
-
-  return specializationOk && qualificationOk && aboutOk && feesOk && categoryOk && hospitalOk;
+const isDoctorOnboardingComplete = (user: any): boolean => {
+  return !!user.isVerified;
 }
 
-const isPatientOnboardingComplete = (user: { phone?: unknown; dob?: unknown; gender?: unknown; emergencyContact?: unknown; medicalHistory?: unknown }): boolean => {
-  const phoneOk = typeof user.phone === 'string' && user.phone.trim().length > 0;
-  const dobOk = typeof user.dob === 'string' && user.dob.trim().length > 0;
-  const genderOk = typeof user.gender === 'string' && user.gender.trim().length > 0;
-
-  const emergency =
-    typeof user.emergencyContact === 'object' && user.emergencyContact !== null
-      ? (user.emergencyContact as Record<string, unknown>)
-      : null;
-  const emergencyName =
-    typeof emergency?.name === 'string' ? emergency.name : typeof emergency?.emergency_name === 'string' ? emergency.emergency_name : '';
-  const emergencyPhone =
-    typeof emergency?.phone === 'string' ? emergency.phone : typeof emergency?.emergency_phone === 'string' ? emergency.emergency_phone : '';
-  const emergencyRelationship =
-    typeof emergency?.relationship === 'string'
-      ? emergency.relationship
-      : typeof emergency?.emergency_relationship === 'string'
-        ? emergency.emergency_relationship
-        : '';
-
-  const emergencyNameOk = emergencyName.trim().length > 0;
-  const emergencyPhoneOk = emergencyPhone.trim().length > 0;
-  const emergencyRelationshipOk = emergencyRelationship.trim().length > 0;
-
-  const medical =
-    typeof user.medicalHistory === 'object' && user.medicalHistory !== null
-      ? (user.medicalHistory as Record<string, unknown>)
-      : null;
-  const allergies =
-    typeof medical?.allergies === 'string' ? medical.allergies : typeof medical?.allergy === 'string' ? medical.allergy : '';
-  const currentMedications =
-    typeof medical?.currentMedications === 'string'
-      ? medical.currentMedications
-      : typeof medical?.current_medications === 'string'
-        ? medical.current_medications
-        : '';
-  const chronicConditions =
-    typeof medical?.chronicConditions === 'string'
-      ? medical.chronicConditions
-      : typeof medical?.chronic_conditions === 'string'
-        ? medical.chronic_conditions
-        : '';
-
-  const allergiesOk = allergies.trim().length > 0;
-  const currentMedicationsOk = currentMedications.trim().length > 0;
-  const chronicConditionsOk = chronicConditions.trim().length > 0;
-
-  return (
-    phoneOk &&
-    dobOk &&
-    genderOk &&
-    emergencyNameOk &&
-    emergencyPhoneOk &&
-    emergencyRelationshipOk &&
-    allergiesOk &&
-    currentMedicationsOk &&
-    chronicConditionsOk
-  );
+const isPatientOnboardingComplete = (user: any): boolean => {
+  return !!user.isVerified;
 }
 
 const layout = ({children}:{children:React.ReactNode}) => {

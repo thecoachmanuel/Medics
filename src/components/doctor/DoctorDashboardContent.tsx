@@ -102,7 +102,7 @@ const DoctorDashboardContent = () => {
       if (!active || !response.ok) return;
       const json = (await response.json().catch(() => null)) as { credentials?: unknown } | null;
       const hasCredentials = Array.isArray(json?.credentials) && json.credentials.length > 0;
-      if (!hasCredentials) {
+      if (!hasCredentials && !user.isVerified) {
         router.replace("/onboarding/doctor");
       }
     };
