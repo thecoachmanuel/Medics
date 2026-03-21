@@ -190,8 +190,9 @@ const PatientOnboardingForm = () => {
       });
       await fetchProfile();
       router.replace("/patient/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Profile update failed", error);
+      setSubmitError(error.message || "Failed to update profile. Please try again.");
     }
   };
   const handleNext = (): void => {
@@ -488,7 +489,7 @@ const PatientOnboardingForm = () => {
               <Button
                type="button"
                onClick={handleSubmit}
-               disabled={loading || !canSubmit}
+               disabled={loading}
                className="bg-green-600 hover:bg-green-700"
               >
                 {loading ? "Completing Setup...": "Complete Profile"}
