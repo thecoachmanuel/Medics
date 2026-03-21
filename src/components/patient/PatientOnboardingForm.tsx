@@ -54,7 +54,7 @@ const PatientOnboardingForm = () => {
       chronicConditions: "",
     },
   });
-  const { updateProfile, user, loading } = userAuthStore();
+  const { updateProfile, fetchProfile, user, loading } = userAuthStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -120,7 +120,8 @@ const PatientOnboardingForm = () => {
         medicalHistory: formData.medicalHistory,
         isVerified: true,
       });
-      router.push("/patient/dashboard");
+      await fetchProfile();
+      router.replace("/patient/dashboard");
     } catch (error) {
       console.error("Profile update failed", error);
     }
@@ -139,9 +140,17 @@ const PatientOnboardingForm = () => {
   return (
     <div className="w-full max-w-2xl mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome {user?.name} to MedicsOnline
-        </h1>
+        <div className="flex justify-center mb-4">
+          <img
+            src="/MedicsOnline_logo.png"
+            alt="MedicsOnline"
+            className="h-10 w-auto"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome {user?.name}</h1>
         <p className="text-gray-600">
           Complete your profile to start booking appointment
         </p>

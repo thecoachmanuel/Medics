@@ -34,13 +34,47 @@ function AuthCallbackContent() {
     const dobOk = typeof user.dob === 'string' && user.dob.trim().length > 0;
     const genderOk = typeof user.gender === 'string' && user.gender.trim().length > 0;
 
-    const emergencyNameOk = typeof user.emergencyContact?.name === 'string' && user.emergencyContact.name.trim().length > 0;
-    const emergencyPhoneOk = typeof user.emergencyContact?.phone === 'string' && user.emergencyContact.phone.trim().length > 0;
-    const emergencyRelationshipOk = typeof user.emergencyContact?.relationship === 'string' && user.emergencyContact.relationship.trim().length > 0;
+    const emergency =
+      typeof user.emergencyContact === 'object' && user.emergencyContact !== null
+        ? (user.emergencyContact as Record<string, unknown>)
+        : null;
+    const emergencyName =
+      typeof emergency?.name === 'string' ? emergency.name : typeof emergency?.emergency_name === 'string' ? emergency.emergency_name : '';
+    const emergencyPhone =
+      typeof emergency?.phone === 'string' ? emergency.phone : typeof emergency?.emergency_phone === 'string' ? emergency.emergency_phone : '';
+    const emergencyRelationship =
+      typeof emergency?.relationship === 'string'
+        ? emergency.relationship
+        : typeof emergency?.emergency_relationship === 'string'
+          ? emergency.emergency_relationship
+          : '';
 
-    const allergiesOk = typeof user.medicalHistory?.allergies === 'string' && user.medicalHistory.allergies.trim().length > 0;
-    const currentMedicationsOk = typeof user.medicalHistory?.currentMedications === 'string' && user.medicalHistory.currentMedications.trim().length > 0;
-    const chronicConditionsOk = typeof user.medicalHistory?.chronicConditions === 'string' && user.medicalHistory.chronicConditions.trim().length > 0;
+    const emergencyNameOk = emergencyName.trim().length > 0;
+    const emergencyPhoneOk = emergencyPhone.trim().length > 0;
+    const emergencyRelationshipOk = emergencyRelationship.trim().length > 0;
+
+    const medical =
+      typeof user.medicalHistory === 'object' && user.medicalHistory !== null
+        ? (user.medicalHistory as Record<string, unknown>)
+        : null;
+    const allergies =
+      typeof medical?.allergies === 'string' ? medical.allergies : typeof medical?.allergy === 'string' ? medical.allergy : '';
+    const currentMedications =
+      typeof medical?.currentMedications === 'string'
+        ? medical.currentMedications
+        : typeof medical?.current_medications === 'string'
+          ? medical.current_medications
+          : '';
+    const chronicConditions =
+      typeof medical?.chronicConditions === 'string'
+        ? medical.chronicConditions
+        : typeof medical?.chronic_conditions === 'string'
+          ? medical.chronic_conditions
+          : '';
+
+    const allergiesOk = allergies.trim().length > 0;
+    const currentMedicationsOk = currentMedications.trim().length > 0;
+    const chronicConditionsOk = chronicConditions.trim().length > 0;
 
     return (
       phoneOk &&
