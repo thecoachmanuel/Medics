@@ -1,29 +1,46 @@
 'use client'
 import { userAuthStore } from '@/store/authStore';
-import { redirect, usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect } from 'react'
+
+const isDoctorOnboardingComplete = (user: { specialization?: string; category?: unknown; qualification?: string; fees?: unknown; about?: string; hospitalInfo?: unknown }): boolean => {
+  const specializationOk = typeof user.specialization === 'string' && user.specialization.trim().length > 0;
+  const qualificationOk = typeof user.qualification === 'string' && user.qualification.trim().length > 0;
+  const aboutOk = typeof user.about === 'string' && user.about.trim().length > 0;
+
+  const feesNumber = typeof user.fees === 'number' ? user.fees : typeof user.fees === 'string' ? Number(user.fees) : NaN;
+  const feesOk = Number.isFinite(feesNumber) && feesNumber > 0;
+
+  const categoryOk = Array.isArray(user.category) && user.category.length > 0;
+
+  const hospitalName =
+    typeof user.hospitalInfo === 'object' && user.hospitalInfo !== null
+      ? (user.hospitalInfo as { name?: unknown }).name
+      : undefined;
+  const hospitalOk = typeof hospitalName === 'string' && hospitalName.trim().length > 0;
+
+  return specializationOk && qualificationOk && aboutOk && feesOk && categoryOk && hospitalOk;
+}
 
 const layout = ({children}:{children:React.ReactNode}) => {
 
  const {isAuthenticated,user} = userAuthStore();
  const pathname = usePathname();
+ const router = useRouter();
 
   useEffect(() => {
     // Don't redirect if on reset-password page
     if (pathname?.includes('/reset-password')) return;
 
     if(isAuthenticated &&  user) {
-      if(!user.isVerified){
-        redirect(`/onboarding/${user.type}`)
-      }else{
-        if(user.type === 'doctor'){
-          redirect('/doctor/dashboard')
-        }else{
-          redirect('/patient/dashboard')
-        }
+      if (user.type === 'doctor') {
+        router.replace(isDoctorOnboardingComplete(user) ? '/doctor/dashboard' : '/onboarding/doctor');
+        return;
       }
+
+      router.replace(user.isVerified ? '/patient/dashboard' : '/onboarding/patient');
     }
-  },[isAuthenticated,user,pathname])
+  },[isAuthenticated,user,pathname,router])
   return (
     <div className='min-h-screen flex'>
      

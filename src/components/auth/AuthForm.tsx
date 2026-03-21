@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Stethoscope } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import type { User } from '@/lib/types';
 
 interface AuthFormProps {
   type: 'login' | 'signup';
@@ -43,6 +44,29 @@ interface AuthFormProps {
   const [localError, setLocalError] = useState<string | null>(null);
 
   const router = useRouter();
+
+  const isDoctorOnboardingComplete = (user: User): boolean => {
+    const specializationOk = typeof user.specialization === 'string' && user.specialization.trim().length > 0;
+    const qualificationOk = typeof user.qualification === 'string' && user.qualification.trim().length > 0;
+    const aboutOk = typeof user.about === 'string' && user.about.trim().length > 0;
+
+    const feesNumber = typeof user.fees === 'number' ? user.fees : Number(user.fees);
+    const feesOk = Number.isFinite(feesNumber) && feesNumber > 0;
+
+    const categoryOk = Array.isArray(user.category) && user.category.length > 0;
+
+    const hospitalName = user.hospitalInfo?.name;
+    const hospitalOk = typeof hospitalName === 'string' && hospitalName.trim().length > 0;
+
+    return specializationOk && qualificationOk && aboutOk && feesOk && categoryOk && hospitalOk;
+  };
+
+  const getPostLoginPath = (user: User): string => {
+    if (user.type === 'doctor') {
+      return isDoctorOnboardingComplete(user) ? '/doctor/dashboard' : '/onboarding/doctor';
+    }
+    return user.isVerified ? '/patient/dashboard' : '/onboarding/patient';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,32 +103,25 @@ interface AuthFormProps {
     
             const { user } = userAuthStore.getState();
             if (user) {
-            if (!user.isVerified) {
-                // This is checking if the doctor is verified by admin, not email confirmation
-                // Email confirmation is handled by Supabase login failure if configured
-                router.push(`/onboarding/${user.type}`);
-            } else if (user.type === 'doctor') {
-                router.push('/doctor/dashboard');
-            } else {
-                router.push('/patient/dashboard');
+              router.push(getPostLoginPath(user));
             }
-            }
-        } catch (loginErr: any) {
+        } catch (loginErr: unknown) {
+             const loginMessage = loginErr instanceof Error ? loginErr.message : String(loginErr ?? '');
              // Check for specific Supabase errors
-             if (loginErr.message?.includes("Email not confirmed")) {
+             if (loginMessage.includes("Email not confirmed")) {
                  setLocalError("Please confirm your email address before logging in. Check your inbox (and spam folder) for the confirmation link.");
-             } else if (loginErr.message?.includes("Invalid login credentials")) {
+             } else if (loginMessage.includes("Invalid login credentials")) {
                  setLocalError("Invalid email or password. Please try again.");
              } else {
-                 setLocalError(loginErr.message || "Login failed");
+                 setLocalError(loginMessage || "Login failed");
              }
              // Re-throw if you want the store error to persist, but we have local state now
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`${type} failed:`, err);
       // Fallback for signup errors
-      setLocalError(err.message || "An error occurred");
+      setLocalError(err instanceof Error ? err.message : "An error occurred");
     }
   };
 

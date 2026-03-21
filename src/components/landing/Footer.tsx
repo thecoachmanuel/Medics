@@ -42,10 +42,11 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
     youtube: Youtube,
     github: Github,
   };
-  const computedSocials = Array.isArray(socialLinks) && socialLinks.length
+  type SocialItem = { name: string; url: string; icon: React.ComponentType<{ className?: string }> };
+  const computedSocials: SocialItem[] = Array.isArray(socialLinks) && socialLinks.length
     ? socialLinks
         .map((s) => ({ ...s, icon: iconMap[s.name.toLowerCase()] }))
-        .filter((s) => !!s.icon)
+        .filter((s): s is SocialItem => Boolean(s.icon))
     : defaultSocials;
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -86,9 +87,6 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
             <div className="lg:col-span-4">
               <div className="flex items-center space-x-2 mb-6">
                 <img src={resolvedLogoUrl} alt="MedicsOnline" className="h-10 w-auto" loading="lazy" decoding="async" />
-                <div className="text-3xl font-bold bg-gradient-to-br from-white to-blue-100  bg-clip-text text-transparent">
-                  MedicsOnline
-                </div>
               </div>
 
               <p className="text-blue-100 mb-6 text-lg leading-relaxed">
@@ -173,13 +171,13 @@ const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, 
         <div className="py-6 border-t border-blue-700/50">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-blue-200 text-sm">
-              <p>&copy; 2026 MedicsOnline, Inc. All rights resetved</p>
+              <p>&copy; 2026. All rights reserved</p>
             </div>
 
             <div className="flex items-center space-x-4">
               <span className="text-blue-200 text-sm">Follow use:</span>
               <div className="flex space-x-3">
-                {computedSocials.map(({ name, icon: Icon, url }: any) => (
+                {computedSocials.map(({ name, icon: Icon, url }) => (
                   <a
                     key={name}
                     href={url}
