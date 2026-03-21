@@ -38,6 +38,8 @@ interface PatientOnboardingData {
 }
 const PatientOnboardingForm = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const [formData, setFormData] = useState<PatientOnboardingData>({
     phone: "",
     dob: "",
@@ -71,6 +73,65 @@ const PatientOnboardingForm = () => {
       }
     }
   }, [user, router]);
+
+  useEffect(() => {
+    if (!user || user.type !== "patient" || initialized) return;
+
+    const emergency =
+      typeof user.emergencyContact === "object" && user.emergencyContact !== null
+        ? (user.emergencyContact as Record<string, unknown>)
+        : null;
+
+    const medical =
+      typeof user.medicalHistory === "object" && user.medicalHistory !== null
+        ? (user.medicalHistory as Record<string, unknown>)
+        : null;
+
+    setFormData({
+      phone: typeof user.phone === "string" ? user.phone : "",
+      dob: typeof user.dob === "string" ? user.dob : "",
+      gender: typeof user.gender === "string" ? user.gender : "",
+      bloodGroup: typeof user.bloodGroup === "string" ? user.bloodGroup : "",
+      emergencyContact: {
+        name: typeof emergency?.name === "string" ? emergency.name : typeof emergency?.emergency_name === "string" ? emergency.emergency_name : "",
+        phone: typeof emergency?.phone === "string" ? emergency.phone : typeof emergency?.emergency_phone === "string" ? emergency.emergency_phone : "",
+        relationship:
+          typeof emergency?.relationship === "string"
+            ? emergency.relationship
+            : typeof emergency?.emergency_relationship === "string"
+              ? emergency.emergency_relationship
+              : "",
+      },
+      medicalHistory: {
+        allergies: typeof medical?.allergies === "string" ? medical.allergies : typeof medical?.allergy === "string" ? medical.allergy : "",
+        currentMedications:
+          typeof medical?.currentMedications === "string"
+            ? medical.currentMedications
+            : typeof medical?.current_medications === "string"
+              ? medical.current_medications
+              : "",
+        chronicConditions:
+          typeof medical?.chronicConditions === "string"
+            ? medical.chronicConditions
+            : typeof medical?.chronic_conditions === "string"
+              ? medical.chronic_conditions
+              : "",
+      },
+    });
+
+    setInitialized(true);
+  }, [initialized, user]);
+
+  const canSubmit =
+    formData.phone.trim().length > 0 &&
+    formData.dob.trim().length > 0 &&
+    formData.gender.trim().length > 0 &&
+    formData.emergencyContact.name.trim().length > 0 &&
+    formData.emergencyContact.phone.trim().length > 0 &&
+    formData.emergencyContact.relationship.trim().length > 0 &&
+    formData.medicalHistory.allergies.trim().length > 0 &&
+    formData.medicalHistory.currentMedications.trim().length > 0 &&
+    formData.medicalHistory.chronicConditions.trim().length > 0;
 
   const handleInputChnage = (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -111,6 +172,13 @@ const PatientOnboardingForm = () => {
 
   const handleSubmit = async (): Promise<void> => {
     try {
+      setSubmitError(null);
+
+      if (!canSubmit) {
+        setSubmitError("Please complete all required fields before continuing.");
+        return;
+      }
+
       await updateProfile({
         phone: formData.phone,
         dob: formData.dob,
@@ -185,6 +253,11 @@ const PatientOnboardingForm = () => {
 
       <Card className="shadow-lg">
         <CardContent className="p-8">
+          {submitError && (
+            <Alert className="mb-6 border border-red-200 bg-red-50/70">
+              <AlertDescription className="text-sm text-red-800">{submitError}</AlertDescription>
+            </Alert>
+          )}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="flex items-center space-x-2 mb-6">
@@ -353,6 +426,7 @@ const PatientOnboardingForm = () => {
                     onChange={(e:ChangeEvent<HTMLTextAreaElement>) => 
                         handleMedicalHistoryChnage("allergies",e.target.value)
                     }
+                    required
                     placeholder="e.g., Penicillin, Peanuts, Dust (or write 'None' if no known allergies" 
                     rows={3}
                    />
@@ -367,6 +441,7 @@ const PatientOnboardingForm = () => {
                     onChange={(e:ChangeEvent<HTMLTextAreaElement>) => 
                         handleMedicalHistoryChnage("currentMedications",e.target.value)
                     }
+                    required
                     placeholder="List any medications you're currently taking (or write 'None' if not taking any)" 
                     rows={3}
                    />
@@ -381,6 +456,7 @@ const PatientOnboardingForm = () => {
                     onChange={(e:ChangeEvent<HTMLTextAreaElement>) => 
                         handleMedicalHistoryChnage("chronicConditions",e.target.value)
                     }
+                    required
                     placeholder="e.g., Diabetes, Hypertension, Asthma (or write 'None' if no chronic conditions)" 
                     rows={3}
                    />
@@ -422,7 +498,7 @@ const PatientOnboardingForm = () => {
               <Button
                type="button"
                onClick={handleSubmit}
-               disabled={loading}
+               disabled={loading || !canSubmit}
                className="bg-green-600 hover:bg-green-700"
               >
                 {loading ? "Completing Setup...": "Complete Profile"}
