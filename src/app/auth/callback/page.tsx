@@ -29,6 +29,32 @@ function AuthCallbackContent() {
     return specializationOk && qualificationOk && aboutOk && feesOk && categoryOk && hospitalOk;
   };
 
+  const isPatientProfileComplete = (user: User): boolean => {
+    const phoneOk = typeof user.phone === 'string' && user.phone.trim().length > 0;
+    const dobOk = typeof user.dob === 'string' && user.dob.trim().length > 0;
+    const genderOk = typeof user.gender === 'string' && user.gender.trim().length > 0;
+
+    const emergencyNameOk = typeof user.emergencyContact?.name === 'string' && user.emergencyContact.name.trim().length > 0;
+    const emergencyPhoneOk = typeof user.emergencyContact?.phone === 'string' && user.emergencyContact.phone.trim().length > 0;
+    const emergencyRelationshipOk = typeof user.emergencyContact?.relationship === 'string' && user.emergencyContact.relationship.trim().length > 0;
+
+    const allergiesOk = typeof user.medicalHistory?.allergies === 'string' && user.medicalHistory.allergies.trim().length > 0;
+    const currentMedicationsOk = typeof user.medicalHistory?.currentMedications === 'string' && user.medicalHistory.currentMedications.trim().length > 0;
+    const chronicConditionsOk = typeof user.medicalHistory?.chronicConditions === 'string' && user.medicalHistory.chronicConditions.trim().length > 0;
+
+    return (
+      phoneOk &&
+      dobOk &&
+      genderOk &&
+      emergencyNameOk &&
+      emergencyPhoneOk &&
+      emergencyRelationshipOk &&
+      allergiesOk &&
+      currentMedicationsOk &&
+      chronicConditionsOk
+    );
+  };
+
   const doctorHasSubmittedCredentials = async (): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
@@ -54,7 +80,7 @@ function AuthCallbackContent() {
       const safeNext = next && next.startsWith('/doctor/') ? next : null;
       return safeNext || '/doctor/dashboard';
     }
-    if (!user.isVerified) return '/onboarding/patient';
+    if (!isPatientProfileComplete(user)) return '/onboarding/patient';
     const safeNext = next && next.startsWith('/patient/') ? next : null;
     return safeNext || '/patient/dashboard';
   };

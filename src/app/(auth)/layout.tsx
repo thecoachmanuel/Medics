@@ -22,6 +22,38 @@ const isDoctorOnboardingComplete = (user: { specialization?: string; category?: 
   return specializationOk && qualificationOk && aboutOk && feesOk && categoryOk && hospitalOk;
 }
 
+const isPatientOnboardingComplete = (user: { phone?: unknown; dob?: unknown; gender?: unknown; emergencyContact?: unknown; medicalHistory?: unknown }): boolean => {
+  const phoneOk = typeof user.phone === 'string' && user.phone.trim().length > 0;
+  const dobOk = typeof user.dob === 'string' && user.dob.trim().length > 0;
+  const genderOk = typeof user.gender === 'string' && user.gender.trim().length > 0;
+
+  const emergency = typeof user.emergencyContact === 'object' && user.emergencyContact !== null
+    ? (user.emergencyContact as { name?: unknown; phone?: unknown; relationship?: unknown })
+    : null;
+  const emergencyNameOk = typeof emergency?.name === 'string' && emergency.name.trim().length > 0;
+  const emergencyPhoneOk = typeof emergency?.phone === 'string' && emergency.phone.trim().length > 0;
+  const emergencyRelationshipOk = typeof emergency?.relationship === 'string' && emergency.relationship.trim().length > 0;
+
+  const medical = typeof user.medicalHistory === 'object' && user.medicalHistory !== null
+    ? (user.medicalHistory as { allergies?: unknown; currentMedications?: unknown; chronicConditions?: unknown })
+    : null;
+  const allergiesOk = typeof medical?.allergies === 'string' && medical.allergies.trim().length > 0;
+  const currentMedicationsOk = typeof medical?.currentMedications === 'string' && medical.currentMedications.trim().length > 0;
+  const chronicConditionsOk = typeof medical?.chronicConditions === 'string' && medical.chronicConditions.trim().length > 0;
+
+  return (
+    phoneOk &&
+    dobOk &&
+    genderOk &&
+    emergencyNameOk &&
+    emergencyPhoneOk &&
+    emergencyRelationshipOk &&
+    allergiesOk &&
+    currentMedicationsOk &&
+    chronicConditionsOk
+  );
+}
+
 const layout = ({children}:{children:React.ReactNode}) => {
 
  const {isAuthenticated,user} = userAuthStore();
@@ -38,7 +70,7 @@ const layout = ({children}:{children:React.ReactNode}) => {
         return;
       }
 
-      router.replace(user.isVerified ? '/patient/dashboard' : '/onboarding/patient');
+      router.replace(isPatientOnboardingComplete(user) ? '/patient/dashboard' : '/onboarding/patient');
     }
   },[isAuthenticated,user,pathname,router])
   return (
