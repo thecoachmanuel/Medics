@@ -131,11 +131,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               fetchPriority="high"
               decoding="async"
             />
-            {!collapsed && (
-              <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                MedicsOnline
-              </div>
-            )}
           </button>
           <Button variant="ghost" size="sm" className="hidden lg:inline-flex" onClick={() => setCollapsed(!collapsed)}>
             <BarChart3 className="h-4 w-4 rotate-90" />

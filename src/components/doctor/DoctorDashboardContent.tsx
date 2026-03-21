@@ -347,15 +347,6 @@ const DoctorDashboardContent = () => {
 
   const statsCards = [
     {
-      title: "Total Patients",
-      value: dashboardData?.stats?.totalPatients?.toString() || "0",
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      change: dashboardData?.statsChange?.totalPatients?.value || "0%",
-      positive: dashboardData?.statsChange?.totalPatients?.positive || false,
-    },
-    {
       title: "Today's Appointments",
       value: dashboardData?.stats?.todayAppointments?.toString() || "0",
       icon: Calendar,
