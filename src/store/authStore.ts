@@ -333,14 +333,27 @@ export const userAuthStore = create<AuthState>()(
         try {
             const { user } = get();
             if(!user) throw new Error("No user found");
+            
+            // Re-verify session to prevent RLS update failure due to expired local session
+            const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+            if (sessionErr || !sessionData.session) {
+                throw new Error("Your session has expired. Please log out and log back in.");
+            }
+
             const payload = mapProfileUpdateToDbPayload(data);
-            const { data: updated, error: updateError } = await supabase
+            const { data: updatedArray, error: updateError } = await supabase
               .from('profiles')
               .update(payload)
               .eq('id', user.id)
-              .select('*')
-              .single();
+              .select('*');
+              
             if (updateError) throw updateError;
+            
+            if (!updatedArray || updatedArray.length === 0) {
+               throw new Error("Update failed: Row not found or permission denied. Your session may have expired.");
+            }
+            
+            const updated = updatedArray[0];
             const merged: User = { ...user, ...{
               name: updated?.name ?? user.name,
               phone: updated?.phone ?? user.phone,
