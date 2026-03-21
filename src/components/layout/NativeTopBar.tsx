@@ -172,7 +172,6 @@ function NativeTopBarContent() {
               fetchPriority="high"
               decoding="async"
             />
-            <div className="text-sm font-semibold text-gray-900">MedicsOnline</div>
           </button>
         </div>
 
