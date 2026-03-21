@@ -37,7 +37,6 @@ export default function AdminLoginPage() {
         <div className="flex flex-col items-center">
           <AdminBrandLogo />
           <div className="text-center">
-            <div className="text-2xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">MedicsOnline Admin</div>
             <p className="text-xs text-gray-500 mt-1">Secure access to the MedicsOnline admin console</p>
           </div>
         </div>

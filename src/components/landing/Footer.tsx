@@ -16,7 +16,7 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ introText, contactPhone, contactEmail, contactLocation, socialLinks, footerLogoUrl }) => {
   const isApp = useAppDetection();
-  const resolvedLogoUrl = "/MedicsOnline_logo.png";
+  const resolvedLogoUrl = "/MedicsOnline_footer_logo.png";
   const resolvedIntro =
     introText && introText.trim().length > 0
       ? introText
