@@ -15,6 +15,7 @@ interface ConsultationStepInterface {
   onBack: () => void;
   onContinue: () => void;
   isLoading?: boolean;
+  voiceDiscount?: { type: 'flat' | 'percentage', value: number } | null;
 }
 const ConsultationStep = ({
   consultationType,
@@ -25,8 +26,18 @@ const ConsultationStep = ({
   onBack,
   onContinue,
   isLoading = false,
+  voiceDiscount,
 }: ConsultationStepInterface) => {
   const getConsultationPrice = (selectedType = consultationType) => {
+    if (selectedType === "Voice Call" && voiceDiscount) {
+      let discount = 0;
+      if (voiceDiscount.type === 'flat') {
+        discount = voiceDiscount.value;
+      } else {
+        discount = (doctorFees * voiceDiscount.value) / 100;
+      }
+      return Math.max(0, doctorFees - discount);
+    }
     const typePrice =
       consultationTypes.find((ct) => ct.type === selectedType)?.price || 0;
     return Math.max(0, doctorFees + typePrice);

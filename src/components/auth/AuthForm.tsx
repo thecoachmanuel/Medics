@@ -132,7 +132,7 @@ interface AuthFormProps {
                     Please click the link in the email to verify your account and start using MedicsOnline.
                 </p>
                 <div className="pt-4">
-                    <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
+                    <Button variant="outline" className="w-full" onClick={() => router.push(`/login/${userRole}`)}>
                         Back to Login
                     </Button>
                 </div>

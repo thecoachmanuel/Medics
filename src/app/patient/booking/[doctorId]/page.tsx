@@ -392,6 +392,7 @@ const page = () => {
                        setSymptoms={setSymptoms}
                        symptoms={symptoms}
                        doctorFees={currentDoctor?.fees}
+                       voiceDiscount={voiceDiscount}
                        onBack={() => setCurrentStep(1)}
                        isLoading={isPaymentProcessing}
                        onContinue={async () => {
