@@ -96,19 +96,29 @@ export default function ChatPage() {
          const file = new File([audioBlob], 'audio-message.webm', { type: 'audio/webm' });
          const { url } = await uploadImage(file, "medimeet/chat-audio");
          
-         const { data, error } = await supabase.from('appointment_messages').insert({
+         const tempId = crypto.randomUUID();
+         const newMsg: Message = {
+           id: tempId,
+           appointment_id: appointmentId,
+           sender_id: user.id,
+           content: `[AUDIO]${url}`,
+           created_at: new Date().toISOString()
+         };
+
+         setMessages(prev => {
+           if (prev.some(m => m.id === tempId)) return prev;
+           return [...prev, newMsg];
+         });
+
+         const { error } = await supabase.from('appointment_messages').insert({
+           id: tempId,
            appointment_id: appointmentId,
            sender_id: user.id,
            content: `[AUDIO]${url}`
-         }).select().single();
+         });
 
-         if (error) throw error;
-         
-         if (data) {
-           setMessages(prev => {
-             if (prev.some(m => m.id === data.id)) return prev;
-             return [...prev, data as Message];
-           });
+         if (error) {
+           console.error("Audio send error:", error);
          }
        } catch (err) {
          console.error(err);
@@ -205,23 +215,29 @@ export default function ChatPage() {
        setIsUploading(false);
     }
 
-    const { data, error } = await supabase.from('appointment_messages').insert({
+    const tempId = crypto.randomUUID();
+    const newMsg: Message = {
+      id: tempId,
+      appointment_id: appointmentId,
+      sender_id: user.id,
+      content: messageContent,
+      created_at: new Date().toISOString()
+    };
+
+    setMessages(prev => {
+      if (prev.some(m => m.id === tempId)) return prev;
+      return [...prev, newMsg];
+    });
+
+    const { error } = await supabase.from('appointment_messages').insert({
+      id: tempId,
       appointment_id: appointmentId,
       sender_id: user.id,
       content: messageContent
-    }).select().single();
+    });
 
     if (error) {
-      console.error(error);
-      alert("Failed to send message.");
-      return;
-    }
-
-    if (data) {
-      setMessages(prev => {
-        if (prev.some(m => m.id === data.id)) return prev;
-        return [...prev, data as Message];
-      });
+      console.error("Send message error:", error);
     }
   };
 
