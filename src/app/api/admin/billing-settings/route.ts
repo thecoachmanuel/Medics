@@ -7,6 +7,8 @@ type BillingSettings = {
   maxWithdrawalPercent: number; // max percentage of available balance that can be withdrawn
   voiceCallDiscountType: 'flat' | 'percentage'; // type of discount for voice calls
   voiceCallDiscountValue: number; // value of the discount
+  messagingDiscountType: 'flat' | 'percentage';
+  messagingDiscountValue: number;
 };
 
 type BillingRow = {
@@ -20,6 +22,8 @@ const DEFAULTS: BillingSettings = {
   maxWithdrawalPercent: 85,
   voiceCallDiscountType: 'percentage',
   voiceCallDiscountValue: 0,
+  messagingDiscountType: 'percentage',
+  messagingDiscountValue: 0,
 };
 
 export async function GET() {
@@ -39,6 +43,8 @@ export async function GET() {
   const withdrawal = Number(cfg.maxWithdrawalPercent);
   const voiceDiscountType = cfg.voiceCallDiscountType === 'flat' ? 'flat' : 'percentage';
   const voiceDiscountValue = Number(cfg.voiceCallDiscountValue);
+  const messagingDiscountType = cfg.messagingDiscountType === 'flat' ? 'flat' : 'percentage';
+  const messagingDiscountValue = Number(cfg.messagingDiscountValue);
 
   const sanitized: BillingSettings = {
     platformFeePercent: Number.isFinite(platform) && platform >= 0 && platform <= 100 ? platform : DEFAULTS.platformFeePercent,
@@ -46,6 +52,8 @@ export async function GET() {
     maxWithdrawalPercent: Number.isFinite(withdrawal) && withdrawal >= 0 && withdrawal <= 100 ? withdrawal : DEFAULTS.maxWithdrawalPercent,
     voiceCallDiscountType: voiceDiscountType,
     voiceCallDiscountValue: Number.isFinite(voiceDiscountValue) && voiceDiscountValue >= 0 ? voiceDiscountValue : DEFAULTS.voiceCallDiscountValue,
+    messagingDiscountType: messagingDiscountType,
+    messagingDiscountValue: Number.isFinite(messagingDiscountValue) && messagingDiscountValue >= 0 ? messagingDiscountValue : DEFAULTS.messagingDiscountValue,
   };
   return NextResponse.json({ config: sanitized });
 }
@@ -67,13 +75,17 @@ export async function POST(req: NextRequest) {
   const withdrawal = Math.max(0, Math.min(100, Number(b.maxWithdrawalPercent ?? DEFAULTS.maxWithdrawalPercent)));
   const voiceDiscountType = b.voiceCallDiscountType === 'flat' ? 'flat' : 'percentage';
   const voiceDiscountValue = Math.max(0, Number(b.voiceCallDiscountValue ?? DEFAULTS.voiceCallDiscountValue));
+  const messagingDiscountType = b.messagingDiscountType === 'flat' ? 'flat' : 'percentage';
+  const messagingDiscountValue = Math.max(0, Number(b.messagingDiscountValue ?? DEFAULTS.messagingDiscountValue));
 
   const config: BillingSettings = { 
     platformFeePercent: platform, 
     adminCommissionPercent: commission,
     maxWithdrawalPercent: withdrawal,
     voiceCallDiscountType: voiceDiscountType,
-    voiceCallDiscountValue: voiceDiscountValue
+    voiceCallDiscountValue: voiceDiscountValue,
+    messagingDiscountType: messagingDiscountType,
+    messagingDiscountValue: messagingDiscountValue
   };
 
   const { data: existing, error: loadError } = await supabase

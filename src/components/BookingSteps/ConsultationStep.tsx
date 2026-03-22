@@ -16,6 +16,7 @@ interface ConsultationStepInterface {
   onContinue: () => void;
   isLoading?: boolean;
   voiceDiscount?: { type: 'flat' | 'percentage', value: number } | null;
+  messagingDiscount?: { type: 'flat' | 'percentage', value: number } | null;
 }
 const ConsultationStep = ({
   consultationType,
@@ -27,6 +28,7 @@ const ConsultationStep = ({
   onContinue,
   isLoading = false,
   voiceDiscount,
+  messagingDiscount,
 }: ConsultationStepInterface) => {
   const getConsultationPrice = (selectedType = consultationType) => {
     if (selectedType === "Voice Call" && voiceDiscount) {
@@ -35,6 +37,15 @@ const ConsultationStep = ({
         discount = voiceDiscount.value;
       } else {
         discount = (doctorFees * voiceDiscount.value) / 100;
+      }
+      return Math.max(0, doctorFees - discount);
+    }
+    if (selectedType === "Messaging" && messagingDiscount) {
+      let discount = 0;
+      if (messagingDiscount.type === 'flat') {
+        discount = messagingDiscount.value;
+      } else {
+        discount = (doctorFees * messagingDiscount.value) / 100;
       }
       return Math.max(0, doctorFees - discount);
     }
@@ -64,10 +75,10 @@ const ConsultationStep = ({
                 return (
                   <div
                     key={type}
-                    className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                    className={`relative border-2 rounded-[1.25rem] p-5 cursor-pointer transition-all flex items-center shadow-sm ${
                       isSelected
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600"
+                        : "border-gray-100 hover:border-gray-300 hover:shadow-md bg-white"
                     }`}
                     onClick={() => handleTypeChnage(type)}
                   >
@@ -76,37 +87,44 @@ const ConsultationStep = ({
                         Recommended
                       </Badge>
                     )}
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 w-full">
                       <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                          isSelected ? "bg-blue-100" : "bg-gray-100"
+                        className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
+                          isSelected ? "bg-blue-600 text-white shadow-md" : "bg-blue-50 text-blue-600"
                         }`}
                       >
-                        <Icon
-                          className={`w-6 h-6 ${
-                            isSelected ? "text-blue-600" : "text-gray-600"
-                          }`}
-                        />
+                        <Icon className="w-6 h-6" />
                       </div>
+                      
                       <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900">{type}</h4>
-                        <p className="text-sm text-gray-600">{description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">
-                          ₦{currentPrice.toLocaleString()}
-                        </p>
-                        {type === 'Voice Call' ? (
-                          <p className="text-sm text-green-600">
-                            Save ₦{Math.max(0, doctorFees - currentPrice).toLocaleString()}
+                        <div className="flex justify-between items-center mb-1">
+                          <h4 className="font-bold text-gray-900 text-lg">{type}</h4>
+                          <p className="font-bold text-gray-900 text-lg">
+                            ₦{currentPrice.toLocaleString()}
                           </p>
-                        ) : (
-                          price !== 0 && (
-                            <p className="text-sm text-green-600">
-                              Save ₦{Math.abs(price).toLocaleString()}
-                            </p>
-                          )
-                        )}
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-gray-500">{description}</p>
+                          <div className="text-right">
+                            {type === 'Voice Call' || type === 'Messaging' ? (
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                                Save ₦{Math.max(0, doctorFees - currentPrice).toLocaleString()}
+                              </span>
+                            ) : (
+                              price !== 0 && (
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                                  Save ₦{Math.abs(price).toLocaleString()}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-4 flex items-center justify-center">
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-600' : 'border-gray-300'}`}>
+                           {isSelected && <div className="w-3 h-3 bg-blue-600 rounded-full" />}
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -291,7 +291,14 @@ export const cities = [
 
 
 
- export const consultationTypes = [
+    export const consultationTypes = [
+      {
+        type: 'Messaging',
+        icon: FileText,
+        description: 'Text-based consultation with secure message history',
+        price: -8000,
+        recommended: false
+      },
       {
         type: 'Video Consultation',
         icon: Video,

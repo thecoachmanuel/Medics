@@ -159,11 +159,15 @@ const CalendarStep = ({
                               key={slot}
                                variant={isSelected ? 'default' : 'outline'}
                                disabled={isDisabled}
-                               className={`p-3 justify-start ${isDisabled ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200' : isSelected ? "bg-blue-600 text-white shadow-lg" : "hover:border-blue-200 hover:bg-blue-50"}`}
+                               className={`p-3 justify-center rounded-full font-medium transition-all w-full leading-none
+                               ${isDisabled 
+                                 ? 'opacity-50 cursor-not-allowed bg-gray-50 text-gray-400 border-gray-100 shadow-none' 
+                                 : isSelected 
+                                   ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md border-transparent" 
+                                   : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 shadow-sm"}`}
                                onClick={() => !isDisabled && setSelectedSlot(slot)}
                              >
 
-                              <Clock className="w-4 h-4 mr-2"/>
                               {slot}
                               {isPast && (
                                 <span className="text-xs ml-2 opacity-75">

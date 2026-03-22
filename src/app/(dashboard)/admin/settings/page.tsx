@@ -157,12 +157,16 @@ export default function AdminSettingsPage() {
     maxWithdrawalPercent: number;
     voiceCallDiscountType: 'flat' | 'percentage';
     voiceCallDiscountValue: number;
+    messagingDiscountType: 'flat' | 'percentage';
+    messagingDiscountValue: number;
   }>({ 
     platformFeePercent: 0, 
     adminCommissionPercent: 20, 
     maxWithdrawalPercent: 85,
     voiceCallDiscountType: 'percentage',
-    voiceCallDiscountValue: 0
+    voiceCallDiscountValue: 0,
+    messagingDiscountType: 'percentage',
+    messagingDiscountValue: 0
   });
   const [billingSaving, setBillingSaving] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
@@ -309,6 +313,8 @@ export default function AdminSettingsPage() {
           maxWithdrawalPercent: Number(cfg.maxWithdrawalPercent || 85),
           voiceCallDiscountType: cfg.voiceCallDiscountType === 'flat' ? 'flat' : 'percentage',
           voiceCallDiscountValue: Number(cfg.voiceCallDiscountValue || 0),
+          messagingDiscountType: cfg.messagingDiscountType === 'flat' ? 'flat' : 'percentage',
+          messagingDiscountValue: Number(cfg.messagingDiscountValue || 0),
         });
       } catch {}
     };
@@ -343,6 +349,8 @@ export default function AdminSettingsPage() {
           maxWithdrawalPercent: Number(cfg.maxWithdrawalPercent || 85),
           voiceCallDiscountType: cfg.voiceCallDiscountType === 'flat' ? 'flat' : 'percentage',
           voiceCallDiscountValue: Number(cfg.voiceCallDiscountValue || 0),
+          messagingDiscountType: cfg.messagingDiscountType === 'flat' ? 'flat' : 'percentage',
+          messagingDiscountValue: Number(cfg.messagingDiscountValue || 0),
         });
       }
     } catch {
@@ -699,6 +707,39 @@ export default function AdminSettingsPage() {
                    />
                    <p className="text-xs text-gray-500 mt-1">
                      {billingSettings.voiceCallDiscountType === 'percentage' 
+                       ? 'Percentage discount applied to consultation fee.' 
+                       : 'Flat amount deducted from consultation fee.'}
+                   </p>
+                 </div>
+               </div>
+            </div>
+
+            <div className="md:col-span-2 pt-2 border-t border-gray-100 mt-4">
+               <label className="block text-xs font-semibold text-gray-700 mb-2">Messaging Option Discount</label>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <label className="text-xs font-medium text-gray-600">Discount Type</label>
+                   <select 
+                     className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                     value={billingSettings.messagingDiscountType}
+                     onChange={(e) => setBillingSettings((prev) => ({ ...prev, messagingDiscountType: e.target.value as 'flat' | 'percentage' }))}
+                   >
+                     <option value="percentage">Percentage (%)</option>
+                     <option value="flat">Flat Rate (NGN)</option>
+                   </select>
+                   <p className="text-xs text-gray-500 mt-1">How the discount is calculated for messaging.</p>
+                 </div>
+                 <div>
+                   <label className="text-xs font-medium text-gray-600">Discount Value</label>
+                   <input
+                     type="number"
+                     min={0}
+                     className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                     value={billingSettings.messagingDiscountValue}
+                     onChange={(e) => setBillingSettings((prev) => ({ ...prev, messagingDiscountValue: Math.max(0, Number(e.target.value || 0)) }))}
+                   />
+                   <p className="text-xs text-gray-500 mt-1">
+                     {billingSettings.messagingDiscountType === 'percentage' 
                        ? 'Percentage discount applied to consultation fee.' 
                        : 'Flat amount deducted from consultation fee.'}
                    </p>

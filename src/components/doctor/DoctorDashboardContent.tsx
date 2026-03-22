@@ -6,23 +6,7 @@ import { userAuthStore } from "@/store/authStore";
 import { useDoctorStore } from "@/store/doctorStore";
 import { Appointment, useAppointmentStore } from "@/store/appointmentStore";
 import {
-  Activity,
-  Calendar,
-  CheckCircle,
-  ChevronRight,
-  Clock,
-  DollarSign,
-  MapPin,
-  Phone,
-  Plus,
-  Star,
-  TrendingUp,
-  Users,
-  Video,
-  XCircle,
-  Sun,
-  SunMedium,
-  Moon,
+  Activity, Calendar, CheckCircle, ChevronRight, Clock, DollarSign, MapPin, Phone, Plus, Star, TrendingUp, Users, Video, XCircle, Sun, SunMedium, Moon, CreditCard, Save, X, MessageSquare
 } from "lucide-react";
 import PrescriptionModal from "./PrescriptionModal";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -634,6 +618,8 @@ const DoctorDashboardContent = () => {
                               {appointment.consultationType ===
                               "Video Consultation" ? (
                                 <Video className="w-4 h-4 text-blue-600" />
+                              ) : appointment.consultationType === "Messaging" ? (
+                                <MessageSquare className="w-4 h-4 text-blue-600" />
                               ) : (
                                 <Phone className="w-4 h-4 text-green-600" />
                               )}
@@ -645,13 +631,13 @@ const DoctorDashboardContent = () => {
                         </div>
                         <div className="flex space-x-2">
                           {canJoinCall(appointment) && (
-                            <Link href={`/call/${appointment._id}`}>
+                            <Link href={appointment.consultationType === 'Messaging' ? `/chat/${appointment._id}` : `/call/${appointment._id}`}>
                               <Button
                                 size="sm"
-                                className="bg-green-600 hover:bg-green-700"
+                                className="bg-blue-600 hover:bg-blue-700 rounded-full px-5"
                               >
-                                <Video className="w-4 h-4 mr-2" />
-                                Start
+                                {appointment.consultationType === 'Messaging' ? <MessageSquare className="w-4 h-4 mr-2" /> : <Video className="w-4 h-4 mr-2" />}
+                                {appointment.consultationType === 'Messaging' ? 'Open Chat' : 'Start'}
                               </Button>
                             </Link>
                           )}
@@ -715,6 +701,8 @@ const DoctorDashboardContent = () => {
                               {appointment.consultationType ===
                               "Video Consultation" ? (
                                 <Video className="w-4 h-4 text-blue-600" />
+                              ) : appointment.consultationType === "Messaging" ? (
+                                <MessageSquare className="w-4 h-4 text-blue-600" />
                               ) : (
                                 <Phone className="w-4 h-4 text-green-600" />
                               )}

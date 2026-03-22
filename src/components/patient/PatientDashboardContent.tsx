@@ -7,7 +7,7 @@ import { Appointment, useAppointmentStore } from "@/store/appointmentStore";
 import { Card, CardContent } from "../ui/card";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Calendar, Clock, CreditCard, FileText, MapPin, Phone, Star, Video } from "lucide-react";
+import { Calendar, Clock, CreditCard, FileText, MapPin, Phone, Star, Video, MessageSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
@@ -244,6 +244,8 @@ const PatientDashboardContentInner = () => {
                 <div className="flex items-center justify-center md:justify-start space-x-2 text-sm text-gray-600">
                   {appointment.consultationType === "Video Consultation" ? (
                     <Video className="w-4 h-4" />
+                  ) : appointment.consultationType === "Messaging" ? (
+                    <MessageSquare className="w-4 h-4" />
                   ) : (
                     <Phone className="w-4 h-4" />
                   )}
@@ -280,13 +282,13 @@ const PatientDashboardContentInner = () => {
 
             <div className="flex space-x-2">
               {canJoinCall(appointment) && (
-                <Link href={`/call/${appointment._id}`}>
+                <Link href={appointment.consultationType === 'Messaging' ? `/chat/${appointment._id}` : `/call/${appointment._id}`}>
                 <Button
                  size='sm'
-                 className="bg-green-600 hover:bg-green-700"
+                 className="bg-blue-600 hover:bg-blue-700 rounded-full font-medium px-6"
                 >
-                  <Video className="w-4 h-4 mr-2"/>
-                  Join Call
+                  {appointment.consultationType === 'Messaging' ? <MessageSquare className="w-4 h-4 mr-2"/> : <Video className="w-4 h-4 mr-2"/>}
+                  {appointment.consultationType === 'Messaging' ? 'Open Chat' : 'Join Call'}
                   </Button></Link>
               )}
 
@@ -508,17 +510,20 @@ const PatientDashboardContentInner = () => {
               <div className="text-xs text-gray-500">Refreshing…</div>
             )}
 
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="flex w-full space-x-2 bg-gray-100 p-1.5 rounded-full border border-gray-200 shadow-inner">
               <TabsTrigger
                 value="upcoming"
-                className="flex items-center space-x-2"
+                className="flex-1 rounded-full py-2.5 text-sm font-semibold transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:bg-gray-200"
               >
-                <Clock className="w-4 h-4" />
+                <Clock className="w-4 h-4 mr-2 hidden sm:inline-block" />
                 <span>Upcoming ({upcomingAppointments.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="past" className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4" />
-                <span>Past ({pastAppointments.length})</span>
+              <TabsTrigger 
+                value="past" 
+                className="flex-1 rounded-full py-2.5 text-sm font-semibold transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:bg-gray-200"
+              >
+                <Calendar className="w-4 h-4 mr-2 hidden sm:inline-block" />
+                <span>Completed ({pastAppointments.length})</span>
               </TabsTrigger>
             </TabsList>
 

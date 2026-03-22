@@ -22,7 +22,7 @@ export interface Appointment {
   date: string;
   slotStartIso: string;
   slotEndIso: string;
-  consultationType: "Video Consultation" | "Voice Call";
+  consultationType: "Video Consultation" | "Voice Call" | "Messaging";
   status: "Scheduled" | "Completed" | "Cancelled" | "In Progress" | "Missed" | "Expired";
   symptoms: string;
   streamCallId: string;

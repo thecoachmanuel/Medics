@@ -39,6 +39,7 @@ const page = () => {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [createdAppointmentId,setCreatedAppointmentId] = useState<string | null>(null)
   const [voiceDiscount, setVoiceDiscount] = useState<{ type: 'flat' | 'percentage', value: number } | null>(null);
+  const [messagingDiscount, setMessagingDiscount] = useState<{ type: 'flat' | 'percentage', value: number } | null>(null);
   const { user } = userAuthStore();
   const patientName = user?.name || user?.email || "Patient";
 
@@ -51,6 +52,10 @@ const page = () => {
             setVoiceDiscount({
                 type: data.config.voiceCallDiscountType || 'percentage',
                 value: Number(data.config.voiceCallDiscountValue || 0)
+            });
+            setMessagingDiscount({
+                type: data.config.messagingDiscountType || 'percentage',
+                value: Number(data.config.messagingDiscountValue || 0)
             });
         }
       } catch (e) {
@@ -258,7 +263,17 @@ const page = () => {
         return Math.max(0, basePrice - discount);
     }
     
-    const typePrice = consultationType === "Voice Call" ? -5000 : 0;
+    if (consultationType === "Messaging" && messagingDiscount) {
+        let discount = 0;
+        if (messagingDiscount.type === 'flat') {
+            discount = messagingDiscount.value;
+        } else {
+            discount = (basePrice * messagingDiscount.value) / 100;
+        }
+        return Math.max(0, basePrice - discount);
+    }
+    
+    const typePrice = consultationType === "Voice Call" ? -5000 : consultationType === "Messaging" ? -8000 : 0;
     return Math.max(0, basePrice + typePrice);
   };
 
@@ -393,6 +408,7 @@ const page = () => {
                        symptoms={symptoms}
                        doctorFees={currentDoctor?.fees}
                        voiceDiscount={voiceDiscount}
+                       messagingDiscount={messagingDiscount}
                        onBack={() => setCurrentStep(1)}
                        isLoading={isPaymentProcessing}
                        onContinue={async () => {
