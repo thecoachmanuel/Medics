@@ -61,6 +61,7 @@ interface PaymentStepInterface {
   loading: boolean;
   appointmentId?: string;
   patientName?: string;
+  platformFee: number;
 }
 
 const PayementStep = ({
@@ -77,6 +78,7 @@ const PayementStep = ({
   loading,
   appointmentId,
   patientName,
+  platformFee,
 }: PaymentStepInterface) => {
   const isApp = useAppDetection();
   const [paymentStatus, setPaymentStatus] = useState<
@@ -86,9 +88,7 @@ const PayementStep = ({
   const { balance, fetchWallet } = useWalletStore();
   const [error, setError] = useState<string>("");
   const [isPaymentLoading, setIsPaymentLoading] = useState<boolean>(false);
-  const [platformPercent, setPlatformPercent] = useState<number>(0);
-  const platformFees = Math.round((consultationFee * platformPercent) / 100);
-  const totalAmount = consultationFee + platformFees;
+  const totalAmount = Math.round(consultationFee + platformFee);
   const paystackLoadPromiseRef = useRef<Promise<void> | null>(null);
   const [paymentDetails, setPaymentDetails] = useState<{ amount: number; currency: string } | null>(null);
 
@@ -105,22 +105,6 @@ const PayementStep = ({
       paystackLoadPromiseRef.current = ensurePaystackScript();
     }
   }, [appointmentId, patientName]);
-
-  useEffect(() => {
-    let mounted = true;
-    const loadBilling = async () => {
-      try {
-        const res = await fetch('/api/admin/billing-settings', { cache: 'no-store' });
-        if (!res.ok) return;
-        const json = await res.json();
-        if (!mounted) return;
-        const p = Math.max(0, Math.min(100, Number(json?.config?.platformFeePercent || 0)));
-        setPlatformPercent(p);
-      } catch {}
-    };
-    loadBilling();
-    return () => { mounted = false };
-  }, []);
 
   const handleWalletPayment = async () => {
     if (!appointmentId || !user?.id) {
@@ -193,7 +177,7 @@ const PayementStep = ({
       paystack.newTransaction({
         key: publicKey,
         email,
-        amount: (totalAmount || 0) * 100,
+        amount: Math.round((totalAmount || 0) * 100),
         currency: 'NGN',
         reference: `${appointmentId}-${Date.now()}`,
         metadata: {
@@ -323,7 +307,7 @@ const PayementStep = ({
                   {new Intl.NumberFormat("en-NG", {
                     style: "currency",
                     currency: "NGN",
-                  }).format(platformFees)}
+                  }).format(platformFee)}
                 </span>
               </div>
 

@@ -35,6 +35,7 @@ const page = () => {
     useState("Video Consultation");
   const [symptoms, setSymptoms] = useState("");
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+  const [bookingPlatformFees, setBookingPlatformFees] = useState(0);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [createdAppointmentId,setCreatedAppointmentId] = useState<string | null>(null)
@@ -220,6 +221,7 @@ const page = () => {
       } catch {}
       const platformFees = Math.round((consultationFees * platformPercent) / 100);
       const totalAmount = consultationFees + platformFees;
+      setBookingPlatformFees(platformFees);
 
       const appointment=await bookAppointment({
         doctorId: doctorId,
@@ -252,15 +254,21 @@ const page = () => {
 
   const getConsultationPrice = (): number => {
     const basePrice = currentDoctor?.fees || 0;
+    const baseAmount =
+      consultationType === "Voice Call"
+        ? Math.max(0, basePrice - 5000)
+        : consultationType === "Messaging"
+        ? Math.max(0, basePrice - 8000)
+        : basePrice;
     
     if (consultationType === "Voice Call" && voiceDiscount) {
         let discount = 0;
         if (voiceDiscount.type === 'flat') {
             discount = voiceDiscount.value;
         } else {
-            discount = (basePrice * voiceDiscount.value) / 100;
+            discount = (baseAmount * voiceDiscount.value) / 100;
         }
-        return Math.max(0, basePrice - discount);
+        return Math.max(0, baseAmount - discount);
     }
     
     if (consultationType === "Messaging" && messagingDiscount) {
@@ -268,13 +276,12 @@ const page = () => {
         if (messagingDiscount.type === 'flat') {
             discount = messagingDiscount.value;
         } else {
-            discount = (basePrice * messagingDiscount.value) / 100;
+            discount = (baseAmount * messagingDiscount.value) / 100;
         }
-        return Math.max(0, basePrice - discount);
+        return Math.max(0, baseAmount - discount);
     }
     
-    const typePrice = consultationType === "Voice Call" ? -5000 : consultationType === "Messaging" ? -8000 : 0;
-    return Math.max(0, basePrice + typePrice);
+    return baseAmount;
   };
 
 
@@ -435,6 +442,7 @@ const page = () => {
                       doctorName={currentDoctor.name}
                       slotDuration={currentDoctor.slotDurationMinutes}
                       consultationFee={getConsultationPrice()}
+                      platformFee={bookingPlatformFees}
                       isProcessing={isPaymentProcessing}
                             onBack={() => setCurrentStep(2)}
                             onConfirm={() => router.push("/patient/dashboard")}
