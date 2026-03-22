@@ -7,8 +7,9 @@ import { useAppointmentStore } from "@/store/appointmentStore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Loader2, Mic, Paperclip, Phone, Send, Video } from "lucide-react";
+import { ArrowLeft, Loader2, Mic, Paperclip, Phone, Send, Video, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/cloudinary";
 
 interface Message {
   id: string;
@@ -29,7 +30,22 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+       alert("Only images are supported.");
+       return;
+    }
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
   
   const appointment = appointments.find(a => a._id === appointmentId);
 
@@ -89,10 +105,28 @@ export default function ChatPage() {
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!inputText.trim() || !user || !appointmentId) return;
+    if ((!inputText.trim() && !selectedFile) || !user || !appointmentId || isUploading) return;
 
-    const messageContent = inputText.trim();
+    let messageContent = inputText.trim();
+    const currentFile = selectedFile;
+
     setInputText("");
+    setSelectedFile(null);
+    setPreviewUrl(null);
+
+    if (currentFile) {
+       setIsUploading(true);
+       try {
+         const { url } = await uploadImage(currentFile, "medimeet/chat-images");
+         messageContent = `[IMAGE]${url}`;
+       } catch (err) {
+         console.error(err);
+         setIsUploading(false);
+         alert("Failed to upload image. Please try again.");
+         return;
+       }
+       setIsUploading(false);
+    }
 
     await supabase.from('appointment_messages').insert({
       appointment_id: appointmentId,
@@ -169,12 +203,16 @@ export default function ChatPage() {
                  </div>
               ) : null}
 
-              <div className={`max-w-[75%] rounded-[1.2rem] px-4 py-2.5 text-[0.95rem] shadow-sm leading-relaxed
+              <div className={`max-w-[85%] sm:max-w-[75%] rounded-[1.2rem] px-4 py-2.5 text-[0.95rem] shadow-sm leading-relaxed overflow-hidden
                 ${isMe 
                   ? 'bg-blue-600 text-white rounded-br-sm' 
                   : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'}`}
               >
-                {msg.content}
+                {msg.content.startsWith('[IMAGE]') ? (
+                   <img src={msg.content.replace('[IMAGE]', '')} alt="Attachment" className="max-w-[15rem] max-h-[15rem] sm:max-w-[20rem] sm:max-h-[20rem] rounded-md object-cover" />
+                ) : (
+                   msg.content
+                )}
               </div>
             </div>
           );
@@ -183,9 +221,18 @@ export default function ChatPage() {
 
       {/* Input Box mimicking the image UI */}
       <div className="bg-white px-4 py-3 md:py-4 border-t z-10 w-full mb-[env(safe-area-inset-bottom)]">
+        {previewUrl && (
+           <div className="mb-3 relative w-20 h-20 rounded-lg overflow-hidden border shadow-sm">
+             <img src={previewUrl} className="w-full h-full object-cover" alt="Preview"/>
+             <button type="button" onClick={() => { setSelectedFile(null); setPreviewUrl(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors">
+               <X className="w-3 h-3" />
+             </button>
+           </div>
+        )}
         <form onSubmit={handleSend} className="flex flex-col gap-3">
+          <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleFileSelect} />
           <div className="flex items-center space-x-2 bg-gray-50 rounded-full px-2 py-1.5 border border-gray-200 shadow-inner focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
-            <Button type="button" variant="ghost" size="icon" className="shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full w-9 h-9">
+            <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} className="shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full w-9 h-9" disabled={isUploading || selectedFile !== null}>
               <Paperclip className="w-4 h-4" />
             </Button>
             
@@ -193,13 +240,14 @@ export default function ChatPage() {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 bg-transparent border-none focus:outline-none text-sm px-2 text-gray-700 placeholder:text-gray-400"
+              disabled={isUploading || selectedFile !== null}
+              placeholder={isUploading ? "Uploading image..." : selectedFile ? "Image attached..." : "Type a message..."}
+              className="flex-1 bg-transparent border-none focus:outline-none text-sm px-2 text-gray-700 placeholder:text-gray-400 disabled:opacity-50"
             />
             
-            {inputText.trim() ? (
-              <Button type="submit" size="icon" className="shrink-0 rounded-full bg-blue-600 hover:bg-blue-700 w-9 h-9 shadow-md text-white transition-colors">
-                <Send className="w-4 h-4 ml-0.5" />
+            {(inputText.trim() || selectedFile) ? (
+              <Button type="submit" size="icon" disabled={isUploading} className="shrink-0 rounded-full bg-blue-600 hover:bg-blue-700 w-9 h-9 shadow-md text-white transition-colors disabled:opacity-50">
+                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
               </Button>
             ) : (
               <Button type="button" variant="ghost" size="icon" className="shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full w-9 h-9">
