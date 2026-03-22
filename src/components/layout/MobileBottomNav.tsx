@@ -117,7 +117,7 @@ function MobileBottomNavContent() {
   })();
 
   // Don't show on login/signup/onboarding pages even if in app (unlikely if we have user, but good safety)
-  if (pathname === "/" || pathname.includes("/login") || pathname.includes("/signup") || pathname.includes("/call/") || pathname.includes("/onboarding")) return null;
+  if (pathname === "/" || pathname.includes("/login") || pathname.includes("/signup") || pathname.includes("/call/") || pathname.includes("/chat/") || pathname.includes("/onboarding")) return null;
 
   return (
     <>
