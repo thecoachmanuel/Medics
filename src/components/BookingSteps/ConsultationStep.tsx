@@ -31,27 +31,28 @@ const ConsultationStep = ({
   messagingDiscount,
 }: ConsultationStepInterface) => {
   const getConsultationPrice = (selectedType = consultationType) => {
+    const typePrice = consultationTypes.find((ct) => ct.type === selectedType)?.price || 0;
+    const baseAmount = Math.max(0, doctorFees + typePrice);
+
     if (selectedType === "Voice Call" && voiceDiscount) {
       let discount = 0;
       if (voiceDiscount.type === 'flat') {
         discount = voiceDiscount.value;
       } else {
-        discount = (doctorFees * voiceDiscount.value) / 100;
+        discount = (baseAmount * voiceDiscount.value) / 100;
       }
-      return Math.max(0, doctorFees - discount);
+      return Math.max(0, baseAmount - discount);
     }
     if (selectedType === "Messaging" && messagingDiscount) {
       let discount = 0;
       if (messagingDiscount.type === 'flat') {
         discount = messagingDiscount.value;
       } else {
-        discount = (doctorFees * messagingDiscount.value) / 100;
+        discount = (baseAmount * messagingDiscount.value) / 100;
       }
-      return Math.max(0, doctorFees - discount);
+      return Math.max(0, baseAmount - discount);
     }
-    const typePrice =
-      consultationTypes.find((ct) => ct.type === selectedType)?.price || 0;
-    return Math.max(0, doctorFees + typePrice);
+    return baseAmount;
   };
 
   const handleTypeChnage = (newType: string) => {

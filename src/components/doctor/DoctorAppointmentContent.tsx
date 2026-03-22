@@ -49,6 +49,10 @@ const DoctorAppointmentContent = () => {
   };
 
   const canJoinCall = (appointment: any) => {
+    if (appointment.status === "Cancelled") return false;
+    if (appointment.consultationType === "Messaging" && appointment.paymentStatus === "success") {
+      return true;
+    }
     const appointmentTime = new Date(appointment.slotStartIso);
     const now = new Date();
     const diffMintues = (appointmentTime.getTime() - now.getTime()) / (1000 * 60);

@@ -176,6 +176,10 @@ const DoctorDashboardContent = () => {
   const formateDate = (dateString: string) => formatDateTimeNG(dateString, { hour12: true });
 
   const canJoinCall = (appointment: any) => {
+    if (appointment.status === "Cancelled") return false;
+    if (appointment.consultationType === "Messaging" && (appointment.paymentStatus === "success" || appointment.fees === 0 || !appointment.fees)) {
+      return true;
+    }
     const appointmentTime = new Date(appointment.slotStartIso);
     const now = new Date();
     const diffMintues =

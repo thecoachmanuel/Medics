@@ -115,7 +115,7 @@ export default function ChatPage() {
   const partnerImage = isDoctor ? appointment?.patientId?.profileImage : appointment?.doctorId?.profileImage;
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 max-w-2xl mx-auto shadow-xl relative border-x border-gray-100 pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 md:max-w-2xl md:mx-auto md:border-x border-gray-200 shadow-2xl overflow-hidden pb-[env(safe-area-inset-bottom)]">
       {/* Top Header */}
       <div className="flex px-4 py-4 md:py-6 items-center bg-white border-b sticky top-0 z-10 rounded-b-2xl shadow-sm space-x-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
@@ -182,7 +182,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input Box mimicking the image UI */}
-      <div className="bg-white px-4 py-3 md:py-4 border-t sticky bottom-0">
+      <div className="bg-white px-4 py-3 md:py-4 border-t z-10 w-full mb-[env(safe-area-inset-bottom)]">
         <form onSubmit={handleSend} className="flex flex-col gap-3">
           <div className="flex items-center space-x-2 bg-gray-50 rounded-full px-2 py-1.5 border border-gray-200 shadow-inner focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
             <Button type="button" variant="ghost" size="icon" className="shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full w-9 h-9">
