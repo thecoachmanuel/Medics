@@ -257,7 +257,7 @@ export default function ChatPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 md:max-w-2xl md:mx-auto md:border-x border-gray-200 shadow-2xl overflow-hidden pb-[env(safe-area-inset-bottom)]">
       {/* Top Header */}
-      <div className="flex px-4 py-4 md:py-6 items-center bg-white border-b sticky top-0 z-10 rounded-b-2xl shadow-sm space-x-4">
+      <div className="shrink-0 flex px-4 py-4 md:py-6 items-center bg-white border-b sticky top-0 z-10 rounded-b-2xl shadow-sm space-x-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
           <ArrowLeft className="w-5 h-5" />
         </Button>
