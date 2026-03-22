@@ -36,6 +36,11 @@ export default function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -45,6 +50,66 @@ export default function ChatPage() {
     }
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error(err);
+      alert("Microphone access denied or unavailable.");
+    }
+  };
+
+  const stopRecording = (cancel = false) => {
+    if (!mediaRecorderRef.current || !isRecording) return;
+    
+    const mr = mediaRecorderRef.current;
+    
+    mr.onstop = async () => {
+       const stream = streamRef.current;
+       stream?.getTracks().forEach(track => track.stop());
+       
+       if (cancel || !user) {
+          audioChunksRef.current = [];
+          setIsRecording(false);
+          return;
+       }
+
+       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+       audioChunksRef.current = [];
+       setIsRecording(false);
+       
+       setIsUploading(true);
+       try {
+         const file = new File([audioBlob], 'audio-message.webm', { type: 'audio/webm' });
+         const { url } = await uploadImage(file, "medimeet/chat-audio");
+         
+         await supabase.from('appointment_messages').insert({
+           appointment_id: appointmentId,
+           sender_id: user.id,
+           content: `[AUDIO]${url}`
+         });
+       } catch (err) {
+         console.error(err);
+         alert("Failed to upload audio message.");
+       } finally {
+         setIsUploading(false);
+       }
+    };
+    
+    mr.stop();
   };
   
   const appointment = appointments.find(a => a._id === appointmentId);
@@ -210,6 +275,8 @@ export default function ChatPage() {
               >
                 {msg.content.startsWith('[IMAGE]') ? (
                    <img src={msg.content.replace('[IMAGE]', '')} alt="Attachment" className="max-w-[15rem] max-h-[15rem] sm:max-w-[20rem] sm:max-h-[20rem] rounded-md object-cover" />
+                ) : msg.content.startsWith('[AUDIO]') ? (
+                   <audio controls src={msg.content.replace('[AUDIO]', '')} className="max-w-[12rem] sm:max-w-[16rem]" />
                 ) : (
                    msg.content
                 )}
@@ -240,19 +307,38 @@ export default function ChatPage() {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              disabled={isUploading || selectedFile !== null}
-              placeholder={isUploading ? "Uploading image..." : selectedFile ? "Image attached..." : "Type a message..."}
-              className="flex-1 bg-transparent border-none focus:outline-none text-sm px-2 text-gray-700 placeholder:text-gray-400 disabled:opacity-50"
+              disabled={isUploading || selectedFile !== null || isRecording}
+              placeholder={isUploading ? "Uploading..." : selectedFile ? "Image attached..." : "Type a message..."}
+              className={`flex-1 bg-transparent border-none focus:outline-none text-sm px-2 text-gray-700 placeholder:text-gray-400 disabled:opacity-50 ${isRecording ? 'hidden' : 'block'}`}
             />
+
+            {isRecording && (
+               <div className="flex-1 flex items-center justify-between px-2">
+                 <div className="flex items-center space-x-2 animate-pulse text-red-500">
+                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                    <span className="text-sm font-medium">Recording audio...</span>
+                 </div>
+                 <div className="flex space-x-1">
+                   <Button type="button" variant="ghost" size="icon" onClick={() => stopRecording(true)} className="text-gray-400 hover:text-red-500 w-8 h-8 rounded-full">
+                     <X className="w-4 h-4" />
+                   </Button>
+                   <Button type="button" size="icon" onClick={() => stopRecording(false)} className="bg-blue-600 hover:bg-blue-700 text-white w-8 h-8 rounded-full shadow-sm">
+                     <Send className="w-4 h-4 ml-0.5" />
+                   </Button>
+                 </div>
+               </div>
+            )}
             
-            {(inputText.trim() || selectedFile) ? (
-              <Button type="submit" size="icon" disabled={isUploading} className="shrink-0 rounded-full bg-blue-600 hover:bg-blue-700 w-9 h-9 shadow-md text-white transition-colors disabled:opacity-50">
-                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
-              </Button>
-            ) : (
-              <Button type="button" variant="ghost" size="icon" className="shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full w-9 h-9">
-                <Mic className="w-4 h-4" />
-              </Button>
+            {!isRecording && (
+              (inputText.trim() || selectedFile) ? (
+                <Button type="submit" size="icon" disabled={isUploading} className="shrink-0 rounded-full bg-blue-600 hover:bg-blue-700 w-9 h-9 shadow-md text-white transition-colors disabled:opacity-50">
+                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
+                </Button>
+              ) : (
+                <Button type="button" variant="ghost" size="icon" onClick={startRecording} disabled={isUploading} className="shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full w-9 h-9">
+                  <Mic className="w-4 h-4" />
+                </Button>
+              )
             )}
           </div>
         </form>
