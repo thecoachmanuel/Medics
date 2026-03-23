@@ -10,7 +10,8 @@ import {
   CreditCard, 
   Stethoscope, 
   Home,
-  Search
+  Search,
+  MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -69,10 +70,10 @@ function MobileBottomNavContent() {
       activePattern: /^\/doctor-list/,
     },
     {
-      href: "/patient/payments",
-      label: "Payments",
-      icon: CreditCard,
-      activePattern: /^\/patient\/payments/,
+      href: "/chat",
+      label: "Chat",
+      icon: MessageSquare,
+      activePattern: /^\/chat/,
     },
     {
       href: "/patient/profile",
@@ -96,10 +97,10 @@ function MobileBottomNavContent() {
       activePattern: /^\/doctor\/appointments/,
     },
     {
-      href: "/doctor/payments",
-      label: "Payments",
-      icon: CreditCard,
-      activePattern: /^\/doctor\/payments/,
+      href: "/chat",
+      label: "Chat",
+      icon: MessageSquare,
+      activePattern: /^\/chat/,
     },
     {
       href: "/doctor/profile",

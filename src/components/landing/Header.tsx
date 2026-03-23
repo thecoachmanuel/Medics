@@ -1,5 +1,5 @@
 "use client";
-import { Bell, Calendar, CreditCard, DollarSign, LogOut, Settings, User } from "lucide-react";
+import { Bell, Calendar, CreditCard, DollarSign, LogOut, Settings, User, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -136,10 +136,10 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
           active: pathname?.includes("/patient/dashboard") || false,
         },
         {
-          lable: "Payments",
-          icon: Calendar,
-          href: "/patient/payments",
-          active: pathname?.includes("/patient/payments") || false,
+          lable: "Chat",
+          icon: MessageSquare,
+          href: "/chat",
+          active: pathname?.includes("/chat") || false,
         },
       ];
     } else if (user?.type === "doctor") {
@@ -157,10 +157,10 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
           active: pathname?.includes("/doctor/appointments") || false,
         },
         {
-          lable: "Payments",
-          icon: CreditCard,
-          href: "/doctor/payments",
-          active: pathname?.includes("/doctor/payments") || false,
+          lable: "Chat",
+          icon: MessageSquare,
+          href: "/chat",
+          active: pathname?.includes("/chat") || false,
         },
         {
           lable: "Payouts",
@@ -297,16 +297,16 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
                 <DropdownMenuSeparator />
                 {user?.type === "doctor" ? (
                   <DropdownMenuItem asChild>
-                    <Link href="/doctor/payments" className="flex items-center">
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Payments
+                    <Link href="/chat" className="flex items-center">
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Chat
                     </Link>
                   </DropdownMenuItem>
                 ) : user?.type === "patient" ? (
                   <DropdownMenuItem asChild>
-                    <Link href="/patient/payments" className="flex items-center">
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Payments
+                    <Link href="/chat" className="flex items-center">
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Chat
                     </Link>
                   </DropdownMenuItem>
                 ) : null}
