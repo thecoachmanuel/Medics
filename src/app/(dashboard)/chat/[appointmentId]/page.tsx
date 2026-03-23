@@ -357,6 +357,53 @@ export default function ChatPage() {
       ? `Last seen ${getRelativeTime(displayLastSeen)}`
       : "Offline";
 
+  const renderDateDivider = (currentDateStr: string, prevDateStr?: string) => {
+    const current = new Date(currentDateStr);
+    const prev = prevDateStr ? new Date(prevDateStr) : null;
+
+    if (
+      prev &&
+      current.getDate() === prev.getDate() &&
+      current.getMonth() === prev.getMonth() &&
+      current.getFullYear() === prev.getFullYear()
+    ) {
+      return null;
+    }
+
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    let dividerText = "";
+    if (
+      current.getDate() === today.getDate() &&
+      current.getMonth() === today.getMonth() &&
+      current.getFullYear() === today.getFullYear()
+    ) {
+      dividerText = "Today";
+    } else if (
+      current.getDate() === yesterday.getDate() &&
+      current.getMonth() === yesterday.getMonth() &&
+      current.getFullYear() === yesterday.getFullYear()
+    ) {
+      dividerText = "Yesterday";
+    } else {
+      dividerText = current.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+
+    return (
+      <div className="flex justify-center my-4 w-full">
+        <div className="bg-gray-200/50 backdrop-blur-sm text-gray-600 text-[11px] py-1 px-3 rounded-lg font-medium shadow-sm">
+          {dividerText}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 md:max-w-2xl md:mx-auto md:border-x border-gray-200 shadow-2xl overflow-hidden pb-[env(safe-area-inset-bottom)]">
       {/* Top Header */}
@@ -395,13 +442,6 @@ export default function ChatPage() {
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
-         {/* System generic message matching screenshot style */}
-         <div className="flex justify-center my-6">
-           <div className="bg-gray-100 text-gray-500 text-xs py-1.5 px-4 rounded-full font-medium">
-             Consultation start time
-           </div>
-         </div>
-
          {messages.length === 0 && !isLoading && (
             <div className="text-center text-gray-400 text-sm mt-10">No messages yet. Say hello!</div>
          )}
@@ -411,8 +451,10 @@ export default function ChatPage() {
           const showAvatar = !isMe && (idx === 0 || messages[idx - 1].sender_id !== msg.sender_id);
           
           return (
-            <div key={msg.id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} items-end space-x-2`}>
-              {!isMe ? (
+            <React.Fragment key={msg.id}>
+              {renderDateDivider(msg.created_at, idx > 0 ? messages[idx - 1].created_at : undefined)}
+              <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} items-end space-x-2`}>
+                {!isMe ? (
                  <div className="w-8 shrink-0 relative">
                    {showAvatar ? (
                      <Avatar className="w-8 h-8">
@@ -426,20 +468,26 @@ export default function ChatPage() {
                  </div>
               ) : null}
 
-              <div className={`max-w-[85%] sm:max-w-[75%] rounded-[1.2rem] px-4 py-2.5 text-[0.95rem] shadow-sm leading-relaxed overflow-hidden
+              <div className={`max-w-[85%] sm:max-w-[75%] rounded-[1.2rem] px-3 pt-2 pb-1.5 text-[0.95rem] shadow-sm leading-relaxed overflow-hidden flex flex-col
                 ${isMe 
-                  ? 'bg-blue-600 text-white rounded-br-sm' 
-                  : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'}`}
+                  ? 'bg-blue-600 text-white rounded-br-sm pl-4' 
+                  : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100 pr-4'}`}
               >
-                {msg.content.startsWith('[IMAGE]') ? (
-                   <img src={msg.content.replace('[IMAGE]', '')} alt="Attachment" className="max-w-[15rem] max-h-[15rem] sm:max-w-[20rem] sm:max-h-[20rem] rounded-md object-cover" />
-                ) : msg.content.startsWith('[AUDIO]') ? (
-                   <audio controls src={msg.content.replace('[AUDIO]', '')} className="max-w-[12rem] sm:max-w-[16rem]" />
-                ) : (
-                   msg.content
-                )}
+                <div>
+                  {msg.content.startsWith('[IMAGE]') ? (
+                     <img src={msg.content.replace('[IMAGE]', '')} alt="Attachment" className="max-w-[15rem] max-h-[15rem] sm:max-w-[20rem] sm:max-h-[20rem] rounded-md object-cover" />
+                  ) : msg.content.startsWith('[AUDIO]') ? (
+                     <audio controls src={msg.content.replace('[AUDIO]', '')} className="max-w-[12rem] sm:max-w-[16rem]" />
+                  ) : (
+                     <span className="whitespace-pre-wrap break-words">{msg.content}</span>
+                  )}
+                </div>
+                <div className={`text-[10px] self-end mt-0.5 font-medium tracking-tight ${isMe ? 'text-blue-200' : 'text-gray-400'}`}>
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             </div>
+          </React.Fragment>
           );
         })}
       </div>
