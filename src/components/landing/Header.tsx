@@ -15,6 +15,8 @@ import {
 } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { userAuthStore } from "@/store/authStore";
+import { useChatStore } from "@/store/chatStore";
+import { useAppointmentStore } from "@/store/appointmentStore";
 import { supabase } from "@/lib/supabase/client";
 
 interface HeaderProps {
@@ -37,9 +39,28 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
   const pathname = usePathname();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const { unreadCount: chatUnreadCount, fetchUnreadCount } = useChatStore();
+  const { appointments, fetchAppointments } = useAppointmentStore();
   const brandName = siteName && siteName.trim().length > 0 ? siteName : "MedicsOnline";
   const headerLogoUrl = "/MedicsOnline_logo.png";
   const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user?.id) {
+      if (appointments.length === 0) fetchAppointments(user.type as any);
+      else fetchUnreadCount(user.id, appointments.map(a => a._id));
+      
+      const channel = supabase.channel('global_unread')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'appointment_messages' }, (payload) => {
+           const msg = payload.new as any;
+           if (msg.sender_id !== user.id && appointments.some(a => a._id === msg.appointment_id)) {
+              useChatStore.setState(s => ({ unreadCount: s.unreadCount + 1 }));
+           }
+        })
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }
+  }, [user?.id, appointments]);
 
   useEffect(() => {
     const checkAdmin = () => {
@@ -213,7 +234,7 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center space-x-1 transition-colors ${
+                  className={`relative flex items-center space-x-1 transition-colors ${
                     item.active
                       ? "text-blue-600 font-semibold"
                       : "text-gray-600 hover:text-blue-600"
@@ -221,6 +242,11 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
                 >
                   <item.icon className="w-4 h-4" />
                   <span className="text-sm font-medium">{item.lable}</span>
+                  {item.lable === "Chat" && chatUnreadCount > 0 && (
+                    <Badge className="absolute -top-3 -right-4 px-1 min-w-[1.2rem] h-4 flex items-center justify-center text-[10px] bg-red-500 hover:bg-red-600 rounded-full shadow-sm border-none leading-none">
+                      {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                    </Badge>
+                  )}
                 </Link>
               ))}
             </nav>
@@ -297,16 +323,30 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
                 <DropdownMenuSeparator />
                 {user?.type === "doctor" ? (
                   <DropdownMenuItem asChild>
-                    <Link href="/chat" className="flex items-center">
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Chat
+                    <Link href="/chat" className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Chat
+                      </div>
+                      {chatUnreadCount > 0 && (
+                        <Badge className="bg-red-500 hover:bg-red-600 px-1.5 h-4 min-w-[1.1rem] flex items-center justify-center text-[10px] rounded-full border-none shadow-sm">
+                           {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                        </Badge>
+                      )}
                     </Link>
                   </DropdownMenuItem>
                 ) : user?.type === "patient" ? (
                   <DropdownMenuItem asChild>
-                    <Link href="/chat" className="flex items-center">
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Chat
+                    <Link href="/chat" className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Chat
+                      </div>
+                      {chatUnreadCount > 0 && (
+                        <Badge className="bg-red-500 hover:bg-red-600 px-1.5 h-4 min-w-[1.1rem] flex items-center justify-center text-[10px] rounded-full border-none shadow-sm">
+                           {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                        </Badge>
+                      )}
                     </Link>
                   </DropdownMenuItem>
                 ) : null}

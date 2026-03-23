@@ -17,6 +17,7 @@ interface Message {
   sender_id: string;
   content: string;
   created_at: string;
+  is_read?: boolean;
 }
 
 export default function ChatPage() {
@@ -214,6 +215,20 @@ export default function ChatPage() {
       presenceChannelRef.current = null;
     };
   }, [user, partnerId]);
+
+  // Mark messages as read when viewing them
+  useEffect(() => {
+    if (!user || messages.length === 0 || !appointmentId) return;
+
+    const unreadMsgs = messages.filter(m => m.sender_id !== user.id && !m.is_read);
+    if (unreadMsgs.length > 0) {
+      const markAsRead = async () => {
+         await supabase.from('appointment_messages').update({ is_read: true }).in('id', unreadMsgs.map(m => m.id));
+         setMessages(prev => prev.map(m => unreadMsgs.some(u => u.id === m.id) ? { ...m, is_read: true } : m));
+      };
+      markAsRead();
+    }
+  }, [messages.length, user, appointmentId]);
 
   // Send Typing Indicator
   useEffect(() => {

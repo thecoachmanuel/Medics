@@ -21,12 +21,14 @@ interface Message {
 }
 
 interface ChatPreview {
-  appointment: Appointment;
+  appointment?: Appointment;
   partnerName: string;
   partnerImage?: string;
   lastMessage?: Message;
   unreadCount: number;
   timestamp: number;
+  isSupport?: boolean;
+  partnerId?: string;
 }
 
 function getRelativeTime(dateStr: string) {
@@ -49,8 +51,10 @@ export default function ChatListPage() {
   const { appointments, fetchAppointments, loading: aptLoading } = useAppointmentStore();
   
   const [messages, setMessages] = useState<Message[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [fetchingMsgs, setFetchingMsgs] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [onlineStatus, setOnlineStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -84,7 +88,21 @@ export default function ChatListPage() {
       setFetchingMsgs(false);
     };
 
+    const loadAnnouncements = async () => {
+      const typeStr = user.type === 'doctor' ? 'doctors' : 'patients';
+      const { data } = await supabase
+        .from('announcements')
+        .select('*')
+        .or(`audience.eq.all,audience.eq.${typeStr},and(audience.eq.user,target_user_id.eq.${user.id})`)
+        .order('created_at', { ascending: false });
+      
+      if (data) {
+        setAnnouncements(data);
+      }
+    };
+
     loadMessages();
+    loadAnnouncements();
 
     // Setup realtime listener for any new message across all conversations
     const channel = supabase
@@ -128,14 +146,21 @@ export default function ChatListPage() {
       
       const partnerId = partner._id;
 
+      const partnerMessages = messages.filter(m => m.appointment_id === apt._id);
+      const unreadCount = partnerMessages.filter(m => m.sender_id === partnerId && !(m as any).is_read).length;
+
       if (!map.has(partnerId)) {
         map.set(partnerId, {
           appointment: apt,
           partnerName: partner.name || "Unknown",
           partnerImage: partner.profileImage,
-          unreadCount: 0,
+          unreadCount: unreadCount,
           timestamp: new Date(apt.createdAt || apt.slotStartIso || Date.now()).getTime(),
+          partnerId,
         });
+      } else {
+        const existing = map.get(partnerId)!;
+        existing.unreadCount += unreadCount;
       }
     });
 
@@ -160,6 +185,25 @@ export default function ChatListPage() {
 
     let results = Array.from(map.values());
     
+    // Inject Support Announcements
+    if (announcements.length > 0) {
+      const latestAnn = announcements[0];
+      results.push({
+        isSupport: true,
+        partnerName: "MedicsOnline Support",
+        partnerImage: "/images/medics-logo.png",
+        unreadCount: 0,
+        timestamp: new Date(latestAnn.created_at).getTime(),
+        lastMessage: {
+          id: latestAnn.id,
+          appointment_id: "support",
+          sender_id: "support",
+          content: `${latestAnn.title} - ${latestAnn.message}`,
+          created_at: latestAnn.created_at,
+        }
+      });
+    }
+
     // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -171,6 +215,31 @@ export default function ChatListPage() {
 
     return results;
   }, [appointments, messages, user, searchQuery]);
+
+  useEffect(() => {
+    const checkOnline = async () => {
+      const pIds = chatPreviews.map(p => p.partnerId).filter(Boolean) as string[];
+      if (pIds.length === 0) return;
+      
+      const { data } = await supabase.from('profiles').select('id, last_seen').in('id', pIds);
+      if (data) {
+        const now = new Date().getTime();
+        const status: Record<string, boolean> = {};
+        data.forEach(d => {
+          if (d.last_seen) {
+             status[d.id] = (now - new Date(d.last_seen).getTime()) < 120000;
+          } else {
+             status[d.id] = false;
+          }
+        });
+        setOnlineStatus(status);
+      }
+    };
+
+    checkOnline();
+    const interval = setInterval(checkOnline, 30000);
+    return () => clearInterval(interval);
+  }, [chatPreviews.length, user?.type]);
 
   if (authLoading || (!user && !isAuthenticated)) {
     return (
@@ -236,28 +305,43 @@ export default function ChatListPage() {
                 
                 return (
                   <Card 
-                    key={preview.appointment._id}
+                    key={preview.isSupport ? "support" : preview.appointment?._id}
                     className="overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors border-transparent shadow-sm hover:shadow-md hover:border-gray-200 group"
-                    onClick={() => router.push(`/chat/${preview.appointment._id}`)}
+                    onClick={() => {
+                       if (preview.isSupport) router.push(`/chat/support`);
+                       else if (preview.appointment) router.push(`/chat/${preview.appointment._id}`);
+                    }}
                   >
                     <CardContent className="p-4 flex items-center gap-4">
-                      <Avatar className="w-14 h-14 border shadow-sm">
-                        <AvatarImage src={preview.partnerImage} />
-                        <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
-                          {preview.partnerName.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="w-14 h-14 border shadow-sm">
+                          <AvatarImage src={preview.partnerImage} />
+                          <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
+                            {preview.partnerName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {preview.partnerId && onlineStatus[preview.partnerId] && (
+                          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></span>
+                        )}
+                      </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <h3 className="font-bold text-gray-900 truncate pr-4 text-[1.05rem]">
-                            {user?.type === "patient" ? "Dr. " : ""}{preview.partnerName}
+                          <h3 className={`font-bold truncate pr-4 text-[1.05rem] ${preview.unreadCount > 0 ? "text-gray-900" : "text-gray-800"}`}>
+                            {!preview.isSupport && user?.type === "patient" ? "Dr. " : ""}{preview.partnerName}
                           </h3>
-                          {preview.lastMessage && (
-                            <span className="text-xs font-medium text-gray-400 shrink-0">
-                              {getRelativeTime(preview.lastMessage.created_at)}
-                            </span>
-                          )}
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {preview.lastMessage && (
+                              <span className={`text-xs ${preview.unreadCount > 0 ? "text-blue-600 font-bold" : "text-gray-400 font-medium"}`}>
+                                {getRelativeTime(preview.lastMessage.created_at)}
+                              </span>
+                            )}
+                            {preview.unreadCount > 0 && (
+                              <div className="bg-blue-600 text-white text-[10px] px-1.5 h-[18px] rounded-full min-w-[1.2rem] flex items-center justify-center font-bold">
+                                {preview.unreadCount > 99 ? "99+" : preview.unreadCount}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         
                         <div className="flex items-center text-sm text-gray-500 truncate w-full">

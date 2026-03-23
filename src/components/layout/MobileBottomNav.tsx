@@ -2,6 +2,7 @@
 
 import { useAppDetection } from "@/hooks/use-app-detection";
 import { userAuthStore } from "@/store/authStore";
+import { useChatStore } from "@/store/chatStore";
 import { cn } from "@/lib/utils";
 import { 
   LayoutGrid, 
@@ -21,6 +22,7 @@ function MobileBottomNavContent() {
   const isApp = useAppDetection();
   const pathname = usePathname();
   const { user } = userAuthStore();
+  const { unreadCount: chatUnreadCount } = useChatStore();
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -164,6 +166,11 @@ function MobileBottomNavContent() {
                           )}
                           strokeWidth={isActive ? 2.5 : 2}
                         />
+                        {link.label === "Chat" && chatUnreadCount > 0 && (
+                          <div className="absolute -top-1.5 -right-2 bg-red-500 text-white shadow-sm border border-white text-[9px] font-bold px-1.5 min-w-[1.1rem] h-4 rounded-full flex items-center justify-center leading-none">
+                            {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                          </div>
+                        )}
                       </div>
                       <span
                         className={cn(
