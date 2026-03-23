@@ -30,6 +30,13 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+
+  // Presence states
+  const [partnerOnline, setPartnerOnline] = useState(false);
+  const [partnerTyping, setPartnerTyping] = useState(false);
+  const [partnerLastSeen, setPartnerLastSeen] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -140,6 +147,68 @@ export default function ChatPage() {
       a.doctorId?._id === appointment.doctorId?._id
     ).map(a => a._id);
   }, [appointment, appointments, appointmentId]);
+
+  const isDoctor = user?.type === "doctor";
+  const partnerName = isDoctor ? appointment?.patientId?.name : appointment?.doctorId?.name;
+  const partnerImage = isDoctor ? appointment?.patientId?.profileImage : appointment?.doctorId?.profileImage;
+  const partnerId = isDoctor ? appointment?.patientId?._id : appointment?.doctorId?._id;
+
+  // Presence hook
+  useEffect(() => {
+    if (!user || !partnerId) return;
+
+    const roomId = [user.id, partnerId].sort().join('_');
+    const channel = supabase.channel(`presence_${roomId}`, {
+      config: { presence: { key: user.id } }
+    });
+    
+    presenceChannelRef.current = channel;
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        if (state[partnerId]) {
+           setPartnerOnline(true);
+           const pState = state[partnerId][0] as any;
+           setPartnerTyping(!!pState?.isTyping);
+        } else {
+           setPartnerOnline(false);
+           setPartnerTyping(false);
+        }
+      })
+      .on('presence', { event: 'join' }, ({ key }) => {
+        if (key === partnerId) {
+          setPartnerOnline(true);
+        }
+      })
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        if (key === partnerId) {
+          setPartnerOnline(false);
+          setPartnerTyping(false);
+          setPartnerLastSeen(new Date().toISOString());
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ online_at: new Date().toISOString(), isTyping: false });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+      presenceChannelRef.current = null;
+    };
+  }, [user, partnerId]);
+
+  // Send Typing Indicator
+  useEffect(() => {
+    if (!presenceChannelRef.current) return;
+    const typing = inputText.trim().length > 0;
+    if (typing !== isTyping) {
+      setIsTyping(typing);
+      presenceChannelRef.current.track({ online_at: new Date().toISOString(), isTyping: typing }).catch(console.error);
+    }
+  }, [inputText, isTyping]);
 
   // Poll for UI / realtime hook
   useEffect(() => {
@@ -261,9 +330,32 @@ export default function ChatPage() {
   }
 
   // Determine chat partner identity
-  const isDoctor = user.type === "doctor";
-  const partnerName = isDoctor ? appointment?.patientId?.name : appointment?.doctorId?.name;
-  const partnerImage = isDoctor ? appointment?.patientId?.profileImage : appointment?.doctorId?.profileImage;
+  // ALREADY DETERMINED ABOVE: isDoctor, partnerName, partnerImage, partnerId
+
+  let displayLastSeen = partnerLastSeen;
+  if (!displayLastSeen && messages.length > 0) {
+    const partnerMessages = messages.filter(m => m.sender_id === partnerId);
+    if (partnerMessages.length > 0) {
+      displayLastSeen = partnerMessages[partnerMessages.length - 1].created_at;
+    }
+  }
+
+  const getRelativeTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    const weeks = Math.floor(days / 7);
+    return `${weeks}w ago`;
+  };
+
+  const lastSeenText = displayLastSeen 
+      ? `Last seen ${getRelativeTime(displayLastSeen)}`
+      : "Offline";
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 md:max-w-2xl md:mx-auto md:border-x border-gray-200 shadow-2xl overflow-hidden pb-[env(safe-area-inset-bottom)]">
@@ -278,7 +370,18 @@ export default function ChatPage() {
         </Avatar>
         <div className="flex-1">
           <h2 className="text-lg font-bold text-gray-900 leading-tight">{partnerName || "Patient"}</h2>
-          <span className="text-xs text-gray-500 font-medium tracking-wide">Messaging Consultation</span>
+          {partnerTyping ? (
+             <span className="text-xs text-blue-600 font-semibold tracking-wide animate-pulse">Typing...</span>
+          ) : partnerOnline ? (
+             <div className="flex items-center space-x-1 mt-0.5">
+               <span className="w-2 h-2 rounded-full bg-green-500"></span>
+               <span className="text-[11px] text-green-600 font-medium uppercase tracking-wider">Online</span>
+             </div>
+          ) : (
+             <span className="text-[11px] text-gray-500 font-medium tracking-wide">
+               {lastSeenText}
+             </span>
+          )}
         </div>
         <div className="flex space-x-1">
            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-600 rounded-full w-10 h-10">
@@ -310,13 +413,16 @@ export default function ChatPage() {
           return (
             <div key={msg.id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} items-end space-x-2`}>
               {!isMe ? (
-                 <div className="w-8 shrink-0">
+                 <div className="w-8 shrink-0 relative">
                    {showAvatar ? (
                      <Avatar className="w-8 h-8">
                         <AvatarImage src={partnerImage} />
                         <AvatarFallback>{partnerName?.charAt(0)}</AvatarFallback>
                      </Avatar>
                    ) : <div className="w-8 h-8" />}
+                   {showAvatar && partnerOnline && (
+                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-gray-50 rounded-full"></span>
+                   )}
                  </div>
               ) : null}
 
