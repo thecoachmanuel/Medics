@@ -491,12 +491,11 @@ export default function ChatPage() {
                {lastSeenText}
              </span>
           )}
-        </div>
         <div className="flex space-x-1">
-           <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-600 rounded-full w-10 h-10">
+           <Button variant="ghost" size="icon" onClick={() => router.push(`/call/${appointmentId}`)} className="text-gray-400 hover:text-blue-600 rounded-full w-10 h-10">
              <Video className="w-4 h-4" />
            </Button>
-           <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-600 rounded-full w-10 h-10">
+           <Button variant="ghost" size="icon" onClick={() => router.push(`/call/${appointmentId}?audioOnly=true`)} className="text-gray-400 hover:text-blue-600 rounded-full w-10 h-10">
              <Phone className="w-4 h-4" />
            </Button>
         </div>
