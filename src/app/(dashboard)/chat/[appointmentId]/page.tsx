@@ -157,6 +157,20 @@ export default function ChatPage() {
   useEffect(() => {
     if (!user || !partnerId) return;
 
+    // Track that I am active right now, and keep bumping it every minute I'm on this chat
+    const trackMyLastSeen = () => {
+      supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id).then();
+    };
+    trackMyLastSeen();
+    const pingInterval = setInterval(trackMyLastSeen, 60000);
+
+    // Fetch partner's latest known last_seen from DB as a solid baseline
+    supabase.from('profiles').select('last_seen').eq('id', partnerId).single().then(({ data }) => {
+       if (data?.last_seen) {
+         setPartnerLastSeen(prev => prev ? prev : data.last_seen);
+       }
+    });
+
     const roomId = [user.id, partnerId].sort().join('_');
     const channel = supabase.channel(`presence_${roomId}`, {
       config: { presence: { key: user.id } }
@@ -195,6 +209,7 @@ export default function ChatPage() {
       });
 
     return () => {
+      clearInterval(pingInterval);
       supabase.removeChannel(channel);
       presenceChannelRef.current = null;
     };

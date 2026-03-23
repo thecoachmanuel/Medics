@@ -58,6 +58,9 @@ export default function ChatListPage() {
       return;
     }
     fetchAppointments(user.type as "patient" | "doctor");
+
+    // Track when user opens the chats list globally
+    supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id).then();
   }, [isAuthenticated, user, authLoading, router, fetchAppointments]);
 
   useEffect(() => {
