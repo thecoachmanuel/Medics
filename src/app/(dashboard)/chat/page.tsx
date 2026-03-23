@@ -241,7 +241,7 @@ export default function ChatListPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <h3 className="font-bold text-gray-900 truncate pr-4 text-[1.05rem]">
-                            {user.type === "patient" ? "Dr. " : ""}{preview.partnerName}
+                            {user?.type === "patient" ? "Dr. " : ""}{preview.partnerName}
                           </h3>
                           {preview.lastMessage && (
                             <span className="text-xs font-medium text-gray-400 shrink-0">
