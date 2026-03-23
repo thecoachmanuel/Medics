@@ -133,6 +133,14 @@ export default function ChatPage() {
   
   const appointment = appointments.find(a => a._id === appointmentId);
 
+  const sharedAptIds = React.useMemo(() => {
+    if (!appointment) return [appointmentId];
+    return appointments.filter(a => 
+      a.patientId?._id === appointment.patientId?._id && 
+      a.doctorId?._id === appointment.doctorId?._id
+    ).map(a => a._id);
+  }, [appointment, appointments, appointmentId]);
+
   // Poll for UI / realtime hook
   useEffect(() => {
     if (!user) return;
@@ -144,14 +152,14 @@ export default function ChatPage() {
 
   // Supabase messages fetch & listen
   useEffect(() => {
-    if (!appointmentId) return;
+    if (!appointmentId || sharedAptIds.length === 0) return;
     
     // Initial fetch
     const fetchMessages = async () => {
       const { data, error } = await supabase
         .from('appointment_messages')
         .select('*')
-        .eq('appointment_id', appointmentId)
+        .in('appointment_id', sharedAptIds)
         .order('created_at', { ascending: true });
         
       if (!error && data) {
@@ -162,26 +170,29 @@ export default function ChatPage() {
     
     fetchMessages();
 
-    // Subscribe to changes
-    const channel = supabase
-      .channel(`chat_${appointmentId}`)
-      .on('postgres_changes', { 
+    // Subscribe to changes (attach listener for each shared appointment ID)
+    const channel = supabase.channel(`chat_shared_${appointmentId}`);
+    
+    sharedAptIds.forEach(id => {
+      channel.on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
         table: 'appointment_messages',
-        filter: `appointment_id=eq.${appointmentId}` 
+        filter: `appointment_id=eq.${id}` 
       }, (payload) => {
         setMessages(prev => {
           if (prev.some(m => m.id === payload.new.id)) return prev;
           return [...prev, payload.new as Message];
         });
-      })
-      .subscribe();
+      });
+    });
+
+    channel.subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [appointmentId]);
+  }, [appointmentId, sharedAptIds.join(',')]);
 
   // Scroll to bottom on new message
   useEffect(() => {

@@ -113,8 +113,7 @@ export default function ChatListPage() {
     const isDoctor = user.type === "doctor";
     const map = new Map<string, ChatPreview>();
 
-    // Initial group by appointments
-    // We only include valid messaging appointments OR any appointment that already has messages
+    // Initial group by partner
     appointments.forEach(apt => {
       const hasMessages = messages.some(m => m.appointment_id === apt._id);
       const isMessaging = apt.consultationType === "Messaging" && apt.paymentStatus === "success";
@@ -122,28 +121,36 @@ export default function ChatListPage() {
       if (!hasMessages && !isMessaging) return;
 
       const partner = isDoctor ? apt.patientId : apt.doctorId;
-      map.set(apt._id, {
-        appointment: apt,
-        partnerName: partner?.name || "Unknown",
-        partnerImage: partner?.profileImage,
-        unreadCount: 0,
-        timestamp: new Date(apt.createdAt || apt.slotStartIso || Date.now()).getTime(),
-      });
+      if (!partner || !partner._id) return;
+      
+      const partnerId = partner._id;
+
+      if (!map.has(partnerId)) {
+        map.set(partnerId, {
+          appointment: apt,
+          partnerName: partner.name || "Unknown",
+          partnerImage: partner.profileImage,
+          unreadCount: 0,
+          timestamp: new Date(apt.createdAt || apt.slotStartIso || Date.now()).getTime(),
+        });
+      }
     });
 
-    // Process messages, they are already sorted descending
+    // Process messages (which are already sorted newest first)
     messages.forEach(msg => {
-      const preview = map.get(msg.appointment_id);
+      // Find the appointment to know the partner
+      const apt = appointments.find(a => a._id === msg.appointment_id);
+      if (!apt) return;
+      const partner = isDoctor ? apt.patientId : apt.doctorId;
+      if (!partner || !partner._id) return;
+
+      const preview = map.get(partner._id);
       if (preview) {
         if (!preview.lastMessage) {
           preview.lastMessage = msg;
           preview.timestamp = new Date(msg.created_at).getTime();
-        }
-        // Very basic unread indicator assuming if it's not from us it might be unread
-        // (Real unread requires 'is_read' flag or tracking last open time)
-        if (msg.sender_id !== user.id) {
-           // We cap unread at just tracking there are some messages
-           // since we don't have read receipts yet.
+          // Set the appointment to the most recent message's appointment so we route correctly
+          preview.appointment = apt;
         }
       }
     });
