@@ -225,7 +225,8 @@ export default function ChatPage() {
     const unreadMsgs = messages.filter(m => m.sender_id !== user.id && !m.is_read);
     if (unreadMsgs.length > 0) {
       const markAsRead = async () => {
-         await supabase.from('appointment_messages').update({ is_read: true }).in('id', unreadMsgs.map(m => m.id));
+         const { error } = await supabase.from('appointment_messages').update({ is_read: true }).in('id', unreadMsgs.map(m => m.id));
+         if (error) console.error("Error marking messages as read:", error);
          setMessages(prev => prev.map(m => unreadMsgs.some(u => u.id === m.id) ? { ...m, is_read: true } : m));
          decrementUnread(unreadMsgs.length);
       };
