@@ -5,6 +5,7 @@ interface ChatStore {
   unreadCount: number;
   setUnreadCount: (count: number) => void;
   fetchUnreadCount: (userId: string, apptIds: string[]) => Promise<void>;
+  decrementUnread: (amount?: number) => void;
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -26,4 +27,5 @@ export const useChatStore = create<ChatStore>((set) => ({
       set({ unreadCount: count || 0 });
     }
   },
+  decrementUnread: (amount = 1) => set((state) => ({ unreadCount: Math.max(0, state.unreadCount - amount) })),
 }));

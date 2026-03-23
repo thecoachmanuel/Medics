@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { userAuthStore } from "@/store/authStore";
 import { useAppointmentStore } from "@/store/appointmentStore";
+import { useChatStore } from "@/store/chatStore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ interface Message {
 export default function ChatPage() {
   const params = useParams();
   const appointmentId = params.appointmentId as string;
+  const { decrementUnread } = useChatStore();
   const router = useRouter();
   
   const { user } = userAuthStore();
@@ -225,6 +227,7 @@ export default function ChatPage() {
       const markAsRead = async () => {
          await supabase.from('appointment_messages').update({ is_read: true }).in('id', unreadMsgs.map(m => m.id));
          setMessages(prev => prev.map(m => unreadMsgs.some(u => u.id === m.id) ? { ...m, is_read: true } : m));
+         decrementUnread(unreadMsgs.length);
       };
       markAsRead();
     }
