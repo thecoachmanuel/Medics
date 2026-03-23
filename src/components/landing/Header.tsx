@@ -57,6 +57,12 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
               useChatStore.setState(s => ({ unreadCount: s.unreadCount + 1 }));
            }
         })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'appointment_messages' }, (payload) => {
+           const msg = payload.new as any;
+           if (msg.is_read && msg.sender_id !== user.id && appointments.some(a => a._id === msg.appointment_id)) {
+              useChatStore.getState().fetchUnreadCount(user.id, appointments.map(a => a._id));
+           }
+        })
         .subscribe();
       return () => { supabase.removeChannel(channel); };
     }

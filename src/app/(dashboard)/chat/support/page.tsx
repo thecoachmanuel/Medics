@@ -77,6 +77,31 @@ export default function SupportChatPage() {
     }
   }, [announcements]);
 
+  // Visual Viewport Keyboard Fix for iOS Safari
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const vv = window.visualViewport;
+    const updateSize = () => {
+      if (containerRef.current) {
+        containerRef.current.style.height = `${vv.height}px`;
+        containerRef.current.style.top = `${vv.offsetTop}px`;
+      }
+      setTimeout(() => {
+         if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+         }
+      }, 50);
+    };
+    vv.addEventListener('resize', updateSize);
+    vv.addEventListener('scroll', updateSize);
+    updateSize(); // Initial set
+    return () => {
+      vv.removeEventListener('resize', updateSize);
+      vv.removeEventListener('scroll', updateSize);
+    };
+  }, []);
+
   const renderDateDivider = (currentDateStr: string, prevDateStr?: string) => {
     const current = new Date(currentDateStr);
     const prev = prevDateStr ? new Date(prevDateStr) : null;
@@ -136,10 +161,14 @@ export default function SupportChatPage() {
   const partnerImage = "/images/medics-logo.png";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 md:max-w-2xl md:mx-auto md:border-x border-gray-200 shadow-2xl overflow-hidden pb-[env(safe-area-inset-bottom)]">
+    <div 
+      ref={containerRef}
+      className="fixed inset-x-0 z-50 flex flex-col bg-gray-50 md:max-w-2xl md:mx-auto md:border-x border-gray-200 overflow-hidden"
+      style={{ top: 0, height: '100dvh' }}
+    >
       {/* Top Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 md:max-w-2xl md:mx-auto flex px-4 py-3 md:py-5 items-center bg-white border-b shadow-sm space-x-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+      <div className="shrink-0 flex px-4 py-3 md:py-4 items-center bg-white border-b border-gray-100 z-10 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] space-x-3 transition-all relative">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full -ml-2 text-gray-700">
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <Avatar className="w-10 h-10 border shadow-sm">
@@ -160,7 +189,7 @@ export default function SupportChatPage() {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 pt-[85px] md:pt-[100px] space-y-4" ref={scrollRef}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#F2F4F7]" ref={scrollRef}>
          {announcements.length === 0 && !isLoading && (
             <div className="text-center text-gray-400 text-sm mt-10">No announcements yet.</div>
          )}

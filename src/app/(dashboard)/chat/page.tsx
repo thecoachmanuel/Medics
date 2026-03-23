@@ -121,6 +121,16 @@ export default function ChatListPage() {
           });
         }
       })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'appointment_messages'
+      }, (payload) => {
+        const updatedMsg = payload.new as Message;
+        if (appointments.some(a => a._id === updatedMsg.appointment_id)) {
+          setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
+        }
+      })
       .subscribe();
 
     return () => {
