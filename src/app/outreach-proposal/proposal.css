@@ -1,0 +1,255 @@
+/* Premium Outreach Proposal Styles */
+
+:root {
+  --a4-width: 210mm;
+  --a4-height: 297mm;
+  --print-padding: 20mm;
+  --brand-primary: oklch(0.205 0 0); /* Matching Medics theme */
+  --brand-secondary: oklch(0.45 0.05 250); /* Subtle blue for accents */
+  --text-main: #1a1a1a;
+  --text-muted: #666;
+}
+
+@layer base {
+  .proposal-container {
+    background: #f4f4f4;
+    min-height: 100vh;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: var(--font-sans), system-ui, sans-serif;
+  }
+
+  .a4-page {
+    width: var(--a4-width);
+    min-height: var(--a4-height);
+    background: white;
+    padding: var(--print-padding);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-main);
+    line-height: 1.6;
+    font-size: 11pt;
+  }
+
+  /* Professional Letterhead Design */
+  .letterhead-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+  }
+
+  .letterhead-accent-bg {
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    background: var(--brand-primary);
+    opacity: 0.03;
+    border-radius: 50%;
+    z-index: 0;
+  }
+
+  .proposal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 20px;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .company-info {
+    text-align: right;
+  }
+
+  .company-name {
+    font-size: 18pt;
+    font-weight: 800;
+    color: var(--brand-primary);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+
+  .contact-detail {
+    font-size: 9pt;
+    color: var(--text-muted);
+    margin: 2px 0;
+  }
+
+  .recipient-block {
+    margin-bottom: 30px;
+  }
+
+  .proposal-date {
+    font-style: italic;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .subject-line {
+    font-weight: 700;
+    font-size: 12pt;
+    text-transform: uppercase;
+    border-bottom: 1px solid #333;
+    display: inline-block;
+    margin-bottom: 25px;
+    padding-bottom: 2px;
+  }
+
+  .proposal-body {
+    flex-grow: 1;
+  }
+
+  .proposal-body p {
+    margin-bottom: 15px;
+    text-align: justify;
+  }
+
+  .highlight-box {
+    background: #f9f9f9;
+    border-left: 4px solid var(--brand-primary);
+    padding: 20px;
+    margin: 25px 0;
+  }
+
+  .benefit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 20px 0;
+  }
+
+  .benefit-item {
+    padding: 10px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #eee;
+  }
+
+  .benefit-title {
+    font-weight: 700;
+    color: var(--brand-primary);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .proposal-footer {
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9pt;
+    color: var(--text-muted);
+  }
+
+  .signature-space {
+    margin-top: 40px;
+    width: 200px;
+    border-top: 1px solid #333;
+    padding-top: 8px;
+    font-weight: 600;
+  }
+
+  /* Controls */
+  .print-controls {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    gap: 15px;
+    z-index: 100;
+  }
+
+  .control-btn {
+    padding: 12px 24px;
+    border-radius: 9999px;
+    background: var(--brand-primary);
+    color: white;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+  }
+
+  .control-btn.secondary {
+    background: white;
+    color: var(--brand-primary);
+    border: 2px solid var(--brand-primary);
+  }
+
+  /* Print specific overrides */
+  @media print {
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    
+    body {
+      background: white;
+    }
+
+    .proposal-container {
+      background: white;
+      padding: 0;
+    }
+
+    .a4-page {
+      box-shadow: none;
+      padding: var(--print-padding);
+      margin: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .print-controls {
+      display: none !important;
+    }
+
+    .edit-hint {
+      display: none !important;
+    }
+  }
+
+  /* Editable hint */
+  .edit-hint {
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+    color: #4338ca;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Focus styling for contenteditable */
+  [contenteditable="true"]:focus {
+    outline: 2px solid #6366f1;
+    background: #fafafa;
+    border-radius: 4px;
+    padding: 2px;
+  }
+}
