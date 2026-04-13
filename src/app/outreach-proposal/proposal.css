@@ -198,7 +198,37 @@
     border: 2px solid var(--brand-primary);
   }
 
-  /* Print specific overrides */
+  /* Status Banner */
+  .status-banner {
+    width: var(--a4-width);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+  }
+
+  .save-indicator {
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.3s ease;
+  }
+
+  .save-indicator.saving {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #334155;
+  }
+
+  /* Printable specific overrides */
   @media print {
     @page {
       size: A4;
@@ -222,10 +252,8 @@
       height: 100%;
     }
 
-    .print-controls {
-      display: none !important;
-    }
-
+    .print-controls,
+    .status-banner,
     .edit-hint {
       display: none !important;
     }
@@ -233,7 +261,7 @@
 
   /* Editable hint */
   .edit-hint {
-    margin-bottom: 20px;
+    flex-grow: 1;
     padding: 8px 16px;
     background: #eef2ff;
     border: 1px solid #c7d2fe;
