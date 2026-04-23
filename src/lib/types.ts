@@ -44,6 +44,7 @@ export interface User {
   isDeclined?: boolean;
   isBlocked?: boolean;
   adminReviewNote?: string;
+  onboardingStep?: number;
 
   // Patient fields
   dob?: string;
@@ -108,6 +109,7 @@ export interface ProfileUpdateInput {
   slotDurationMinutes?: number;
   profileImage?: string;
   isVerified?: boolean;
+  onboardingStep?: number;
 }
 
 

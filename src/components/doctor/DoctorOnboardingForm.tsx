@@ -56,6 +56,7 @@ const DoctorOnboardingForm = () => {
 
   const [availableSpecializations, setAvailableSpecializations] = useState<string[]>(defaultSpecializations);
   const [availableCategories, setAvailableCategories] = useState<string[]>(healthcareCategoriesList);
+  const [initialized, setInitialized] = useState(false);
 
   const { updateProfile, user, loading } = userAuthStore();
   const router = useRouter();
@@ -74,6 +75,39 @@ const DoctorOnboardingForm = () => {
       }
     }
   }, [user, router]);
+  
+  useEffect(() => {
+    if (!user || user.type !== "doctor" || initialized) return;
+
+    if (user.onboardingStep) {
+      setCurrentStep(user.onboardingStep);
+    }
+
+    setFormData({
+      specialization: user.specialization || "",
+      categories: user.category || [],
+      qualification: user.qualification || "",
+      experience: user.experience?.toString() || "",
+      fees: user.fees?.toString() || "",
+      about: user.about || "",
+      hospitalInfo: {
+        name: user.hospitalInfo?.name || "",
+        address: user.hospitalInfo?.address || "",
+        city: user.hospitalInfo?.city || "",
+      },
+      availabilityRange: {
+        startDate: user.availabilityRange?.startDate || "",
+        endDate: user.availabilityRange?.endDate || "",
+        excludedWeekdays: user.availabilityRange?.excludedWeekdays || [],
+      },
+      dailyTimeRanges: user.dailyTimeRanges && user.dailyTimeRanges.length > 0 
+        ? user.dailyTimeRanges 
+        : [{ start: "09:00", end: "12:00" }, { start: "14:00", end: "17:00" }],
+      slotDurationMinutes: user.slotDurationMinutes || 30,
+    });
+
+    setInitialized(true);
+  }, [initialized, user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -229,15 +263,49 @@ const DoctorOnboardingForm = () => {
       console.error("Profile update failed", error);
     }
   };
-  const handleNext = (): void => {
+  const handleNext = async (): Promise<void> => {
     if (currentStep < 4) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      
+      // Save progress to DB
+      try {
+        await updateProfile({
+          specialization: formData.specialization,
+          category: formData.categories,
+          qualification: formData.qualification,
+          experience: formData.experience,
+          about: formData.about,
+          fees: formData.fees,
+          hospitalInfo: formData.hospitalInfo,
+          availabilityRange: {
+            startDate: formData.availabilityRange.startDate,
+            endDate: formData.availabilityRange.endDate,
+            excludedWeekdays: formData.availabilityRange.excludedWeekdays,
+          },
+          dailyTimeRanges: formData.dailyTimeRanges,
+          slotDurationMinutes: formData.slotDurationMinutes,
+          onboardingStep: nextStep,
+        });
+      } catch (error) {
+        console.error("Failed to save progress", error);
+      }
     }
   };
 
-  const handlePrevious = (): void => {
+  const handlePrevious = async (): Promise<void> => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      const prevStep = currentStep - 1;
+      setCurrentStep(prevStep);
+      
+      // Save progress to DB
+      try {
+        await updateProfile({
+          onboardingStep: prevStep,
+        });
+      } catch (error) {
+        console.error("Failed to save progress", error);
+      }
     }
   };
   return (

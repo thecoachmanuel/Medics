@@ -39,6 +39,7 @@ const mapProfileUpdateToDbPayload = (data: ProfileUpdateInput): Record<string, u
 
   if (data.profileImage !== undefined) payload.profile_image = data.profileImage;
   if (data.isVerified !== undefined) payload.is_verified = data.isVerified;
+  if (data.onboardingStep !== undefined) payload.onboarding_step = data.onboardingStep;
 
   return payload;
 };
@@ -138,6 +139,7 @@ export const userAuthStore = create<AuthState>()(
           availabilityRange: profile?.availability_range || undefined,
           dailyTimeRanges: profile?.daily_time_ranges || undefined,
           slotDurationMinutes: profile?.slot_duration_minutes || undefined,
+          onboardingStep: profile?.onboarding_step || undefined,
         };
         get().setUser(user);
       } catch (error: any) {
@@ -190,6 +192,7 @@ export const userAuthStore = create<AuthState>()(
           availabilityRange: profile?.availability_range || undefined,
           dailyTimeRanges: profile?.daily_time_ranges || undefined,
           slotDurationMinutes: profile?.slot_duration_minutes || undefined,
+          onboardingStep: profile?.onboarding_step || undefined,
         };
         get().setUser(user);
       } catch (error: any) {
@@ -316,6 +319,7 @@ export const userAuthStore = create<AuthState>()(
               availabilityRange: profile?.availability_range || undefined,
               dailyTimeRanges: profile?.daily_time_ranges || undefined,
               slotDurationMinutes: profile?.slot_duration_minutes || undefined,
+              onboardingStep: profile?.onboarding_step || undefined,
             };
             set({user, isAuthenticated: true});
             return user;
@@ -378,6 +382,7 @@ export const userAuthStore = create<AuthState>()(
               isSuspended: updated?.is_suspended ?? user.isSuspended,
               isDeclined: updated?.is_declined ?? user.isDeclined,
               adminReviewNote: updated?.admin_review_note ?? user.adminReviewNote,
+              onboardingStep: updated?.onboarding_step ?? user.onboardingStep,
             }}
             set({user: merged})
         } catch (error:any) {

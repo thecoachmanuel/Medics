@@ -77,6 +77,10 @@ const PatientOnboardingForm = () => {
   useEffect(() => {
     if (!user || user.type !== "patient" || initialized) return;
 
+    if (user.onboardingStep) {
+      setCurrentStep(user.onboardingStep);
+    }
+
     const emergency =
       typeof user.emergencyContact === "object" && user.emergencyContact !== null
         ? (user.emergencyContact as Record<string, unknown>)
@@ -195,15 +199,41 @@ const PatientOnboardingForm = () => {
       setSubmitError(error.message || "Failed to update profile. Please try again.");
     }
   };
-  const handleNext = (): void => {
+  const handleNext = async (): Promise<void> => {
     if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      
+      // Save progress to DB
+      try {
+        await updateProfile({
+          phone: formData.phone,
+          dob: formData.dob,
+          gender: formData.gender,
+          bloodGroup: formData.bloodGroup,
+          emergencyContact: formData.emergencyContact,
+          medicalHistory: formData.medicalHistory,
+          onboardingStep: nextStep,
+        });
+      } catch (error) {
+        console.error("Failed to save progress", error);
+      }
     }
   };
 
-  const handlePrevious = (): void => {
+  const handlePrevious = async (): Promise<void> => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      const prevStep = currentStep - 1;
+      setCurrentStep(prevStep);
+      
+      // Save progress to DB
+      try {
+        await updateProfile({
+          onboardingStep: prevStep,
+        });
+      } catch (error) {
+        console.error("Failed to save progress", error);
+      }
     }
   };
   return (
