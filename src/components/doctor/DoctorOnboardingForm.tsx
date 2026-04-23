@@ -17,7 +17,7 @@ import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
-import { uploadImage } from "@/lib/cloudinary";
+import { uploadImage } from "@/lib/supabase-storage";
 import { supabase } from "@/lib/supabase/client";
 import { FileIcon, LinkIcon, Loader2, Trash2, X } from "lucide-react";
 

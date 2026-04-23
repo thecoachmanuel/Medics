@@ -1,41 +1,42 @@
-import { NextRequest, NextResponse } from "next/server";
-import { v2 as cloudinary } from "cloudinary";
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+const BUCKET = 'medicsonline'
 
 export async function POST(req: NextRequest) {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  if (!cloudName || !apiKey || !apiSecret) {
-    return NextResponse.json({ error: "Missing Cloudinary configuration" }, { status: 500 });
+  if (!supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json({ error: 'Missing Supabase configuration' }, { status: 500 })
   }
 
-  let body: unknown;
+  let body: unknown
   try {
-    body = await req.json();
+    body = await req.json()
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  if (!body || typeof body !== "object") {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
   }
 
-  const publicId = (body as any).publicId as string | undefined;
+  const publicId = (body as any).publicId as string | undefined
   if (!publicId) {
-    return NextResponse.json({ error: "publicId is required" }, { status: 400 });
+    return NextResponse.json({ error: 'publicId is required' }, { status: 400 })
   }
 
-  cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
+  // Use the service role (admin) client so RLS does not block server-side deletion
+  const adminSupabase = createClient(supabaseUrl, serviceRoleKey)
 
   try {
-    const result = await cloudinary.uploader.destroy(publicId, { invalidate: true });
-    if (result.result !== "ok" && result.result !== "not found") {
-      return NextResponse.json({ error: "Unable to delete asset" }, { status: 500 });
+    const { error } = await adminSupabase.storage.from(BUCKET).remove([publicId])
+    if (error) {
+      return NextResponse.json({ error: 'Unable to delete asset' }, { status: 500 })
     }
-    return NextResponse.json({ success: true });
-  } catch (e) {
-    return NextResponse.json({ error: "Unable to delete asset" }, { status: 500 });
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: 'Unable to delete asset' }, { status: 500 })
   }
 }
-

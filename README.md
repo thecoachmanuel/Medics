@@ -29,7 +29,7 @@ The app is designed with production‑grade patterns: typed TypeScript, Supabase
   - Doctor dashboard with daily schedule, appointment details and prescriptions
   - Dedicated payments pages for both roles
 - Video/voice consultation using Stream.io Video SDK
-- Cloudinary integration for profile image uploads
+- Supabase Storage for profile images and document uploads
 
 ---
 
@@ -54,7 +54,7 @@ src/
     (dashboard)/       # Doctor & Patient dashboards and sub‑pages
     api/
       paystack/        # Verify + webhook routes
-      upload/          # Cloudinary signed upload route
+      # File uploads go directly to Supabase Storage
     doctor-list/       # Public doctor discovery page
     onboarding/        # Doctor and patient onboarding flows
     patient/booking/   # Patient booking flow for a given doctor
@@ -102,15 +102,13 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=your_paystack_public_key
 PAYSTACK_SECRET_KEY=your_paystack_secret_key
 
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+# Cloudinary is no longer used. All uploads go through Supabase Storage.
 
 NEXT_PUBLIC_STREAM_API_KEY=your_stream_api_key
 STREAM_SECRET_KEY=your_stream_secret_key
 ```
 
-> Use your own credentials for Supabase, Paystack, and Cloudinary. Do not commit this file.
+> Use your own credentials for Supabase and Paystack. Do not commit this file.
 
 ### 3. Apply Supabase migrations
 

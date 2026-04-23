@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Loader2, Mic, Paperclip, Phone, Send, Video, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import { uploadImage } from "@/lib/cloudinary";
+import { uploadImage } from "@/lib/supabase-storage";
 
 interface Message {
   id: string;

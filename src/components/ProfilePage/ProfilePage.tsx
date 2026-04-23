@@ -32,7 +32,7 @@ import {
 import { Textarea } from "../ui/textarea";
 import { Badge } from "../ui/badge";
 import { Checkbox } from "../ui/checkbox";
-import { uploadImage } from "@/lib/cloudinary";
+import { uploadImage } from "@/lib/supabase-storage";
 import { useAppDetection } from "@/hooks/use-app-detection";
 
 interface ProfileProps {

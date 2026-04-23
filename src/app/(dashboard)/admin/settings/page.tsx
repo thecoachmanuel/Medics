@@ -534,8 +534,8 @@ export default function AdminSettingsPage() {
                   const file = e.dataTransfer.files?.[0];
                   if (!file) return;
                   try {
-                    const { uploadImage } = await import("@/lib/cloudinary");
-                    const res = await uploadImage(file, "medimeet/email");
+                    const { uploadImage } = await import("@/lib/supabase-storage");
+                    const res = await uploadImage(file, "email");
                     setEmailBranding((prev) => ({ ...prev, headerLogoUrl: res.url, headerLogoPublicId: res.publicId }));
                   } catch {}
                 }}
@@ -553,8 +553,8 @@ export default function AdminSettingsPage() {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       try {
-                        const { uploadImage } = await import("@/lib/cloudinary");
-                        const res = await uploadImage(file, "medimeet/email");
+                        const { uploadImage } = await import("@/lib/supabase-storage");
+                        const res = await uploadImage(file, "email");
                         setEmailBranding((prev) => ({ ...prev, headerLogoUrl: res.url, headerLogoPublicId: res.publicId }));
                       } catch {
                       } finally {
@@ -798,8 +798,8 @@ export default function AdminSettingsPage() {
                   const file = e.dataTransfer.files?.[0];
                   if (!file) return;
                   try {
-                    const { uploadImage } = await import("@/lib/cloudinary");
-                    const res = await uploadImage(file, "medimeet/branding");
+                    const { uploadImage } = await import("@/lib/supabase-storage");
+                    const res = await uploadImage(file, "branding");
                     setHomepageContent((prev) => ({ ...prev, headerLogoUrl: res.url, headerLogoPublicId: res.publicId }));
                   } catch {}
                 }}
@@ -817,8 +817,8 @@ export default function AdminSettingsPage() {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       try {
-                        const { uploadImage } = await import("@/lib/cloudinary");
-                        const res = await uploadImage(file, "medimeet/branding");
+                        const { uploadImage } = await import("@/lib/supabase-storage");
+                        const res = await uploadImage(file, "branding");
                         setHomepageContent((prev) => ({ ...prev, headerLogoUrl: res.url, headerLogoPublicId: res.publicId }));
                       } catch {
                       } finally {
@@ -875,8 +875,8 @@ export default function AdminSettingsPage() {
                   const file = e.dataTransfer.files?.[0];
                   if (!file) return;
                   try {
-                    const { uploadImage } = await import("@/lib/cloudinary");
-                    const res = await uploadImage(file, "medimeet/branding");
+                    const { uploadImage } = await import("@/lib/supabase-storage");
+                    const res = await uploadImage(file, "branding");
                     setHomepageContent((prev) => ({ ...prev, footerLogoUrl: res.url, footerLogoPublicId: res.publicId }));
                   } catch {}
                 }}
@@ -894,8 +894,8 @@ export default function AdminSettingsPage() {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       try {
-                        const { uploadImage } = await import("@/lib/cloudinary");
-                        const res = await uploadImage(file, "medimeet/branding");
+                        const { uploadImage } = await import("@/lib/supabase-storage");
+                        const res = await uploadImage(file, "branding");
                         setHomepageContent((prev) => ({ ...prev, footerLogoUrl: res.url, footerLogoPublicId: res.publicId }));
                       } catch {
                       } finally {
