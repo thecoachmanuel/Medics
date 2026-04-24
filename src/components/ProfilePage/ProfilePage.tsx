@@ -94,8 +94,9 @@ const ProfilePage = ({ userType }: ProfileProps) => {
       setUploadingImage(true);
       const result = await uploadImage(file, "medimeet/profile-images");
       await updateProfile({ profileImage: result.url });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to upload profile image", error);
+      alert(`Upload failed: ${error.message || "Please try again."}`);
     } finally {
       setUploadingImage(false);
       event.target.value = "";

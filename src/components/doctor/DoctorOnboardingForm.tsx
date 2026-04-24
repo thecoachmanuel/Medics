@@ -183,9 +183,9 @@ const DoctorOnboardingForm = () => {
         ...prev,
         { url: result.url, label: file.name },
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload failed", error);
-      alert("Failed to upload file");
+      alert(`Upload failed: ${error.message || "Please try again."}`);
     } finally {
       setIsUploading(false);
       e.target.value = ""; // Reset input
@@ -244,16 +244,20 @@ const DoctorOnboardingForm = () => {
 
         if (token) {
           await Promise.all(
-            credentials.map((cred) =>
-              fetch("/api/doctor/credentials", {
+            credentials.map(async (cred) => {
+              const res = await fetch("/api/doctor/credentials", {
                 method: "POST",
                 headers: { 
                   "Content-Type": "application/json",
                   "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify(cred),
-              })
-            )
+              });
+              if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.error || "Failed to save credential to database");
+              }
+            })
           );
         }
       }

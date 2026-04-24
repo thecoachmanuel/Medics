@@ -16,7 +16,9 @@ const BUCKET = 'medicsonline'
  */
 export async function uploadImage(file: File, folder = 'general'): Promise<UploadResult> {
   const ext = file.name.split('.').pop() ?? 'bin'
-  const uuid = crypto.randomUUID()
+  const uuid = typeof crypto.randomUUID === 'function' 
+    ? crypto.randomUUID() 
+    : Math.random().toString(36).substring(2) + Date.now().toString(36);
   const path = `${folder}/${uuid}.${ext}`
 
   const { error } = await supabase.storage
