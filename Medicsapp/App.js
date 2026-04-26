@@ -200,6 +200,10 @@ function AppContent() {
       javaScriptEnabled: true,
       domStorageEnabled: true,
       allowsInlineMediaPlayback: true,
+      mediaPlaybackRequiresUserAction: false,
+      onPermissionRequest: (event) => {
+        event.grant(event.resources);
+      },
       setSupportMultipleWindows: false,
       onShouldStartLoadWithRequest,
       allowsBackForwardNavigationGestures: true,
