@@ -27,6 +27,32 @@ const WEBVIEW_BRIDGE_SCRIPT = `
     } catch (e) {}
   }
 
+  // Diagnostics for Media Devices
+  function checkMediaDevices() {
+    var diagnostics = {
+      hasMediaDevices: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+      userAgent: navigator.userAgent,
+      protocol: window.location.protocol,
+      secureContext: window.isSecureContext
+    };
+    
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices().then(function(devices) {
+        diagnostics.devices = devices.map(function(d) { 
+          return { kind: d.kind, label: d.label, id: d.deviceId }; 
+        });
+        post('diagnostics', diagnostics);
+      }).catch(function(e) {
+        diagnostics.error = e.message;
+        post('diagnostics', diagnostics);
+      });
+    } else {
+      post('diagnostics', diagnostics);
+    }
+  }
+
+  window.addEventListener('load', checkMediaDevices);
+
   window.addEventListener('error', function (event) {
     post('window_error', {
       message: event && event.message,
@@ -190,6 +216,11 @@ function AppContent() {
     if (parsed.type === "window_error" || parsed.type === "unhandledrejection") {
       setWebRuntimeError(parsed);
     }
+    if (parsed.type === "diagnostics") {
+      try {
+        console.log("WebView Diagnostics:", JSON.stringify(parsed.payload, null, 2));
+      } catch (e) {}
+    }
     if (parsed.type === "console_error") {
       try {
         console.error("WebView console.error", parsed.payload);
@@ -251,10 +282,13 @@ function AppContent() {
       allowsInlineMediaPlayback: true,
       mediaPlaybackRequiresUserAction: false,
       javaScriptCanOpenWindowsAutomatically: true,
+      mediaCapturePermissionGrantType: "grant",
+      geolocationEnabled: true,
       userAgent: Platform.OS === 'android' 
-        ? 'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36'
-        : 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1',
+        ? 'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
+        : 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
       onPermissionRequest: (event) => {
+        // Explicitly handle each resource if needed, but grant all for now
         event.grant(event.resources);
       },
       setSupportMultipleWindows: false,
@@ -266,6 +300,7 @@ function AppContent() {
       sharedCookiesEnabled: true,
       thirdPartyCookiesEnabled: true,
       mixedContentMode: "always",
+      androidHardwareAccelerationDisabled: false,
     };
     return <WebView {...webViewProps} style={styles.webview} />;
   }, [url, onNavigationStateChange, onShouldStartLoadWithRequest, onMessage, handleReload]);
