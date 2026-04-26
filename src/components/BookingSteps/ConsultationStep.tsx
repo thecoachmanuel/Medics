@@ -1,10 +1,11 @@
 import { consultationTypes } from "@/lib/constant";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Label } from "../ui/label";
-import { Icon } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
+import { ChevronRight, ArrowLeft, MessageSquare, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ConsultationStepProps {
   doctorId: string;
@@ -19,7 +20,6 @@ interface ConsultationStepProps {
 }
 
 const ConsultationStep = ({
-  doctorId,
   consultationType,
   setConsultationType,
   symptoms,
@@ -33,13 +33,11 @@ const ConsultationStep = ({
     const basePrice = doctorFees || 0;
 
     if (selectedType === "Voice Call") {
-      // Force 30% discount as per user requirement
       const discount = Math.round((basePrice * 30) / 100);
       return Math.max(0, basePrice - discount);
     }
 
     if (selectedType === "Messaging") {
-      // Force 50% discount as per user requirement
       const discount = Math.round((basePrice * 50) / 100);
       return Math.max(0, basePrice - discount);
     }
@@ -47,121 +45,162 @@ const ConsultationStep = ({
     return basePrice;
   };
 
-  const handleTypeChnage = (newType: string) => {
-    setConsultationType(newType);
-  };
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-6">
-          Consultation Details
-        </h3>
-        <div className="mb-8">
-          <Label className="text-base font-semibold mb-4 block">
-            Select Consultation Type
-          </Label>
-          <div className="space-y-3">
-            {consultationTypes.map(
-              ({ type, icon: Icon, description, price, recommended }) => {
-                const currentPrice = getConsultationPrice(type);
-                const isSelected = consultationType === type;
-                return (
-                  <div
-                    key={type}
-                    className={`relative border-2 rounded-[1.25rem] p-5 cursor-pointer transition-all flex items-center shadow-sm ${
-                      isSelected
-                        ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600"
-                        : "border-gray-100 hover:border-gray-300 hover:shadow-md bg-white"
-                    }`}
-                    onClick={() => handleTypeChnage(type)}
-                  >
-                    {recommended && (
-                      <Badge className="absolute -top-2 left-4 bg-green-500">
-                        Recommended
-                      </Badge>
-                    )}
-                    <div className="flex items-center space-x-4 w-full">
-                      <div
-                        className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
-                          isSelected ? "bg-blue-600 text-white shadow-md" : "bg-blue-50 text-blue-600"
-                        }`}
-                      >
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center mb-1">
-                          <h4 className="font-bold text-gray-900 text-lg">
-                            {type === 'Video Consultation' ? 'Video Call' : type}
-                          </h4>
-                          <p className="font-bold text-gray-900 text-lg">
-                            ₦{currentPrice.toLocaleString()}
-                          </p>
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+            <MessageSquare className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-black text-gray-900">
+              Consultation Details
+            </h3>
+            <p className="text-gray-500 text-sm font-medium">Customize your consultation experience</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <Label className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 block">
+              Select Consultation Type
+            </Label>
+            <div className="grid gap-4">
+              {consultationTypes.map(
+                ({ type, icon: Icon, description, recommended }) => {
+                  const currentPrice = getConsultationPrice(type);
+                  const isSelected = consultationType === type;
+                  const discount = doctorFees - currentPrice;
+                  
+                  return (
+                    <div
+                      key={type}
+                      className={cn(
+                        "relative group border-2 rounded-[2rem] p-6 cursor-pointer transition-all duration-300 flex items-center gap-4",
+                        isSelected
+                          ? "border-blue-600 bg-blue-50/30 shadow-lg shadow-blue-100/50"
+                          : "border-gray-100 bg-white hover:border-blue-200 hover:shadow-md"
+                      )}
+                      onClick={() => setConsultationType(type)}
+                    >
+                      {recommended && (
+                        <div className="absolute -top-3 left-6">
+                          <Badge className="bg-green-500 hover:bg-green-600 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border-2 border-white shadow-sm">
+                            Recommended
+                          </Badge>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm text-gray-500">{description}</p>
+                      )}
+
+                      <div className={cn(
+                        "w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300",
+                        isSelected ? "bg-blue-600 text-white shadow-lg" : "bg-gray-50 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500"
+                      )}>
+                        <Icon className="w-8 h-8" />
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-black text-gray-900 text-lg leading-tight">
+                              {type === "Video Consultation" ? "Video Call" : type}
+                            </h4>
+                            <p className="text-sm text-gray-500 font-medium mt-0.5 line-clamp-1">
+                              {description}
+                            </p>
+                          </div>
                           <div className="text-right">
-                            {(type === 'Voice Call' || type === 'Messaging') && doctorFees > currentPrice ? (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                                Save ₦{(doctorFees - currentPrice).toLocaleString()}
-                              </span>
-                            ) : null}
+                            <p className="font-black text-gray-900 text-xl">
+                              ₦{currentPrice.toLocaleString()}
+                            </p>
+                            {discount > 0 && (
+                              <Badge variant="outline" className="mt-1 bg-green-50 text-green-600 border-green-100 text-[10px] font-black">
+                                SAVE ₦{discount.toLocaleString()}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
-                      
-                      <div className="ml-4 flex items-center justify-center">
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-600' : 'border-gray-300'}`}>
-                           {isSelected && <div className="w-3 h-3 bg-blue-600 rounded-full" />}
+
+                      <div className="ml-2 flex items-center justify-center">
+                        <div className={cn(
+                          "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300",
+                          isSelected ? "border-blue-600 bg-blue-600 shadow-inner" : "border-gray-200"
+                        )}>
+                          {isSelected && <div className="w-2 h-2 bg-white rounded-full shadow-sm" />}
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              }
-            )}
+                  );
+                }
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="mb-8 p-4 bg-blue-50 rounded-lg">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-blue-900">
-              Selected Consultation:
-            </span>
-            <span className="text-lg font-bold text-blue-900">
-              {consultationType === 'Video Consultation' ? 'Video Call' : consultationType} - ₦{getConsultationPrice().toLocaleString()}
-            </span>
+          <div className="p-6 bg-blue-600 rounded-[2rem] shadow-xl shadow-blue-100 flex items-center justify-between text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">
+                Selected Method
+              </p>
+              <h4 className="text-xl font-black">
+                {consultationType === "Video Consultation" ? "Video Call" : consultationType}
+              </h4>
+            </div>
+            <div className="relative z-10 text-right">
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">
+                Total Price
+              </p>
+              <p className="text-2xl font-black">₦{getConsultationPrice().toLocaleString()}</p>
+            </div>
           </div>
-        </div>
 
-        <div className="mb-8">
-          <Label
-            htmlFor="symptoms"
-            className="text-base font-semibold mb-4 block"
-          >
-            Describe your symptoms or concerns (optional)
-          </Label>
-          <Textarea
-            id="symptoms"
-            placeholder="Please describe what brings you to see the doctor today..."
-            value={symptoms}
-            onChange={(e) => setSymptoms(e.target.value)}
-            rows={5}
-            className="resize-none border-2 focus:border-blue-500"
-          />
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="symptoms" className="text-sm font-black uppercase tracking-widest text-gray-400">
+                Symptoms or Concerns
+              </Label>
+              <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full uppercase tracking-tighter">Optional</span>
+            </div>
+            <div className="relative group">
+              <Textarea
+                id="symptoms"
+                placeholder="Describe your symptoms or what you'd like to discuss with the doctor..."
+                value={symptoms}
+                onChange={(e) => setSymptoms(e.target.value)}
+                rows={4}
+                className="resize-none border-2 border-gray-100 rounded-[1.5rem] p-5 focus:border-blue-500 focus:ring-0 transition-all bg-gray-50/50 group-hover:bg-white group-hover:shadow-inner"
+              />
+              <div className="absolute bottom-4 right-4 text-gray-300 pointer-events-none">
+                <Info className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex justify-between gap-2">
-        <Button variant="outline" onClick={onBack} className="PX-8 PY-3" disabled={isLoading}>
-          Back
+      <div className="flex items-center justify-between pt-6 border-t border-gray-100 gap-4">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          disabled={isLoading}
+          className="h-14 px-8 rounded-2xl font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all flex items-center gap-2"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Back</span>
         </Button>
         <Button
           onClick={onContinue}
           disabled={isLoading}
-          className="px-7 py-3 bg-blue-600 hover:bg-blue-700"
+          className="h-14 flex-1 max-w-[280px] bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2 group"
         >
-          {isLoading ? "Processing..." : "Continue to Payment"}
+          {isLoading ? (
+            <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <>
+              <span>Proceed to Payment</span>
+              <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -169,3 +208,4 @@ const ConsultationStep = ({
 };
 
 export default ConsultationStep;
+

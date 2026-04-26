@@ -202,10 +202,10 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
 
   if (isApp) return null;
   return (
-    <header className="border-b bg-white/95 backdrop:blur-sm fixed top-0 left-0 right-0 z-50">
-      <div className="container mx-auto px-4 h-16 flex items-center  justify-between">
+    <header className="border-b bg-white/80 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
+      <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
         {/* Left side -> logo  + navigation */}
-        <div className="flex items-center space-x-8">
+        <div className="flex items-center space-x-12">
           <button
             type="button"
             onClick={() => {
@@ -221,37 +221,42 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
               }
               router.push("/");
             }}
-            className="flex items-center space-x-2 focus:outline-none"
+            className="flex items-center space-x-2 focus:outline-none transition-transform active:scale-95"
           >
             <img
               src={headerLogoUrl}
               alt={brandName}
-              className="h-8 w-auto"
+              className="h-7 md:h-10 w-auto"
               loading="eager"
               fetchPriority="high"
               decoding="async"
             />
           </button>
 
-          {/* Dashboard navigation */}
+          {/* Dashboard navigation - Desktop only */}
           {isAuthenticated && showDashboardNav && (
-            <nav className="hidden md:flex items-center space-x-6">
+            <nav className="hidden lg:flex items-center space-x-8">
               {getDashboardNavigation().map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative flex items-center space-x-1 transition-colors ${
+                  className={`group relative flex items-center space-x-2 py-2 transition-all ${
                     item.active
-                      ? "text-blue-600 font-semibold"
-                      : "text-gray-600 hover:text-blue-600"
+                      ? "text-blue-600"
+                      : "text-gray-500 hover:text-blue-600"
                   }`}
                 >
-                  <item.icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{item.lable}</span>
+                  <div className={`p-1.5 rounded-lg transition-colors ${item.active ? "bg-blue-50" : "group-hover:bg-blue-50"}`}>
+                    <item.icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm font-bold tracking-tight">{item.lable}</span>
                   {item.lable === "Chat" && chatUnreadCount > 0 && (
-                    <Badge className="absolute -top-3 -right-4 px-1 min-w-[1.2rem] h-4 flex items-center justify-center text-[10px] bg-red-500 hover:bg-red-600 rounded-full shadow-sm border-none leading-none">
+                    <span className="flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-black bg-red-500 text-white shadow-lg shadow-red-200 border-2 border-white leading-none">
                       {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
-                    </Badge>
+                    </span>
+                  )}
+                  {item.active && (
+                    <div className="absolute -bottom-[21px] left-0 right-0 h-1 bg-blue-600 rounded-t-full shadow-[0_-2px_8px_rgba(37,99,235,0.4)]" />
                   )}
                 </Link>
               ))}
@@ -260,23 +265,23 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
         </div>
 
         {isAuthenticated && showDashboardNav ? (
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             <Button
               type="button"
               variant="ghost"
-              size="sm"
-              className="relative"
+              size="icon"
+              className="relative w-10 h-10 rounded-xl hover:bg-gray-50 transition-colors"
               onClick={() => {
                 if (!user) return;
                 const base = `/${user.type}`;
                 router.push(`${base}/notifications`);
               }}
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-5 h-5 text-gray-600" />
               {unreadCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 w-5 h-5 text-xs bg-red-500 hover:bg-red-600">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </Badge>
+                <span className="absolute top-2 right-2 w-4 h-4 flex items-center justify-center text-[9px] font-black bg-red-500 text-white rounded-full border-2 border-white shadow-sm">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
               )}
             </Button>
 
@@ -284,105 +289,117 @@ const Header: React.FC<HeaderProps> = ({ showDashboardNav = false, siteName, log
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center space-x-2 px-2"
+                  className="flex items-center space-x-2 pl-2 pr-1 md:pr-4 h-10 md:h-12 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100"
                 >
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage
-                      src={user?.profileImage}
-                      alt={user?.name}
-                    ></AvatarImage>
-                    <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-semibold">
-                      {user?.name?.charAt(0)?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-gray-900">
-                      {user?.name}
+                  <div className="relative">
+                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border-2 border-white shadow-sm">
+                      <AvatarImage
+                        src={user?.profileImage}
+                        alt={user?.name}
+                      />
+                      <AvatarFallback className="bg-blue-50 text-blue-600 text-xs font-black">
+                        {user?.name?.charAt(0)?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                  </div>
+                  <div className="hidden md:flex flex-col items-start leading-none">
+                    <p className="text-sm font-black text-gray-900">
+                      {user?.name?.split(' ')[0]}
                     </p>
-                    <p className="text-xs text-gray-500 capitalize">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
                       {user?.type}
                     </p>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex items-center space-x-2">
-                    <Avatar className="w-10 h-10">
+              <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl shadow-xl border-gray-100">
+                <DropdownMenuLabel className="p-2 mb-2 bg-gray-50/50 rounded-xl">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="w-10 h-10 border-2 border-white shadow-sm">
                       <AvatarImage
                         src={user?.profileImage}
                         alt={user?.name}
-                      ></AvatarImage>
-                      <AvatarFallback className="bg-blue-100 text-blue-600 ">
+                      />
+                      <AvatarFallback className="bg-blue-100 text-blue-600 font-bold">
                         {user?.name?.charAt(0)?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-
                     <div className="flex-1 min-w-0">
-                      <p className=" font-medium truncate">{user?.name}</p>
-                      <p className="text-sm text-gray-500 truncate max-w-[140px]">
+                      <p className="text-sm font-bold text-gray-900 truncate">{user?.name}</p>
+                      <p className="text-[11px] text-gray-500 truncate">
                         {user?.email}
                       </p>
                     </div>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {user?.type === "doctor" ? (
-                  <DropdownMenuItem asChild>
-                    <Link href="/chat" className="flex items-center justify-between w-full">
-                      <div className="flex items-center">
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        Chat
-                      </div>
-                      {chatUnreadCount > 0 && (
-                        <Badge className="bg-red-500 hover:bg-red-600 px-1.5 h-4 min-w-[1.1rem] flex items-center justify-center text-[10px] rounded-full border-none shadow-sm">
-                           {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
-                        </Badge>
-                      )}
+                <DropdownMenuSeparator className="bg-gray-100" />
+                
+                {/* Dynamic Menu Items based on user type */}
+                {user?.type === "doctor" && (
+                  <>
+                    <DropdownMenuItem asChild className="rounded-lg focus:bg-blue-50 focus:text-blue-600 cursor-pointer">
+                      <Link href="/doctor/dashboard" className="flex items-center">
+                        <Calendar className="w-4 h-4 mr-3" />
+                        <span className="font-medium">Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-lg focus:bg-blue-50 focus:text-blue-600 cursor-pointer">
+                      <Link href="/doctor/appointments" className="flex items-center">
+                        <Calendar className="w-4 h-4 mr-3" />
+                        <span className="font-medium">Appointments</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                
+                {user?.type === "patient" && (
+                  <DropdownMenuItem asChild className="rounded-lg focus:bg-blue-50 focus:text-blue-600 cursor-pointer">
+                    <Link href="/patient/dashboard" className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-3" />
+                      <span className="font-medium">My Appointments</span>
                     </Link>
                   </DropdownMenuItem>
-                ) : user?.type === "patient" ? (
-                  <DropdownMenuItem asChild>
-                    <Link href="/chat" className="flex items-center justify-between w-full">
-                      <div className="flex items-center">
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        Chat
-                      </div>
-                      {chatUnreadCount > 0 && (
-                        <Badge className="bg-red-500 hover:bg-red-600 px-1.5 h-4 min-w-[1.1rem] flex items-center justify-center text-[10px] rounded-full border-none shadow-sm">
-                           {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
-                        </Badge>
-                      )}
-                    </Link>
-                  </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={`/${user?.type}/profile`}
-                    className="flex items-center"
-                  >
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
+                )}
+
+                <DropdownMenuItem asChild className="rounded-lg focus:bg-blue-50 focus:text-blue-600 cursor-pointer">
+                  <Link href="/chat" className="flex items-center justify-between w-full">
+                    <div className="flex items-center">
+                      <MessageSquare className="w-4 h-4 mr-3" />
+                      <span className="font-medium">Messages</span>
+                    </div>
+                    {chatUnreadCount > 0 && (
+                      <Badge className="bg-red-500 hover:bg-red-600 px-1.5 h-4 min-w-[1.1rem] flex items-center justify-center text-[10px] rounded-full border-none shadow-sm text-white">
+                         {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                      </Badge>
+                    )}
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={`/${user?.type}/profile`}
-                    className="flex items-center"
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
+
+                <DropdownMenuSeparator className="bg-gray-100" />
+                
+                <DropdownMenuItem asChild className="rounded-lg focus:bg-blue-50 focus:text-blue-600 cursor-pointer">
+                  <Link href={`/${user?.type}/profile`} className="flex items-center">
+                    <User className="w-4 h-4 mr-3" />
+                    <span className="font-medium">Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                       <DropdownMenuSeparator />
+                
+                <DropdownMenuItem asChild className="rounded-lg focus:bg-blue-50 focus:text-blue-600 cursor-pointer">
+                  <Link href={`/${user?.type}/profile`} className="flex items-center">
+                    <Settings className="w-4 h-4 mr-3" />
+                    <span className="font-medium">Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator className="bg-gray-100" />
+                
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="text-red-600"
+                  className="rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                  <LogOut className="w-4 h-4 mr-3" />
+                  <span className="font-medium">Logout</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

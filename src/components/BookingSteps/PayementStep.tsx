@@ -2,14 +2,14 @@ import { userAuthStore } from "@/store/authStore";
 import React, { useEffect, useRef, useState } from "react";
 import { Separator } from "../ui/separator";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle, CreditCard, Loader2, Shield, XCircle, Wallet } from "lucide-react";
-import { Progress } from "../ui/progress";
+import { CheckCircle, CreditCard, Loader2, Shield, XCircle, Wallet, Calendar, Clock, User, ChevronRight, ArrowLeft } from "lucide-react";
 import { Button } from "../ui/button";
 import { useWalletStore } from "@/store/walletStore";
 import { payWithWallet } from "@/actions/wallet-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAppDetection } from "@/hooks/use-app-detection";
+import { cn } from "@/lib/utils";
 
 declare global {
   interface Window {
@@ -69,13 +69,10 @@ const PayementStep = ({
   selectedSlot,
   consultationType,
   doctorName,
-  slotDuration,
   consultationFee,
-  isProcessing,
   onBack,
   onConfirm,
   onPaymentSuccess,
-  loading,
   appointmentId,
   patientName,
   platformFee,
@@ -98,7 +95,6 @@ const PayementStep = ({
     }
   }, [user, fetchWallet]);
 
-  // Load Paystack inline script
   useEffect(() => {
     if (!appointmentId || !patientName) return;
     if (!paystackLoadPromiseRef.current) {
@@ -130,7 +126,6 @@ const PayementStep = ({
         toast.success("Payment successful!", { id: toastId });
         setPaymentStatus('success');
         setPaymentDetails({ amount: totalAmount, currency: 'NGN' });
-        // We do not auto-redirect anymore to allow user to see the success message
       } else {
         throw new Error(res.error || "Wallet payment failed");
       }
@@ -172,7 +167,7 @@ const PayementStep = ({
 
       const paystack = new window.PaystackPop();
       
-      toast.dismiss(toastId); // Dismiss initialization toast
+      toast.dismiss(toastId);
 
       paystack.newTransaction({
         key: publicKey,
@@ -203,7 +198,6 @@ const PayementStep = ({
                   currency: data.data.currency || 'NGN',
                 });
               }
-              // We do not auto-redirect anymore
             } else {
               throw new Error(data?.error || 'Payment verification failed');
             }
@@ -245,171 +239,205 @@ const PayementStep = ({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6">
-      <Card>
-        <CardContent className={isApp ? "p-4" : "p-6"}>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Payment</h2>
-              <p className="text-gray-500">Complete your appointment booking</p>
+    <div className="space-y-10">
+      <AnimatePresence mode="wait">
+        {paymentStatus === "success" ? (
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center py-12 text-center"
+          >
+            <div className="w-24 h-24 bg-green-100 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-lg shadow-green-100">
+              <CheckCircle className="w-12 h-12 text-green-600" />
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Total Amount</p>
-              <p className="text-3xl font-bold text-blue-600">
-                {new Intl.NumberFormat("en-NG", {
-                  style: "currency",
-                  currency: "NGN",
-                }).format(totalAmount)}
-              </p>
-            </div>
-          </div>
-
-          <Separator className="my-6" />
-
-          <div className="bg-gray-50 rounded-lg p-6 mb-8">
-            <h4 className="font-semibold text-gray-900 mb-4">Booking Summary</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Date & Time</span>
-                <span className="font-medium">
-                  {selectedDate?.toLocaleDateString("en-NG", {
-                    timeZone: "Africa/Lagos",
-                    year: "numeric",
-                    month: "short",
-                    day: "2-digit",
-                  })} at {selectedSlot}
-                </span>
+            <h3 className="text-3xl font-black text-gray-900 mb-2">Payment Confirmed!</h3>
+            <p className="text-gray-500 font-medium mb-10 max-w-xs">Your appointment with {doctorName} is successfully booked.</p>
+            
+            <div className="w-full bg-gray-50 rounded-[2rem] p-6 mb-10 border border-gray-100">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Amount Paid</span>
+                <span className="text-xl font-black text-gray-900">₦{totalAmount.toLocaleString()}</span>
               </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600">Consultation Type</span>
-                <span className="font-medium">{consultationType}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600">Doctor</span>
-                <span className="font-medium">{doctorName}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600">Consultation Fee</span>
-                <span className="font-medium">
-                  {new Intl.NumberFormat("en-NG", {
-                    style: "currency",
-                    currency: "NGN",
-                  }).format(consultationFee)}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600">Platform Fee</span>
-                <span className="font-medium">
-                  {new Intl.NumberFormat("en-NG", {
-                    style: "currency",
-                    currency: "NGN",
-                  }).format(platformFee)}
-                </span>
-              </div>
-
-              <Separator className="my-2" />
-
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span className="text-blue-600">
-                  {new Intl.NumberFormat("en-NG", {
-                    style: "currency",
-                    currency: "NGN",
-                  }).format(totalAmount)}
-                </span>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Transaction ID</span>
+                <span className="text-xs font-bold text-gray-600 truncate max-w-[150px]">{appointmentId}</span>
               </div>
             </div>
-          </div>
 
-          <AnimatePresence mode="wait">
-            {paymentStatus === "success" ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-8 text-center"
-              >
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
-                <p className="text-gray-500 mb-6">Your appointment has been confirmed.</p>
-                <Button onClick={handleSuccessClick} className="w-full max-w-sm">
-                  View Appointment Details
-                </Button>
-              </motion.div>
-            ) : (
+            <Button onClick={handleSuccessClick} className="h-14 w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black shadow-xl shadow-blue-200 transition-all active:scale-95">
+              Go to Dashboard
+            </Button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="payment"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-8"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+                <CreditCard className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-gray-900">
+                  Payment
+                </h3>
+                <p className="text-gray-500 text-sm font-medium">Review summary and complete booking</p>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
               <div className="space-y-6">
-                <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div className="bg-gray-50/50 rounded-[2.5rem] p-8 border border-gray-100 shadow-inner">
+                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Booking Summary</h4>
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                        <Calendar className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {selectedDate?.toLocaleDateString("en-NG", {
+                            month: "short",
+                            day: "2-digit",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                        <Clock className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Time Slot</p>
+                        <p className="text-sm font-bold text-gray-900">{selectedSlot}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                        <User className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Doctor</p>
+                        <p className="text-sm font-bold text-gray-900">{doctorName}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator className="my-8 bg-gray-200" />
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 font-medium">Consultation Fee</span>
+                      <span className="text-gray-900 font-black">₦{consultationFee.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 font-medium">Platform Fee</span>
+                      <span className="text-gray-900 font-black">₦{platformFee.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-sm font-black text-gray-900">Total Amount</span>
+                      <span className="text-2xl font-black text-blue-600">₦{totalAmount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-blue-50/50 p-6 rounded-[2rem] border border-blue-100/50 flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-200">
+                    <Shield className="w-5 h-5 text-white" />
+                  </div>
                   <div>
-                    <h4 className="font-medium text-blue-900">Secure Payment</h4>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Choose your preferred payment method.
+                    <h4 className="font-black text-blue-900 text-sm uppercase tracking-wider">Secure Payment</h4>
+                    <p className="text-xs text-blue-700 mt-1 font-medium leading-relaxed">
+                      Your payment is processed through secure encryption. Choose your preferred method below.
                     </p>
                   </div>
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 p-4 rounded-lg flex items-start gap-3">
-                    <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-red-900">Payment Failed</h4>
-                      <p className="text-sm text-red-700 mt-1">{error}</p>
-                    </div>
+                  <div className="bg-red-50 p-4 rounded-2xl flex items-start gap-3 border border-red-100">
+                    <XCircle className="w-5 h-5 text-red-600 shrink-0" />
+                    <p className="text-xs text-red-700 font-bold leading-tight">{error}</p>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-auto py-6 flex flex-col items-center gap-2 hover:bg-blue-50 border-2 hover:border-blue-200"
+                <div className="space-y-4">
+                  <button
                     onClick={handleWalletPayment}
                     disabled={isPaymentLoading}
+                    className={cn(
+                      "w-full group relative overflow-hidden bg-white border-2 rounded-[2rem] p-6 text-left transition-all duration-300 hover:border-blue-600 hover:shadow-xl hover:shadow-blue-100",
+                      isPaymentLoading ? "opacity-50 cursor-not-allowed" : ""
+                    )}
                   >
-                    <Wallet className="w-8 h-8 text-blue-600" />
-                    <span className="font-semibold text-gray-900">Pay with Wallet</span>
-                    <span className="text-xs text-gray-500">
-                      Balance: {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(balance)}
-                    </span>
-                  </Button>
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                        <Wallet className="w-7 h-7" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-black text-gray-900 text-lg">Pay with Wallet</p>
+                        <p className="text-xs text-gray-500 font-medium">Balance: ₦{balance.toLocaleString()}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </button>
 
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-auto py-6 flex flex-col items-center gap-2 hover:bg-blue-50 border-2 hover:border-blue-200"
+                  <button
                     onClick={handlePaystackPayment}
                     disabled={isPaymentLoading}
+                    className={cn(
+                      "w-full group relative overflow-hidden bg-white border-2 rounded-[2rem] p-6 text-left transition-all duration-300 hover:border-blue-600 hover:shadow-xl hover:shadow-blue-100",
+                      isPaymentLoading ? "opacity-50 cursor-not-allowed" : ""
+                    )}
                   >
-                    <CreditCard className="w-8 h-8 text-blue-600" />
-                    <span className="font-semibold text-gray-900">Pay with Card</span>
-                    <span className="text-xs text-gray-500">Secured by Paystack</span>
-                  </Button>
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                        <CreditCard className="w-7 h-7" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-black text-gray-900 text-lg">Pay with Card</p>
+                        <p className="text-xs text-gray-500 font-medium">Secured by Paystack</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </button>
                 </div>
                 
                 {isPaymentLoading && (
-                  <div className="text-center py-4">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600" />
-                    <p className="text-sm text-gray-500 mt-2">Processing payment...</p>
+                  <div className="flex items-center justify-center gap-3 py-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                    <p className="text-sm font-black text-gray-400 uppercase tracking-widest">Processing...</p>
                   </div>
                 )}
-
-                <div className="flex justify-between items-center pt-4">
-                  <Button variant="ghost" onClick={onBack} disabled={isPaymentLoading}>
-                    Back
-                  </Button>
-                </div>
               </div>
-            )}
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+            </div>
+
+            <div className="flex items-center pt-6 border-t border-gray-100">
+              <Button
+                variant="ghost"
+                onClick={onBack}
+                disabled={isPaymentLoading}
+                className="h-14 px-8 rounded-2xl font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all flex items-center gap-2"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back</span>
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 export default PayementStep;
+

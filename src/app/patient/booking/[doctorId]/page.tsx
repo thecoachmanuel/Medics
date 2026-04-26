@@ -16,6 +16,8 @@ import CalendarStep from "@/components/BookingSteps/CalendarStep";
 import ConsultationStep from "@/components/BookingSteps/ConsultationStep";
 import PayementStep from "@/components/BookingSteps/PayementStep";
 import { toast } from "sonner";
+import Header from "@/components/landing/Header";
+import { cn } from "@/lib/utils";
 
 const page = () => {
   const isApp = useAppDetection();
@@ -277,88 +279,96 @@ const page = () => {
   console.log("this is my current doctor", currentDoctor);
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 ${isApp ? 'pt-4' : ''}`}>
-      <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {!isApp && (
-                <Link href="/doctor-list">
-                  <Button variant="ghost" size="sm" className="text-gray-600">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Doctors
-                  </Button>
-                </Link>
-              )}
-              <div className="h-6 w-px bg-gray-200"></div>
-              <div>
-                <h1 className="text-sm md:text-2xl font-bold text-gray-900">
-                  Book Appointment
-                </h1>
-                <p className="text-xs md:text-sm text-gray-600">
-                  with {currentDoctor.name}
-                </p>
+    <div className={cn(
+      "min-h-screen bg-[#F8FAFC]",
+      isApp ? "pt-6" : "pt-24",
+      "pb-24"
+    )}>
+      <Header />
+      
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <div className="flex items-center space-x-5">
+            {!isApp && (
+              <Link href="/doctor-list">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-14 w-14 rounded-[2rem] bg-white shadow-xl shadow-blue-100/50 border border-gray-100 hover:bg-gray-50 text-gray-600 transition-all active:scale-95 group"
+                >
+                  <ArrowLeft className="w-6 h-6 transition-transform group-hover:-translate-x-1" />
+                </Button>
+              </Link>
+            )}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-1.5 w-6 bg-blue-600 rounded-full" />
+                <span className="text-xs font-black text-blue-600 uppercase tracking-[0.2em]">Booking Portal</span>
               </div>
+              <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
+                Book Appointment
+              </h1>
+              <p className="text-gray-500 font-medium mt-1">
+                Complete the steps to confirm your visit
+              </p>
             </div>
+          </div>
 
-            {/* Process Indicator */}
-
-            <div className="hidden md:flex items-center space-x-4">
-              {[1, 2, 3].map((step) => (
-                <React.Fragment key={step}>
+          {/* Process Indicator */}
+          <div className="flex items-center bg-white p-2.5 rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-blue-100/20 w-fit">
+            {[1, 2, 3].map((step) => (
+              <React.Fragment key={step}>
+                <div
+                  className={cn(
+                    "flex items-center gap-3 px-5 py-3 rounded-[1.5rem] transition-all duration-500",
+                    currentStep === step ? "bg-blue-600 text-white shadow-xl shadow-blue-200" : 
+                    currentStep > step ? "text-blue-600 bg-blue-50/50" : "text-gray-400"
+                  )}
+                >
                   <div
-                    className={`flex items-center space-x-2 ${
-                      currentStep >= step ? "text-blue-600" : "text-gray-400"
-                    }`}
+                    className={cn(
+                      "w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm transition-all duration-500",
+                      currentStep === step ? "bg-white/20 scale-110" : 
+                      currentStep > step ? "bg-blue-100/50" : "bg-gray-100"
+                    )}
                   >
-                    <div
-                      className={`w-8 h-8 rounded-full border-2 ${
-                        currentStep >= step
-                          ? "bg-blue-600 border-blue-600 "
-                          : "border-gray-200"
-                      } flex items-center justify-center`}
-                    >
-                      {currentStep > step ? (
-                        <Check className="w-4 h-4 text-white" />
-                      ) : (
-                        <span className="text-sm font-semibold text-white">
-                          {step}
-                        </span>
-                      )}
-                    </div>
-
-                    <span className="text-sm font-medium">
-                      {step === 1
-                        ? "Select Time"
-                        : step === 2
-                        ? "Details"
-                        : "Payment"}
-                    </span>
+                    {currentStep > step ? (
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    ) : (
+                      <span>{step}</span>
+                    )}
                   </div>
-                  {step < 3 && <div className="w-12 h-px bg-gray-300"></div>}
-                </React.Fragment>
-              ))}
-            </div>
+
+                  <span className={cn(
+                    "text-xs font-black uppercase tracking-[0.1em] transition-all duration-500",
+                    currentStep === step ? "opacity-100 translate-x-0" : 
+                    currentStep > step ? "opacity-100" : "hidden sm:inline opacity-40"
+                  )}>
+                    {step === 1 ? "Schedule" : step === 2 ? "Consultation" : "Payment"}
+                  </span>
+                </div>
+                {step < 3 && <div className="w-3" />}
+              </React.Fragment>
+            ))}
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          <aside className="lg:col-span-4 order-2 lg:order-1">
             <DoctorProfile doctor={currentDoctor} />
-          </div>
+          </aside>
 
-          <div className="lg:col-span-2">
-            <Card className="shadow-lg border-0">
-              <CardContent className="p-8">
+          <main className="lg:col-span-8 order-1 lg:order-2">
+            <Card className="shadow-[0_32px_64px_-16px_rgba(0,0,0,0.05)] border-none rounded-[3.5rem] overflow-hidden bg-white ring-1 ring-gray-100">
+              <CardContent className="p-8 md:p-14">
                 <AnimatePresence mode="wait">
                   {currentStep === 1 && (
                     <motion.div
                       key="step1"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
                     >
                       <CalendarStep
                        selectedDate={selectedDate}
@@ -370,7 +380,6 @@ const page = () => {
                        excludedWeekdays={currentDoctor?.availabilityRange?.excludedWeekdays || []}
                        bookedSlots={bookedSlots}
                        onContinue={() => setCurrentStep(2)}
-                      
                       />
                     </motion.div>
                   )}
@@ -378,9 +387,10 @@ const page = () => {
                   {currentStep === 2 && (
                     <motion.div
                       key="step2"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
                     >
                       <ConsultationStep 
                        doctorId={doctorId}
@@ -405,9 +415,10 @@ const page = () => {
                   {currentStep === 3 && (
                     <motion.div
                       key="step3"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
                     >
                       <PayementStep 
                       selectedDate={selectedDate}
@@ -430,7 +441,7 @@ const page = () => {
                 </AnimatePresence>
               </CardContent>
             </Card>
-          </div>
+          </main>
         </div>
       </div>
     </div>
