@@ -281,18 +281,33 @@ const DoctorAppointmentContent = () => {
   );
 
   const EmptyState = ({ tab }: { tab: string }) => {
+    const emptyStatesData = {
+      upcoming: {
+        icon: Clock,
+        title: "No Upcoming Appointments",
+        description: "You have no upcoming consultations scheduled at the moment.",
+      },
+      completed: {
+        icon: FileText,
+        title: "No Completed Appointments",
+        description: "Your finished consultations will appear here once you complete them.",
+      },
+    };
 
-
-    const state = emptyStates[tab as keyof typeof emptyStates];
+    const state = emptyStatesData[tab as keyof typeof emptyStatesData] || emptyStatesData.upcoming;
     const Icon = state.icon;
     return (
-      <Card>
+      <Card className="border-dashed border-2 bg-gray-50/50">
         <CardContent className="p-12 text-center">
-          <Icon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Icon className="w-10 h-10 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
             {state.title}
           </h3>
-          <p className="text-gray-600 mb-6">{state.description}</p>
+          <p className="text-gray-500 max-w-xs mx-auto mb-4">
+            {state.description}
+          </p>
         </CardContent>
       </Card>
     );
