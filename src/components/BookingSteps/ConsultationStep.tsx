@@ -6,19 +6,20 @@ import { Badge } from "../ui/badge";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 
-interface ConsultationStepInterface {
+interface ConsultationStepProps {
+  doctorId: string;
   consultationType: string;
   setConsultationType: (type: string) => void;
   symptoms: string;
   setSymptoms: (symptoms: string) => void;
   doctorFees: number;
   onBack: () => void;
-  onContinue: () => void;
-  isLoading?: boolean;
-  voiceDiscount?: { type: 'flat' | 'percentage', value: number } | null;
-  messagingDiscount?: { type: 'flat' | 'percentage', value: number } | null;
+  onContinue: () => Promise<boolean>;
+  isLoading: boolean;
 }
+
 const ConsultationStep = ({
+  doctorId,
   consultationType,
   setConsultationType,
   symptoms,
@@ -26,35 +27,21 @@ const ConsultationStep = ({
   doctorFees,
   onBack,
   onContinue,
-  isLoading = false,
-  voiceDiscount,
-  messagingDiscount,
-}: ConsultationStepInterface) => {
+  isLoading,
+}: ConsultationStepProps) => {
   const getConsultationPrice = (selectedType = consultationType) => {
     const basePrice = doctorFees || 0;
 
     if (selectedType === "Voice Call") {
-      const type = voiceDiscount?.type || 'percentage';
-      const value = voiceDiscount?.value ?? 30;
-      
-      if (type === 'flat') {
-        return Math.max(0, basePrice - value);
-      } else {
-        const discount = Math.round((basePrice * value) / 100);
-        return Math.max(0, basePrice - discount);
-      }
+      // Force 30% discount as per user requirement
+      const discount = Math.round((basePrice * 30) / 100);
+      return Math.max(0, basePrice - discount);
     }
 
     if (selectedType === "Messaging") {
-      const type = messagingDiscount?.type || 'percentage';
-      const value = messagingDiscount?.value ?? 50;
-      
-      if (type === 'flat') {
-        return Math.max(0, basePrice - value);
-      } else {
-        const discount = Math.round((basePrice * value) / 100);
-        return Math.max(0, basePrice - discount);
-      }
+      // Force 50% discount as per user requirement
+      const discount = Math.round((basePrice * 50) / 100);
+      return Math.max(0, basePrice - discount);
     }
 
     return basePrice;

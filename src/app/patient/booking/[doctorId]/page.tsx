@@ -39,26 +39,14 @@ const page = () => {
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [createdAppointmentId,setCreatedAppointmentId] = useState<string | null>(null)
-  const [voiceDiscount, setVoiceDiscount] = useState<{ type: 'flat' | 'percentage', value: number } | null>({ type: 'percentage', value: 30 });
-  const [messagingDiscount, setMessagingDiscount] = useState<{ type: 'flat' | 'percentage', value: number } | null>({ type: 'percentage', value: 50 });
   const { user } = userAuthStore();
   const patientName = user?.name || user?.email || "Patient";
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/admin/billing-settings', { cache: 'no-store' });
-        const data = await res.json();
-        if (data?.config) {
-            setVoiceDiscount({
-                type: data.config.voiceCallDiscountType || 'percentage',
-                value: Number(data.config.voiceCallDiscountValue ?? 30)
-            });
-            setMessagingDiscount({
-                type: data.config.messagingDiscountType || 'percentage',
-                value: Number(data.config.messagingDiscountValue ?? 50)
-            });
-        }
+        await fetch('/api/admin/billing-settings', { cache: 'no-store' });
+        // Settings are now handled directly in getConsultationPrice for specific discounts
       } catch (e) {
         // ignore
       }
@@ -256,27 +244,15 @@ const page = () => {
     const basePrice = currentDoctor?.fees || 0;
     
     if (consultationType === "Voice Call") {
-        const type = voiceDiscount?.type || 'percentage';
-        const value = voiceDiscount?.value ?? 30;
-        
-        if (type === 'flat') {
-            return Math.max(0, basePrice - value);
-        } else {
-            const discount = Math.round((basePrice * value) / 100);
-            return Math.max(0, basePrice - discount);
-        }
+        // Force 30% discount as per user requirement
+        const discount = Math.round((basePrice * 30) / 100);
+        return Math.max(0, basePrice - discount);
     }
     
     if (consultationType === "Messaging") {
-        const type = messagingDiscount?.type || 'percentage';
-        const value = messagingDiscount?.value ?? 50;
-        
-        if (type === 'flat') {
-            return Math.max(0, basePrice - value);
-        } else {
-            const discount = Math.round((basePrice * value) / 100);
-            return Math.max(0, basePrice - discount);
-        }
+        // Force 50% discount as per user requirement
+        const discount = Math.round((basePrice * 50) / 100);
+        return Math.max(0, basePrice - discount);
     }
     
     return basePrice;
@@ -407,13 +383,12 @@ const page = () => {
                       exit={{ opacity: 0, x: -20 }}
                     >
                       <ConsultationStep 
+                       doctorId={doctorId}
                        consultationType={consultationType}
                        setConsultationType={setConsultationType}
                        setSymptoms={setSymptoms}
                        symptoms={symptoms}
-                       doctorFees={currentDoctor?.fees}
-                       voiceDiscount={voiceDiscount}
-                       messagingDiscount={messagingDiscount}
+                       doctorFees={currentDoctor?.fees || 0}
                        onBack={() => setCurrentStep(1)}
                        isLoading={isPaymentProcessing}
                        onContinue={async () => {
@@ -421,6 +396,7 @@ const page = () => {
                          if (success) {
                            setCurrentStep(3);
                          }
+                         return success;
                        }}
                       />
                     </motion.div>
