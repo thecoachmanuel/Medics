@@ -19,6 +19,7 @@ import { useWalletStore } from "@/store/walletStore";
 import { userAuthStore } from "@/store/authStore";
 import { fundWallet } from "@/actions/wallet-actions";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 declare global {
   interface Window {
