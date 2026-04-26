@@ -82,7 +82,7 @@ const DoctorAppointmentContent = () => {
       try {
          await updateAppointmentStatus(appointmentId,'Cancelled')
          if(user?.type === 'doctor') {
-          fetchAppointments('doctor', activeTab);
+          fetchAppointments('doctor');
          }
       } catch (error) {
          console.error('Failed to mark cancel appointment',error)

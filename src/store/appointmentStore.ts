@@ -76,7 +76,6 @@ interface AppointmentState {
   //Api Actions
   fetchAppointments: (
     role: "doctor" | "patient",
-    tab?: string,
     filters?: AppointmentFilters
   ) => Promise<void>;
   fetchBookedSlots: (doctorId: string, date: string) => Promise<void>;
@@ -138,7 +137,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
     set({ subscription: channel });
   },
 
-  fetchAppointments: async (role, tab = "", filters = {}) => {
+  fetchAppointments: async (role, filters = {}) => {
     set({ loading: true, error: null });
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -151,11 +150,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
       } else {
         query = query.eq('patient_id', uid);
       }
-      if (tab === 'upcoming') {
-        query = query.in('status', ['Scheduled','In Progress']);
-      } else if (tab === 'past') {
-        query = query.in('status', ['Completed','Cancelled']);
-      }
+      
       if (filters.from) query = query.gte('slot_start_iso', filters.from);
       if (filters.to) query = query.lte('slot_start_iso', filters.to);
       if (filters.status) query = Array.isArray(filters.status) ? query.in('status', filters.status as string[]) : query.eq('status', filters.status as string);
