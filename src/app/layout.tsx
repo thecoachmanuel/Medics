@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { NativeTopBar } from "@/components/layout/NativeTopBar";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,20 @@ export default function RootLayout({
               {children}
               <MobileBottomNav />
         </Providers>
+        <Script id="webview-permission-shim" strategy="afterInteractive">
+          {`
+            (function() {
+              if (navigator.userAgent.includes('wv') || navigator.userAgent.includes('Android')) {
+                // Pre-request permissions to trigger OS dialogs early
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                  navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+                    .then(function(s) { s.getTracks().forEach(t => t.stop()); })
+                    .catch(function(e) { console.log('Early perm check:', e); });
+                }
+              }
+            })();
+          `}
+        </Script>
       </body>
     </html>
   );

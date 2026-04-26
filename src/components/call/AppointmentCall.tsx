@@ -119,18 +119,52 @@ function LobbyUI({
   const { useMicrophoneState, useCameraState } = useCallStateHooks();
   const { isEnabled: isMicEnabled, microphone } = useMicrophoneState();
   const { isEnabled: isCamEnabled, camera } = useCameraState();
+  const [permError, setPermError] = useState<string | null>(null);
 
   useEffect(() => {
     const initDevices = async () => {
       try {
         await camera.enable();
         await microphone.enable();
-      } catch (err) {
+      } catch (err: any) {
         console.warn("Failed to enable devices in lobby", err);
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+           setPermError("Camera or Microphone access was denied. If you are using the mobile app, please ensure you've granted permissions in your phone settings.");
+        } else {
+           setPermError(err.message || "Could not access media devices.");
+        }
       }
     };
     initDevices();
   }, [camera, microphone]);
+
+  const toggleMic = async () => {
+    try {
+      if (!isMicEnabled) {
+        await microphone.enable();
+      } else {
+        await microphone.disable();
+      }
+      setPermError(null);
+    } catch (err: any) {
+      console.warn("Mic toggle error:", err);
+      setPermError("Could not access microphone. Please check app permissions.");
+    }
+  };
+
+  const toggleCamera = async () => {
+    try {
+      if (!isCamEnabled) {
+        await camera.enable();
+      } else {
+        await camera.disable();
+      }
+      setPermError(null);
+    } catch (err: any) {
+      console.warn("Camera toggle error:", err);
+      setPermError("Could not access camera. Please check app permissions.");
+    }
+  };
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-950 p-4 text-white">
@@ -146,11 +180,12 @@ function LobbyUI({
              <div className="absolute inset-0">
                 <VideoPreview />
              </div>
-             {!isCamEnabled && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10">
+             {(!isCamEnabled || permError) && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10 p-4 text-center">
                    <div className="text-slate-500 font-medium flex flex-col items-center gap-2">
-                      <VideoOff className="h-8 w-8" />
-                      <span>Camera Off</span>
+                      <VideoOff className="h-8 w-8 text-red-400" />
+                      <span className="text-red-400 font-semibold">Media Blocked</span>
+                      {permError && <p className="text-xs text-slate-400 mt-2">{permError}</p>}
                    </div>
                 </div>
              )}
@@ -161,7 +196,7 @@ function LobbyUI({
             variant={isMicEnabled ? "secondary" : "destructive"}
             size="icon"
             className="h-12 w-12 rounded-full"
-            onClick={() => microphone.toggle()}
+            onClick={toggleMic}
           >
             {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
           </Button>
@@ -169,7 +204,7 @@ function LobbyUI({
             variant={isCamEnabled ? "secondary" : "destructive"}
             size="icon"
             className="h-12 w-12 rounded-full"
-            onClick={() => camera.toggle()}
+            onClick={toggleCamera}
           >
             {isCamEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
           </Button>
@@ -178,7 +213,7 @@ function LobbyUI({
         <Button
           className="w-full text-lg bg-emerald-600 hover:bg-emerald-700 h-12"
           onClick={onJoin}
-          disabled={joining}
+          disabled={joining || !!permError}
         >
           {joining ? (
             <>
