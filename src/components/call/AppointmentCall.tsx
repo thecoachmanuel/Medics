@@ -120,12 +120,15 @@ function LobbyUI({
   const { isEnabled: isMicEnabled, microphone } = useMicrophoneState();
   const { isEnabled: isCamEnabled, camera } = useCameraState();
   const [permError, setPermError] = useState<string | null>(null);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
     const initDevices = async () => {
       try {
+        setInitializing(true);
         await camera.enable();
         await microphone.enable();
+        setPermError(null);
       } catch (err: any) {
         console.warn("Failed to enable devices in lobby", err);
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -133,6 +136,8 @@ function LobbyUI({
         } else {
            setPermError(err.message || "Could not access media devices.");
         }
+      } finally {
+        setInitializing(false);
       }
     };
     initDevices();
@@ -180,7 +185,13 @@ function LobbyUI({
              <div className="absolute inset-0">
                 <VideoPreview />
              </div>
-             {(!isCamEnabled || permError) && (
+             {initializing && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-20">
+                   <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+                   <p className="text-xs text-slate-400 mt-2">Initializing hardware...</p>
+                </div>
+             )}
+             {(!isCamEnabled && !initializing || permError) && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10 p-4 text-center">
                    <div className="text-slate-500 font-medium flex flex-col items-center gap-2">
                       <VideoOff className="h-8 w-8 text-red-400" />

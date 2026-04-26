@@ -51,13 +51,19 @@ export default function RootLayout({
         <Script id="webview-permission-shim" strategy="afterInteractive">
           {`
             (function() {
+              // 1. Spoof User Agent to look like a full Chrome browser
+              // This prevents WebRTC libraries from blocking the WebView
               if (navigator.userAgent.includes('wv') || navigator.userAgent.includes('Android')) {
-                // Pre-request permissions to trigger OS dialogs early
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                  navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-                    .then(function(s) { s.getTracks().forEach(t => t.stop()); })
-                    .catch(function(e) { console.log('Early perm check:', e); });
-                }
+                Object.defineProperty(navigator, 'userAgent', {
+                  get: function () { return 'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'; }
+                });
+              }
+
+              // 2. Pre-request permissions to trigger OS dialogs early
+              if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+                  .then(function(s) { s.getTracks().forEach(t => t.stop()); })
+                  .catch(function(e) { console.log('Early perm check:', e); });
               }
             })();
           `}
