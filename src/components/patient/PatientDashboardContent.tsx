@@ -11,7 +11,6 @@ import { Calendar, Clock, CreditCard, FileText, MapPin, Phone, Star, Video, Mess
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
-import { cn } from "@/lib/utils";
 import { getStatusColor } from "@/lib/constant";
 import { formatDateTimeNG } from "@/lib/datetime";
 import { WalletCard } from "./WalletCard";
@@ -200,180 +199,210 @@ const PatientDashboardContentInner = () => {
     };
 
     return (
-      <Card className="hover:shadow-lg transition-all duration-300 border-none bg-white overflow-hidden group">
-        <CardContent className="p-0">
-          <div className="flex flex-col md:flex-row">
-            {/* Status Strip */}
-            <div className={cn(
-              "h-1.5 md:h-auto md:w-1.5",
-              appointment.status === "Scheduled" ? "bg-blue-500" : 
-              appointment.status === "Completed" ? "bg-green-500" : 
-              appointment.status === "Cancelled" ? "bg-red-500" : "bg-gray-300"
-            )} />
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex flex-col items-center md:flex-row md:items-start md:space-x-6">
+          <div className="flex-shrink-0 flex justify-center md:justify-start">
+            <Avatar className="w-20 h-20">
+              <AvatarImage
+                src={appointment.doctorId?.profileImage}
+                alt={appointment.doctorId?.name}
+              />
+              <AvatarFallback className="bg-blue-100 text-blue-600 text-lg font-semibold">
+                {appointment.doctorId?.name?.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          </div>
 
-            <div className="p-4 md:p-6 flex flex-col md:flex-row md:items-start md:space-x-6 flex-1">
-              <div className="flex-shrink-0 flex justify-between md:justify-start items-start md:items-center">
-                <div className="relative">
-                  <Avatar className="w-16 h-16 md:w-20 md:h-20 border-2 border-white shadow-md">
-                    <AvatarImage
-                      src={appointment.doctorId?.profileImage}
-                      alt={appointment.doctorId?.name}
-                    />
-                    <AvatarFallback className="bg-blue-50 text-blue-600 text-lg font-semibold">
-                      {appointment.doctorId?.name?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  {isToday(appointment.slotStartIso) && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-                  )}
-                </div>
-
-                <div className="md:hidden flex flex-col items-end gap-1">
-                  <Badge className={cn("rounded-full font-medium px-3", getStatusColor(appointment.status))}>
-                    {appointment.status}
-                  </Badge>
-                  {isToday(appointment.slotStartIso) && (
-                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Today</span>
-                  )}
-                </div>
+          <div className="mt-4 md:mt-0 flex-1 w-full text-center md:text-left">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start">
+              <div>
+                <h3 className="text-lg font-semiboldtext-gray-900">
+                  {appointment.doctorId?.name}
+                </h3>
+                <p className="text-gray-600">
+                  {appointment.doctorId?.specialization}
+                </p>
+                
               </div>
 
-              <div className="mt-4 md:mt-0 flex-1 w-full">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-start">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {appointment.doctorId?.name}
-                    </h3>
-                    <p className="text-sm font-medium text-gray-500">
-                      {appointment.doctorId?.specialization}
-                    </p>
-                  </div>
-
-                  <div className="hidden md:flex flex-col items-end gap-2">
-                    <Badge className={cn("rounded-full font-medium px-4 py-1", getStatusColor(appointment.status))}>
-                      {appointment.status}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-2xl">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-white rounded-xl shadow-sm">
-                      <Calendar className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Date</span>
-                      <span className="text-xs font-bold text-gray-700 truncate">{formatDate(appointment.slotStartIso)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-white rounded-xl shadow-sm">
-                      {appointment.consultationType === "Video Consultation" ? (
-                        <Video className="w-4 h-4 text-purple-600" />
-                      ) : appointment.consultationType === "Messaging" ? (
-                        <MessageSquare className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Phone className="w-4 h-4 text-orange-600" />
-                      )}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Type</span>
-                      <span className="text-xs font-bold text-gray-700">{appointment.consultationType === "Video Consultation" ? "Video Call" : appointment.consultationType}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-bold text-gray-900">₦{(appointment.paidAmount ?? appointment.fees ?? 0).toLocaleString()}</span>
-                    {appointment.paymentStatus === 'success' && (
-                      <span className="flex items-center text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                        <CreditCard className="w-3 h-3 mr-1" />
-                        PAID
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    {canJoinCall(appointment) && (
-                      <Link href={appointment.consultationType === 'Messaging' ? `/chat/${appointment._id}` : `/call/${appointment._id}`}>
-                        <Button
-                          size='sm'
-                          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold px-4 h-9 shadow-lg shadow-blue-100 transition-all active:scale-95"
-                        >
-                          {appointment.consultationType === 'Messaging' ? 'Open Chat' : 'Join Call'}
-                        </Button>
-                      </Link>
-                    )}
-
-                    {appointment.status === 'Completed' && appointment.prescription && (
-                      <PrescriptionViewModal
-                        appointment={appointment}
-                        userType="patient"
-                        trigger={
-                          <Button
-                            variant='outline'
-                            size='sm'
-                            className="text-green-600 border-green-100 bg-green-50 hover:bg-green-100 rounded-xl font-bold px-4 h-9"
-                          >
-                            Prescription
-                          </Button>
-                        }
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {appointment.status === 'Completed' && appointment.paymentStatus === 'success' && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-1">
-                        {[...Array(5)].map((_, i) => {
-                          const value = i + 1;
-                          const filled = localRating !== undefined ? value <= localRating : false;
-                          return (
-                            <button
-                              key={value}
-                              type="button"
-                              disabled={savingRating || reviewLocked}
-                              onClick={() => handleRate(value)}
-                              className={cn(
-                                "focus:outline-none transition-transform active:scale-125",
-                                reviewLocked ? "cursor-default" : "cursor-pointer"
-                              )}
-                            >
-                              <Star
-                                className={cn(
-                                  "w-4 h-4",
-                                  filled ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'
-                                )}
-                              />
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {!reviewLocked && localRating !== undefined && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs text-blue-600 font-bold hover:bg-blue-50"
-                          disabled={savingRating}
-                          onClick={handleSaveReview}
-                        >
-                          {savingRating ? '...' : 'Submit'}
-                        </Button>
-                      )}
-                    </div>
+              <div className="mt-2 md:mt-0 text-center md:text-right">
+                <Badge className={getStatusColor(appointment.status)}>
+                  {appointment.status}
+                </Badge>
+                {isToday(appointment.slotStartIso) && (
+                  <div className="text-xs text-blue-600 font-semibold mt-1">
+                    TODAY
                   </div>
                 )}
               </div>
             </div>
+
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-center md:justify-start space-x-2 text-sm text-gray-600">
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatDate(appointment.slotStartIso)}</span>
+                </div>
+
+                <div className="flex items-center justify-center md:justify-start space-x-2 text-sm text-gray-600">
+                  {appointment.consultationType === "Video Consultation" ? (
+                    <Video className="w-4 h-4" />
+                  ) : appointment.consultationType === "Messaging" ? (
+                    <MessageSquare className="w-4 h-4" />
+                  ) : (
+                    <Phone className="w-4 h-4" />
+                  )}
+                  <span>{appointment.consultationType}</span>
+                </div>
+              </div>
+
+              <div className="text-center md:text-left">
+                <div className="flex justify-center gap-2 text-sm text-gray-600">
+                  <span className="font-semibold">Fee:</span>
+                  <p>
+                    ₦
+                    {appointment.paidAmount ?? appointment.fees ?? ""}
+                  </p>
+                </div>
+                {appointment.paymentStatus === 'success' && (
+                  <div className="mt-1">
+                    <Badge className="bg-green-100 text-green-700 border border-green-200">Paid</Badge>
+                  </div>
+                )}
+
+                {appointment.symptoms && (
+                  <div className="flex justify-center gap-2 text-sm text-gray-600 mt-1">
+                    <span className="font-semibold">Symptoms</span>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                      {appointment.symptoms}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col md:flex-row items-center md:justify-between space-y-3 md:space-y-0">
+
+            <div className="flex space-x-2">
+              {canJoinCall(appointment) && (
+                <Link href={appointment.consultationType === 'Messaging' ? `/chat/${appointment._id}` : `/call/${appointment._id}`}>
+                <Button
+                 size='sm'
+                 className="bg-blue-600 hover:bg-blue-700 rounded-full font-medium px-6"
+                >
+                  {appointment.consultationType === 'Messaging' ? <MessageSquare className="w-4 h-4 mr-2"/> : <Video className="w-4 h-4 mr-2"/>}
+                  {appointment.consultationType === 'Messaging' ? 'Open Chat' : 'Join Call'}
+                  </Button></Link>
+              )}
+
+                  {appointment.status === 'Completed' && appointment.prescription && (
+                    <PrescriptionViewModal
+                     appointment={appointment}
+                     userType="patient"
+                     trigger={
+                      <Button
+                       variant='outline'
+                       size='sm'
+                       className="text-green-700 border-green-200 hover:bg-green-50"
+                      >
+                        <FileText className="w-4 h-4 mr-2"/>
+                        View Prescription
+                      </Button>
+                     }
+                    />
+                  )}
+
+
+
+            </div>
+
+            {appointment.status === 'Completed' && appointment.paymentStatus === 'success' && (
+              <div className="mt-3 w-full">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center space-x-1">
+                    {[...Array(5)].map((_, i) => {
+                      const value = i + 1;
+                      const filled = localRating !== undefined ? value <= localRating : false;
+
+                      if (reviewLocked) {
+                        return (
+                          <Star
+                            key={value}
+                            className={
+                              filled
+                                ? 'w-4 h-4 fill-yellow-400 text-yellow-400'
+                                : 'w-4 h-4 text-gray-300'
+                            }
+                          />
+                        );
+                      }
+
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          disabled={savingRating}
+                          onClick={() => handleRate(value)}
+                          className="focus:outline-none"
+                        >
+                          <Star
+                            className={
+                              filled
+                                ? 'w-4 h-4 fill-yellow-400 text-yellow-400'
+                                : 'w-4 h-4 text-gray-300'
+                            }
+                          />
+                        </button>
+                      );
+                    })}
+                    <span className="ml-2 text-xs text-gray-500">
+                      {localRating !== undefined ? `${localRating.toFixed(1)} / 5` : 'Tap to rate your doctor'}
+                    </span>
+                  </div>
+
+                  {reviewLocked && (
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge className="bg-green-100 text-green-700 border border-green-200">Review submitted</Badge>
+                      {appointment.reviewCreatedAt && (
+                        <span className="text-xs text-gray-500">Reviewed on {formatDateTimeNG(appointment.reviewCreatedAt)}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0 w-full">
+                  <Textarea
+                    value={comment}
+                    onChange={(e) => {
+                      if (reviewLocked) return;
+                      setComment(e.target.value);
+                    }}
+                    placeholder="Share your experience with this doctor (optional)"
+                    className="text-sm"
+                    rows={2}
+                    readOnly={reviewLocked}
+                    disabled={savingRating}
+                  />
+
+                  {!reviewLocked && (
+                    <Button
+                      size="sm"
+                      disabled={savingRating || localRating === undefined}
+                      onClick={handleSaveReview}
+                    >
+                      {savingRating ? 'Saving...' : 'Save Review'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    );
-  };
+        </div>
+      </CardContent>
+    </Card>
+  )};
 
   const EmptyState = ({ tab }: { tab: string }) => {
     const emptyStatesData = {
@@ -423,62 +452,86 @@ const PatientDashboardContentInner = () => {
     <>
       <Header showDashboardNav={true} />
 
-      <div className={`min-h-screen bg-gray-50/50 ${isApp ? 'pt-6' : 'pt-24'} pb-24`}>
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+      <div className={`min-h-screen bg-gray-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight">
-                My Appointments
+              <h1 className="text-md md:text-3xl font-bold text-gray-900">
+                My Appointment
               </h1>
-              <p className="text-sm md:text-lg text-gray-500 font-medium mt-1">
-                Manage your healthcare journey
+              <p className="text-xs md:text-lg text-gray-600">
+                Manage your healthcare appointments
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Link href="/doctor-list" className="flex-1 md:flex-none">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 h-12 font-bold shadow-lg shadow-blue-100 transition-all active:scale-95">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Book Appointment
-                </Button>
-              </Link>
-              <Link href="/patient/payments" className="md:hidden">
-                <Button variant="outline" className="w-12 h-12 rounded-2xl border-gray-200 p-0">
-                  <CreditCard className="w-5 h-5 text-gray-600" />
-                </Button>
-              </Link>
-            </div>
+          <div className="flex items-center space-x-4 ">
+            <Link href="/doctor-list">
+              <Button>
+                <Calendar className="w-4 h-4 mr-2 " />
+                Book <span className="hidden md:block">New Appointment</span>
+              </Button>
+            </Link>
+            <Link href="/patient/payments" className="md:hidden">
+              <Button variant="outline">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Payments
+              </Button>
+            </Link>
+          </div>
           </div>
 
-          <div className="mb-10">
+          <div className="mb-8">
             <WalletCard />
           </div>
 
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            className="space-y-8"
+            className="space-y-6"
           >
-            {/* ... error handling ... */}
+            {appointmentError && (
+              <Card className="border border-red-200 bg-red-50/70">
+                <CardContent className="p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-red-900">Something went wrong</div>
+                    <div className="text-sm text-red-800">{appointmentError}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        clearAppointmentError();
+                        fetchAppointments("patient");
+                      }}
+                    >
+                      Retry
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => clearAppointmentError()}>
+                      Dismiss
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            <TabsList className="inline-flex w-full md:w-auto bg-gray-100/80 backdrop-blur-sm p-1.5 rounded-2xl border border-gray-200/50">
+            {isRefreshing && (
+              <div className="text-xs text-gray-500">Refreshing…</div>
+            )}
+
+            <TabsList className="flex w-full space-x-2 bg-gray-100 p-1.5 rounded-full border border-gray-200 shadow-inner">
               <TabsTrigger
                 value="upcoming"
-                className="flex-1 md:px-8 rounded-xl py-2.5 text-sm font-bold transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=inactive]:text-gray-500"
+                className="flex-1 rounded-full py-2.5 text-sm font-semibold transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:bg-gray-200"
               >
-                Upcoming
-                <Badge className="ml-2 bg-blue-100 text-blue-600 hover:bg-blue-100 border-none px-2 h-5">
-                  {upcomingAppointments.length}
-                </Badge>
+                <Clock className="w-4 h-4 mr-2 hidden sm:inline-block" />
+                <span>Upcoming ({upcomingAppointments.length})</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="past" 
-                className="flex-1 md:px-8 rounded-xl py-2.5 text-sm font-bold transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=inactive]:text-gray-500"
+                className="flex-1 rounded-full py-2.5 text-sm font-semibold transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:bg-gray-200"
               >
-                History
-                <Badge className="ml-2 bg-gray-200 text-gray-600 hover:bg-gray-200 border-none px-2 h-5">
-                  {pastAppointments.length}
-                </Badge>
+                <Calendar className="w-4 h-4 mr-2 hidden sm:inline-block" />
+                <span>Completed ({pastAppointments.length})</span>
               </TabsTrigger>
             </TabsList>
 

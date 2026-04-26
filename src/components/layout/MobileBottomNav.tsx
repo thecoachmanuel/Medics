@@ -125,60 +125,66 @@ function MobileBottomNavContent() {
   return (
     <>
       {/* Spacer to prevent content from being hidden behind the nav */}
-      <div className="h-20 md:hidden" />
+      <div className="h-24 md:hidden" />
       
-      <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">
-        {/* Modern Blur Background */}
-        <div className="absolute inset-0 bg-white/80 backdrop-blur-2xl border-t border-gray-100 pb-[env(safe-area-inset-bottom,16px)]" />
-        
-        <div className="relative mx-auto max-w-md pb-[env(safe-area-inset-bottom,16px)]">
-          <div className="flex justify-around items-center h-16 px-2">
-            {links.map((link) => {
-              const Icon = link.icon;
-              const isActive = link.activePattern.test(pathname);
+      <div className="fixed inset-x-0 bottom-0 z-50 md:hidden pb-[env(safe-area-inset-bottom,16px)]">
+        <div className="mx-auto w-[calc(100%-1.25rem)] max-w-md">
+          <div className="rounded-[28px] bg-white/75 backdrop-blur-xl ring-1 ring-black/5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] px-2 py-2">
+            <div className="relative grid grid-cols-4 gap-1">
+              <div
+                className="pointer-events-none absolute inset-y-0 left-0 w-[calc((100%-12px)/4)] rounded-2xl bg-gradient-to-b from-blue-50 to-white transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]"
+                style={{
+                  transform: `translateX(calc(${activeIndex} * (100% + 4px)))`,
+                }}
+              />
+              {links.map((link) => {
+                const Icon = link.icon;
+                const isActive = link.activePattern.test(pathname);
 
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="relative flex flex-col items-center justify-center flex-1 h-full group"
-                >
-                  <div className={cn(
-                    "relative flex flex-col items-center justify-center transition-all duration-300 ease-out",
-                    isActive ? "-translate-y-1" : "translate-y-0"
-                  )}>
-                    <div className={cn(
-                      "p-2 rounded-2xl transition-all duration-300",
-                      isActive ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110" : "text-gray-400 group-hover:text-gray-600"
-                    )}>
-                      <Icon
-                        className="h-5 w-5"
-                        strokeWidth={isActive ? 2.5 : 2}
-                      />
-                      {link.label === "Chat" && chatUnreadCount > 0 && (
-                        <div className={cn(
-                          "absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold border-2 border-white",
-                          isActive ? "bg-red-500 text-white" : "bg-blue-600 text-white"
-                        )}>
-                          {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
-                        </div>
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="relative"
+                  >
+                    <div
+                      className={cn(
+                        "relative flex h-16 w-full flex-col items-center justify-center rounded-2xl text-[10px] font-semibold tracking-wide transition-transform duration-200 active:scale-[0.96]",
+                        isActive ? "text-blue-700" : "text-gray-500"
                       )}
+                    >
+                      <div
+                        className={cn(
+                          "relative z-10 transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]",
+                          isActive ? "-translate-y-[1px] scale-[1.08]" : "translate-y-0 scale-100"
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-6 w-6 transition-colors duration-200",
+                            isActive ? "text-blue-700" : "text-gray-500"
+                          )}
+                          strokeWidth={isActive ? 2.5 : 2}
+                        />
+                        {link.label === "Chat" && chatUnreadCount > 0 && (
+                          <div className="absolute -top-1.5 -right-2 bg-red-500 text-white shadow-sm border border-white text-[9px] font-bold px-1.5 min-w-[1.1rem] h-4 rounded-full flex items-center justify-center leading-none">
+                            {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className={cn(
+                          "relative z-10 mt-1 transition-opacity duration-200",
+                          isActive ? "opacity-100" : "opacity-90"
+                        )}
+                      >
+                        {link.label}
+                      </span>
                     </div>
-                    <span className={cn(
-                      "text-[10px] mt-1 font-medium transition-all duration-300",
-                      isActive ? "text-blue-600 opacity-100 scale-100" : "text-gray-400 opacity-0 scale-75"
-                    )}>
-                      {link.label}
-                    </span>
-                  </div>
-                  
-                  {/* Indicator Dot */}
-                  {isActive && (
-                    <div className="absolute bottom-1 w-1 h-1 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.6)]" />
-                  )}
-                </Link>
-              );
-            })}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
