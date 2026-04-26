@@ -95,15 +95,32 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
-function OfflineScreen({ onRetry }) {
+function ErrorView({ title, message, onRetry }) {
   return (
-    <View style={styles.offlineContainer}>
-      <Text style={styles.offlineTitle}>You’re Offline</Text>
-      <Text style={styles.offlineSubtitle}>Please check your internet connection.</Text>
-      <TouchableOpacity onPress={onRetry} style={styles.retryButton}>
-        <Text style={styles.retryText}>Retry</Text>
+    <View style={styles.errorContainer}>
+      <View style={styles.errorIconContainer}>
+        <View style={styles.errorCircle}>
+          <Text style={styles.errorExclamation}>!</Text>
+        </View>
+      </View>
+      <Text style={styles.errorTitle}>{title || "Connection Error"}</Text>
+      <Text style={styles.errorSubtitle}>
+        {message || "We couldn't connect to the server. Please check your internet and try again."}
+      </Text>
+      <TouchableOpacity onPress={onRetry} style={styles.retryButton} activeOpacity={0.8}>
+        <Text style={styles.retryText}>Try Again</Text>
       </TouchableOpacity>
     </View>
+  );
+}
+
+function OfflineScreen({ onRetry }) {
+  return (
+    <ErrorView 
+      title="You’re Offline" 
+      message="It looks like you're not connected to the internet. Please check your connection and try again." 
+      onRetry={onRetry} 
+    />
   );
 }
 
@@ -164,6 +181,8 @@ function AppContent() {
     }
   }, []);
 
+  const handleReload = useCallback(() => webviewRef.current?.reload(), []);
+
   const webView = useMemo(() => {
     const webViewProps = {
       ref: webviewRef,
@@ -197,6 +216,20 @@ function AppContent() {
           },
         });
       },
+      renderError: (errorName, errorCode, errorDesc) => (
+        <ErrorView 
+          title="Unable to Load" 
+          message={errorDesc || "There was a problem loading the page. Please check your connection."} 
+          onRetry={handleReload} 
+        />
+      ),
+      renderLoading: () => (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#2b7de9" />
+          <Text style={styles.loadingText}>Loading…</Text>
+        </View>
+      ),
+      startInLoadingState: true,
       javaScriptEnabled: true,
       domStorageEnabled: true,
       allowsInlineMediaPlayback: true,
@@ -215,25 +248,13 @@ function AppContent() {
       mixedContentMode: "always",
     };
     return <WebView {...webViewProps} style={styles.webview} />;
-  }, [url, onNavigationStateChange, onShouldStartLoadWithRequest, onMessage]);
-
-  const handleReload = useCallback(() => webviewRef.current?.reload(), []);
+  }, [url, onNavigationStateChange, onShouldStartLoadWithRequest, onMessage, handleReload]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar barStyle={Platform.OS === "ios" ? "dark-content" : "default"} />
       {!isConnected ? (
         <OfflineScreen onRetry={handleReload} />
-      ) : webError || webRuntimeError ? (
-        <View style={styles.offlineContainer}>
-          <Text style={styles.offlineTitle}>Unable to Load</Text>
-          <Text style={styles.offlineSubtitle} numberOfLines={4}>
-            {webRuntimeError?.payload?.message || webRuntimeError?.payload?.description || "There was a problem loading the page."}
-          </Text>
-          <TouchableOpacity onPress={handleReload} style={styles.retryButton}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
       ) : (
         <View style={styles.webviewContainer}>
           {webView}
@@ -276,28 +297,59 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
+    backgroundColor: "#ffffff",
   },
-  offlineTitle: {
-    fontSize: 20,
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 30,
+    backgroundColor: "#ffffff",
+  },
+  errorIconContainer: {
+    marginBottom: 24,
+  },
+  errorCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#fee2e2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorExclamation: {
+    fontSize: 40,
     fontWeight: "bold",
-    marginBottom: 10,
-    color: "#333",
+    color: "#ef4444",
   },
-  offlineSubtitle: {
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  errorSubtitle: {
     fontSize: 16,
-    color: "#666",
-    marginBottom: 20,
+    lineHeight: 24,
+    color: "#4b5563",
+    marginBottom: 32,
     textAlign: "center",
   },
   retryButton: {
     backgroundColor: "#2b7de9",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 16,
+    shadowColor: "#2b7de9",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   retryText: {
-    color: "#fff",
-    fontSize: 16,
+    color: "#ffffff",
+    fontSize: 18,
     fontWeight: "600",
   },
   webviewContainer: {
