@@ -35,24 +35,24 @@ const ConsultationStep = ({
 
     if (selectedType === "Voice Call") {
       const type = voiceDiscount?.type || 'percentage';
-      const value = voiceDiscount?.value ?? 30; // Default 30% off
+      const value = voiceDiscount?.value ?? 30;
       
       if (type === 'flat') {
         return Math.max(0, basePrice - value);
       } else {
-        const discount = (basePrice * value) / 100;
+        const discount = Math.round((basePrice * value) / 100);
         return Math.max(0, basePrice - discount);
       }
     }
 
     if (selectedType === "Messaging") {
       const type = messagingDiscount?.type || 'percentage';
-      const value = messagingDiscount?.value ?? 50; // Default 50% off
+      const value = messagingDiscount?.value ?? 50;
       
       if (type === 'flat') {
         return Math.max(0, basePrice - value);
       } else {
-        const discount = (basePrice * value) / 100;
+        const discount = Math.round((basePrice * value) / 100);
         return Math.max(0, basePrice - discount);
       }
     }
@@ -104,7 +104,9 @@ const ConsultationStep = ({
                       
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
-                          <h4 className="font-bold text-gray-900 text-lg">{type}</h4>
+                          <h4 className="font-bold text-gray-900 text-lg">
+                            {type === 'Video Consultation' ? 'Video Call' : type}
+                          </h4>
                           <p className="font-bold text-gray-900 text-lg">
                             ₦{currentPrice.toLocaleString()}
                           </p>
@@ -112,17 +114,11 @@ const ConsultationStep = ({
                         <div className="flex justify-between items-center">
                           <p className="text-sm text-gray-500">{description}</p>
                           <div className="text-right">
-                            {type === 'Voice Call' || type === 'Messaging' ? (
+                            {(type === 'Voice Call' || type === 'Messaging') && doctorFees > currentPrice ? (
                               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                                Save ₦{Math.max(0, doctorFees - currentPrice).toLocaleString()}
+                                Save ₦{(doctorFees - currentPrice).toLocaleString()}
                               </span>
-                            ) : (
-                              price !== 0 && (
-                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                                  Save ₦{Math.abs(price).toLocaleString()}
-                                </span>
-                              )
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -146,7 +142,7 @@ const ConsultationStep = ({
               Selected Consultation:
             </span>
             <span className="text-lg font-bold text-blue-900">
-              {consultationType} - ₦{getConsultationPrice().toLocaleString()}
+              {consultationType === 'Video Consultation' ? 'Video Call' : consultationType} - ₦{getConsultationPrice().toLocaleString()}
             </span>
           </div>
         </div>

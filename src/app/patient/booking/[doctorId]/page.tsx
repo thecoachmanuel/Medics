@@ -39,8 +39,8 @@ const page = () => {
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [createdAppointmentId,setCreatedAppointmentId] = useState<string | null>(null)
-  const [voiceDiscount, setVoiceDiscount] = useState<{ type: 'flat' | 'percentage', value: number } | null>(null);
-  const [messagingDiscount, setMessagingDiscount] = useState<{ type: 'flat' | 'percentage', value: number } | null>(null);
+  const [voiceDiscount, setVoiceDiscount] = useState<{ type: 'flat' | 'percentage', value: number } | null>({ type: 'percentage', value: 30 });
+  const [messagingDiscount, setMessagingDiscount] = useState<{ type: 'flat' | 'percentage', value: number } | null>({ type: 'percentage', value: 50 });
   const { user } = userAuthStore();
   const patientName = user?.name || user?.email || "Patient";
 
@@ -52,11 +52,11 @@ const page = () => {
         if (data?.config) {
             setVoiceDiscount({
                 type: data.config.voiceCallDiscountType || 'percentage',
-                value: Number(data.config.voiceCallDiscountValue || 0)
+                value: Number(data.config.voiceCallDiscountValue ?? 30)
             });
             setMessagingDiscount({
                 type: data.config.messagingDiscountType || 'percentage',
-                value: Number(data.config.messagingDiscountValue || 0)
+                value: Number(data.config.messagingDiscountValue ?? 50)
             });
         }
       } catch (e) {
@@ -257,24 +257,24 @@ const page = () => {
     
     if (consultationType === "Voice Call") {
         const type = voiceDiscount?.type || 'percentage';
-        const value = voiceDiscount?.value ?? 30; // Default 30% off
+        const value = voiceDiscount?.value ?? 30;
         
         if (type === 'flat') {
             return Math.max(0, basePrice - value);
         } else {
-            const discount = (basePrice * value) / 100;
+            const discount = Math.round((basePrice * value) / 100);
             return Math.max(0, basePrice - discount);
         }
     }
     
     if (consultationType === "Messaging") {
         const type = messagingDiscount?.type || 'percentage';
-        const value = messagingDiscount?.value ?? 50; // Default 50% off
+        const value = messagingDiscount?.value ?? 50;
         
         if (type === 'flat') {
             return Math.max(0, basePrice - value);
         } else {
-            const discount = (basePrice * value) / 100;
+            const discount = Math.round((basePrice * value) / 100);
             return Math.max(0, basePrice - discount);
         }
     }
