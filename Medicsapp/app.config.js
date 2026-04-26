@@ -42,6 +42,16 @@ module.exports = ({ config }) => {
       ],
       softwareKeyboardLayoutMode: "pan"
     },
+    plugins: [
+      [
+        "expo-camera",
+        {
+          cameraPermission: "Allow MedicsApp to access your camera",
+          microphonePermission: "Allow MedicsApp to access your microphone",
+          recordAudioPermission: "Allow MedicsApp to access your microphone"
+        }
+      ]
+    ],
     web: {
       bundler: "metro"
     },

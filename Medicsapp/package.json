@@ -15,6 +15,8 @@
     "@react-native-community/netinfo": "11.4.1",
     "babel-preset-expo": "~54.0.10",
     "expo": "54.0.33",
+    "expo-av": "^16.0.8",
+    "expo-camera": "^55.0.16",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",

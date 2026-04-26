@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { registerRootComponent } from "expo";
 import { ActivityIndicator, BackHandler, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { WebView } from "react-native-webview";
+import { Camera } from "expo-camera";
+import { Audio } from "expo-av";
 import Constants from "expo-constants";
 import NetInfo from "@react-native-community/netinfo";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
@@ -141,6 +143,20 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
+    (async () => {
+      try {
+        const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
+        const { status: audioStatus } = await Audio.requestPermissionsAsync();
+        if (cameraStatus !== 'granted' || audioStatus !== 'granted') {
+          console.warn('Camera or Audio permissions not granted');
+        }
+      } catch (e) {
+        console.error('Error requesting permissions', e);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
     if (Platform.OS === "android") {
       const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
         if (webviewRef.current && canGoBack) {
@@ -234,6 +250,10 @@ function AppContent() {
       domStorageEnabled: true,
       allowsInlineMediaPlayback: true,
       mediaPlaybackRequiresUserAction: false,
+      javaScriptCanOpenWindowsAutomatically: true,
+      userAgent: Platform.OS === 'android' 
+        ? 'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36'
+        : 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1',
       onPermissionRequest: (event) => {
         event.grant(event.resources);
       },
