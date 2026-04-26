@@ -254,34 +254,32 @@ const page = () => {
 
   const getConsultationPrice = (): number => {
     const basePrice = currentDoctor?.fees || 0;
-    const baseAmount =
-      consultationType === "Voice Call"
-        ? Math.max(0, basePrice - 5000)
-        : consultationType === "Messaging"
-        ? Math.max(0, basePrice - 8000)
-        : basePrice;
     
-    if (consultationType === "Voice Call" && voiceDiscount) {
-        let discount = 0;
-        if (voiceDiscount.type === 'flat') {
-            discount = voiceDiscount.value;
+    if (consultationType === "Voice Call") {
+        const type = voiceDiscount?.type || 'percentage';
+        const value = voiceDiscount?.value ?? 30; // Default 30% off
+        
+        if (type === 'flat') {
+            return Math.max(0, basePrice - value);
         } else {
-            discount = (baseAmount * voiceDiscount.value) / 100;
+            const discount = (basePrice * value) / 100;
+            return Math.max(0, basePrice - discount);
         }
-        return Math.max(0, baseAmount - discount);
     }
     
-    if (consultationType === "Messaging" && messagingDiscount) {
-        let discount = 0;
-        if (messagingDiscount.type === 'flat') {
-            discount = messagingDiscount.value;
+    if (consultationType === "Messaging") {
+        const type = messagingDiscount?.type || 'percentage';
+        const value = messagingDiscount?.value ?? 50; // Default 50% off
+        
+        if (type === 'flat') {
+            return Math.max(0, basePrice - value);
         } else {
-            discount = (baseAmount * messagingDiscount.value) / 100;
+            const discount = (basePrice * value) / 100;
+            return Math.max(0, basePrice - discount);
         }
-        return Math.max(0, baseAmount - discount);
     }
     
-    return baseAmount;
+    return basePrice;
   };
 
 

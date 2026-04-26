@@ -21,9 +21,9 @@ const DEFAULTS: BillingSettings = {
   adminCommissionPercent: 20,
   maxWithdrawalPercent: 85,
   voiceCallDiscountType: 'percentage',
-  voiceCallDiscountValue: 0,
+  voiceCallDiscountValue: 30,
   messagingDiscountType: 'percentage',
-  messagingDiscountValue: 0,
+  messagingDiscountValue: 50,
 };
 
 export async function GET() {

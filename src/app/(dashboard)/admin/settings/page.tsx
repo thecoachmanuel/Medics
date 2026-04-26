@@ -164,9 +164,9 @@ export default function AdminSettingsPage() {
     adminCommissionPercent: 20, 
     maxWithdrawalPercent: 85,
     voiceCallDiscountType: 'percentage',
-    voiceCallDiscountValue: 0,
+    voiceCallDiscountValue: 30,
     messagingDiscountType: 'percentage',
-    messagingDiscountValue: 0
+    messagingDiscountValue: 50
   });
   const [billingSaving, setBillingSaving] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
@@ -694,7 +694,7 @@ export default function AdminSettingsPage() {
                      <option value="percentage">Percentage (%)</option>
                      <option value="flat">Flat Rate (NGN)</option>
                    </select>
-                   <p className="text-xs text-gray-500 mt-1">How the discount is calculated for voice calls.</p>
+                   <p className="text-xs text-gray-500 mt-1">How the discount is calculated for voice calls. Default: Percentage (30%).</p>
                  </div>
                  <div>
                    <label className="text-xs font-medium text-gray-600">Discount Value</label>
@@ -707,8 +707,8 @@ export default function AdminSettingsPage() {
                    />
                    <p className="text-xs text-gray-500 mt-1">
                      {billingSettings.voiceCallDiscountType === 'percentage' 
-                       ? 'Percentage discount applied to consultation fee.' 
-                       : 'Flat amount deducted from consultation fee.'}
+                       ? 'Percentage discount applied relative to video consultation fee. Default 30%.' 
+                       : 'Flat amount deducted from video consultation fee.'}
                    </p>
                  </div>
                </div>
@@ -727,7 +727,7 @@ export default function AdminSettingsPage() {
                      <option value="percentage">Percentage (%)</option>
                      <option value="flat">Flat Rate (NGN)</option>
                    </select>
-                   <p className="text-xs text-gray-500 mt-1">How the discount is calculated for messaging.</p>
+                   <p className="text-xs text-gray-500 mt-1">How the discount is calculated for messaging. Default: Percentage (50%).</p>
                  </div>
                  <div>
                    <label className="text-xs font-medium text-gray-600">Discount Value</label>
@@ -740,8 +740,8 @@ export default function AdminSettingsPage() {
                    />
                    <p className="text-xs text-gray-500 mt-1">
                      {billingSettings.messagingDiscountType === 'percentage' 
-                       ? 'Percentage discount applied to consultation fee.' 
-                       : 'Flat amount deducted from consultation fee.'}
+                       ? 'Percentage discount applied relative to video consultation fee. Default 50%.' 
+                       : 'Flat amount deducted from video consultation fee.'}
                    </p>
                  </div>
                </div>

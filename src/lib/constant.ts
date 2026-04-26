@@ -296,7 +296,7 @@ export const cities = [
         type: 'Messaging',
         icon: FileText,
         description: 'Text-based consultation with secure message history',
-        price: -8000,
+        price: 0,
         recommended: false
       },
       {
@@ -310,7 +310,7 @@ export const cities = [
         type: 'Voice Call',
         icon: Phone,
         description: 'Audio-only consultation via voice call',
-        price: -5000,
+        price: 0,
         recommended: false
       }
     ];

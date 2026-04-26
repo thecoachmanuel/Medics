@@ -31,28 +31,33 @@ const ConsultationStep = ({
   messagingDiscount,
 }: ConsultationStepInterface) => {
   const getConsultationPrice = (selectedType = consultationType) => {
-    const typePrice = consultationTypes.find((ct) => ct.type === selectedType)?.price || 0;
-    const baseAmount = Math.max(0, doctorFees + typePrice);
+    const basePrice = doctorFees || 0;
 
-    if (selectedType === "Voice Call" && voiceDiscount) {
-      let discount = 0;
-      if (voiceDiscount.type === 'flat') {
-        discount = voiceDiscount.value;
+    if (selectedType === "Voice Call") {
+      const type = voiceDiscount?.type || 'percentage';
+      const value = voiceDiscount?.value ?? 30; // Default 30% off
+      
+      if (type === 'flat') {
+        return Math.max(0, basePrice - value);
       } else {
-        discount = (baseAmount * voiceDiscount.value) / 100;
+        const discount = (basePrice * value) / 100;
+        return Math.max(0, basePrice - discount);
       }
-      return Math.max(0, baseAmount - discount);
     }
-    if (selectedType === "Messaging" && messagingDiscount) {
-      let discount = 0;
-      if (messagingDiscount.type === 'flat') {
-        discount = messagingDiscount.value;
+
+    if (selectedType === "Messaging") {
+      const type = messagingDiscount?.type || 'percentage';
+      const value = messagingDiscount?.value ?? 50; // Default 50% off
+      
+      if (type === 'flat') {
+        return Math.max(0, basePrice - value);
       } else {
-        discount = (baseAmount * messagingDiscount.value) / 100;
+        const discount = (basePrice * value) / 100;
+        return Math.max(0, basePrice - discount);
       }
-      return Math.max(0, baseAmount - discount);
     }
-    return baseAmount;
+
+    return basePrice;
   };
 
   const handleTypeChnage = (newType: string) => {
