@@ -127,16 +127,20 @@ function MobileBottomNavContent() {
       {/* Spacer to prevent content from being hidden behind the nav */}
       <div className="h-24 md:hidden" />
       
-      <div className="fixed inset-x-0 bottom-0 z-50 md:hidden pb-[env(safe-area-inset-bottom,16px)]">
+      <div className="fixed inset-x-0 bottom-0 z-50 md:hidden pb-[calc(env(safe-area-inset-bottom,0px)+12px)]">
         <div className="mx-auto w-[calc(100%-1.25rem)] max-w-md">
-          <div className="rounded-[28px] bg-white/75 backdrop-blur-xl ring-1 ring-black/5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] px-2 py-2">
-            <div className="relative grid grid-cols-4 gap-1">
+          <nav
+            className="rounded-full bg-white/70 backdrop-blur-xl ring-1 ring-black/5 shadow-[0_16px_48px_rgba(0,0,0,0.14)] px-2 py-2"
+            aria-label="Bottom navigation"
+          >
+            <div className="relative flex items-stretch gap-1">
               <div
-                className="pointer-events-none absolute inset-y-0 left-0 w-[calc((100%-12px)/4)] rounded-2xl bg-gradient-to-b from-blue-50 to-white transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/4 rounded-full bg-gradient-to-b from-blue-600 to-blue-700 shadow-[0_10px_30px_rgba(37,99,235,0.35)] transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]"
                 style={{
                   transform: `translateX(calc(${activeIndex} * (100% + 4px)))`,
                 }}
               />
+
               {links.map((link) => {
                 const Icon = link.icon;
                 const isActive = link.activePattern.test(pathname);
@@ -145,37 +149,32 @@ function MobileBottomNavContent() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="relative"
+                    className={cn(
+                      "relative flex-1 rounded-full outline-none transition-transform duration-200 active:scale-[0.97]",
+                      isActive ? "text-white" : "text-gray-600"
+                    )}
+                    aria-current={isActive ? "page" : undefined}
                   >
-                    <div
-                      className={cn(
-                        "relative flex h-16 w-full flex-col items-center justify-center rounded-2xl text-[10px] font-semibold tracking-wide transition-transform duration-200 active:scale-[0.96]",
-                        isActive ? "text-blue-700" : "text-gray-500"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "relative z-10 transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]",
-                          isActive ? "-translate-y-[1px] scale-[1.08]" : "translate-y-0 scale-100"
-                        )}
-                      >
+                    <div className="relative z-10 flex h-14 flex-col items-center justify-center">
+                      <div className="relative">
                         <Icon
                           className={cn(
                             "h-6 w-6 transition-colors duration-200",
-                            isActive ? "text-blue-700" : "text-gray-500"
+                            isActive ? "text-white" : "text-gray-600"
                           )}
                           strokeWidth={isActive ? 2.5 : 2}
                         />
                         {link.label === "Chat" && chatUnreadCount > 0 && (
-                          <div className="absolute -top-1.5 -right-2 bg-red-500 text-white shadow-sm border border-white text-[9px] font-bold px-1.5 min-w-[1.1rem] h-4 rounded-full flex items-center justify-center leading-none">
+                          <div className="absolute -top-2 -right-3 bg-red-500 text-white shadow-sm border border-white text-[9px] font-bold px-1.5 min-w-[1.1rem] h-4 rounded-full flex items-center justify-center leading-none">
                             {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
                           </div>
                         )}
                       </div>
+
                       <span
                         className={cn(
-                          "relative z-10 mt-1 transition-opacity duration-200",
-                          isActive ? "opacity-100" : "opacity-90"
+                          "mt-1 text-[10px] font-semibold tracking-wide transition-opacity duration-200",
+                          isActive ? "opacity-100" : "opacity-70"
                         )}
                       >
                         {link.label}
@@ -185,7 +184,7 @@ function MobileBottomNavContent() {
                 );
               })}
             </div>
-          </div>
+          </nav>
         </div>
       </div>
     </>
