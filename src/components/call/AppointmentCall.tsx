@@ -636,7 +636,7 @@ function MyCallUI({
       `}</style>
       
       {/* Top right badges/stats */}
-      <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2 pointer-events-none">
+      <div className="absolute top-[calc(env(safe-area-inset-top)+1rem)] right-4 z-20 flex flex-col items-end gap-2 pointer-events-none">
         <div className="pointer-events-auto bg-black/40 backdrop-blur-md rounded-full px-4 py-1.5 text-sm font-medium border border-white/10 flex items-center gap-2">
            <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
            <span className="text-white">Live</span>
@@ -659,7 +659,7 @@ function MyCallUI({
         />
         
         {/* Floating Controls Bar */}
-        <div className="absolute bottom-6 sm:bottom-8 inset-x-0 flex justify-center z-20 pointer-events-none px-4">
+        <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:bottom-[calc(env(safe-area-inset-bottom)+2rem)] inset-x-0 flex justify-center z-20 pointer-events-none px-4">
           <div className="flex items-center gap-4 sm:gap-6 bg-[#2A3B32]/95 backdrop-blur-md px-6 py-4 rounded-[2.5rem] shadow-2xl border border-white/10 pointer-events-auto">
             <button
                 onClick={async () => {
@@ -953,7 +953,7 @@ function ModernCallLayout({
 
       {/* Info Overlay */}
       {primary && (
-        <div className="absolute bottom-32 left-4 sm:bottom-36 sm:left-8 z-10 max-w-[50%] sm:max-w-[60%] pointer-events-none">
+        <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+8rem)] left-4 sm:bottom-[calc(env(safe-area-inset-bottom)+9rem)] sm:left-8 z-10 max-w-[50%] sm:max-w-[60%] pointer-events-none">
           <h2 className="text-xl sm:text-3xl font-bold text-white drop-shadow-md">
             {remote ? otherPartyLabel : "Waiting for others..."}
           </h2>
@@ -967,7 +967,7 @@ function ModernCallLayout({
 
       {/* PiP Local Video */}
       {pip && (
-        <div className="absolute bottom-28 right-4 sm:bottom-32 sm:right-8 w-24 h-36 sm:w-36 sm:h-48 rounded-[1.5rem] overflow-hidden shadow-2xl border-[3px] border-white/20 bg-slate-800 z-10 transition-all">
+        <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+7rem)] right-4 sm:bottom-[calc(env(safe-area-inset-bottom)+8rem)] sm:right-8 w-24 h-36 sm:w-36 sm:h-48 rounded-[1.5rem] overflow-hidden shadow-2xl border-[3px] border-white/20 bg-slate-800 z-10 transition-all">
           <ParticipantView participant={pip} />
         </div>
       )}

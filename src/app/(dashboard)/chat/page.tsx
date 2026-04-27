@@ -302,17 +302,21 @@ export default function ChatListPage() {
           {/* Chat List */}
           <div className="space-y-3">
             {(fetchingMsgs || aptLoading) && chatPreviews.length === 0 ? (
-              <div className="grid gap-3">
-                {[...Array(5)].map((_, i) => (
-                  <Card key={i} className="animate-pulse border-transparent shadow-sm">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="w-14 h-14 bg-gray-200 rounded-full" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-1/3" />
+              <div className="rounded-3xl bg-white ring-1 ring-gray-200 shadow-sm overflow-hidden">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="flex items-center gap-4 px-4 py-3.5">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full" />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="h-4 bg-gray-200 rounded w-1/3" />
+                          <div className="h-3 bg-gray-200 rounded w-10" />
+                        </div>
                         <div className="h-3 bg-gray-200 rounded w-2/3" />
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                    {i !== 5 && <div className="h-px bg-gray-100 ml-[4.25rem]" />}
+                  </div>
                 ))}
               </div>
             ) : chatPreviews.length === 0 ? (
@@ -333,65 +337,93 @@ export default function ChatListPage() {
                 </CardContent>
               </Card>
             ) : (
-              chatPreviews.map((preview) => {
-                const isMeLast = preview.lastMessage?.sender_id === user?.id;
-                
-                return (
-                  <Card 
-                    key={preview.isSupport ? "support" : preview.appointment?._id}
-                    className="overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors border-transparent shadow-sm hover:shadow-md hover:border-gray-200 group"
-                    onClick={() => {
-                       if (preview.isSupport) router.push(`/chat/support`);
-                       else if (preview.appointment) router.push(`/chat/${preview.appointment._id}`);
-                    }}
-                  >
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="relative">
-                        <Avatar className="w-14 h-14 border shadow-sm">
-                          <AvatarImage src={preview.partnerImage} />
-                          <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
-                            {preview.partnerName.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        {preview.partnerId && onlineStatus[preview.partnerId] && (
-                          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></span>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h3 className={`font-bold truncate pr-4 text-[1.05rem] ${preview.unreadCount > 0 ? "text-gray-900" : "text-gray-800"}`}>
-                            {!preview.isSupport && user?.type === "patient" ? "Dr. " : ""}{preview.partnerName}
-                          </h3>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            {preview.lastMessage && (
-                              <span className={`text-xs ${preview.unreadCount > 0 ? "text-blue-600 font-bold" : "text-gray-400 font-medium"}`}>
-                                {getRelativeTime(preview.lastMessage.created_at)}
-                              </span>
-                            )}
-                            {preview.unreadCount > 0 && (
-                              <div className="bg-blue-600 text-white text-[10px] px-1.5 h-[18px] rounded-full min-w-[1.2rem] flex items-center justify-center font-bold">
-                                {preview.unreadCount > 99 ? "99+" : preview.unreadCount}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center text-sm text-gray-500 truncate w-full">
-                          {preview.lastMessage ? (
-                            <div className="flex items-center gap-1.5 truncate">
-                              {isMeLast && <span className="text-[10px] text-gray-400 font-medium tracking-wide">You:</span>}
-                              <span className="truncate">{renderMessageContent(preview.lastMessage.content)}</span>
-                            </div>
-                          ) : (
-                            <span className="italic text-gray-400">Tap to start chatting...</span>
+              <div className="rounded-3xl bg-white ring-1 ring-gray-200 shadow-sm overflow-hidden">
+                {chatPreviews.map((preview, idx) => {
+                  const isMeLast = preview.lastMessage?.sender_id === user?.id;
+                  const titlePrefix = !preview.isSupport && user?.type === "patient" ? "Dr. " : "";
+                  const showOnline =
+                    !!preview.partnerId && !!onlineStatus[preview.partnerId] && !preview.isSupport;
+
+                  return (
+                    <div key={preview.isSupport ? "support" : preview.appointment?._id}>
+                      <button
+                        type="button"
+                        className="w-full text-left flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                        onClick={() => {
+                          if (preview.isSupport) router.push(`/chat/support`);
+                          else if (preview.appointment) router.push(`/chat/${preview.appointment._id}`);
+                        }}
+                      >
+                        <div className="relative shrink-0">
+                          <Avatar className="w-12 h-12 ring-1 ring-gray-200">
+                            <AvatarImage src={preview.partnerImage} />
+                            <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
+                              {preview.partnerName.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {showOnline && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 ring-2 ring-white rounded-full" />
                           )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <h3
+                                className={`truncate text-[15px] sm:text-base leading-5 ${
+                                  preview.unreadCount > 0 ? "font-bold text-gray-900" : "font-semibold text-gray-900"
+                                }`}
+                              >
+                                {titlePrefix}
+                                {preview.partnerName}
+                              </h3>
+                              <div
+                                className={`mt-1 flex items-center gap-1.5 text-[13px] leading-5 ${
+                                  preview.unreadCount > 0 ? "text-gray-700 font-medium" : "text-gray-500"
+                                }`}
+                              >
+                                {preview.lastMessage ? (
+                                  <>
+                                    {isMeLast && (
+                                      <span className="text-[11px] text-gray-400 font-semibold tracking-wide">
+                                        You
+                                      </span>
+                                    )}
+                                    <span className="truncate">{renderMessageContent(preview.lastMessage.content)}</span>
+                                  </>
+                                ) : (
+                                  <span className="italic text-gray-400">Tap to start chatting…</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 flex flex-col items-end gap-1">
+                              {preview.lastMessage && (
+                                <span
+                                  className={`text-[11px] leading-4 ${
+                                    preview.unreadCount > 0 ? "text-blue-600 font-bold" : "text-gray-400 font-medium"
+                                  }`}
+                                >
+                                  {getRelativeTime(preview.lastMessage.created_at)}
+                                </span>
+                              )}
+                              {preview.unreadCount > 0 && (
+                                <div className="bg-blue-600 text-white text-[10px] px-2 h-[18px] rounded-full min-w-[1.25rem] flex items-center justify-center font-bold">
+                                  {preview.unreadCount > 99 ? "99+" : preview.unreadCount}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+
+                      {idx !== chatPreviews.length - 1 && (
+                        <div className="h-px bg-gray-100 ml-[4.25rem]" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>

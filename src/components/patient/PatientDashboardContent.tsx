@@ -7,16 +7,19 @@ import { Appointment, useAppointmentStore } from "@/store/appointmentStore";
 import { Card, CardContent } from "../ui/card";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Calendar, Clock, CreditCard, FileText, MapPin, Phone, Star, Video, MessageSquare } from "lucide-react";
+import { Bell, Calendar, Clock, CreditCard, FileText, Phone, Search, Star, Video, MessageSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
-import { getStatusColor } from "@/lib/constant";
+import { getStatusColor, healthcareCategories } from "@/lib/constant";
 import { formatDateTimeNG } from "@/lib/datetime";
 import { WalletCard } from "./WalletCard";
 import PrescriptionViewModal from "../doctor/PrescriptionViewModal";
 import { Textarea } from "../ui/textarea";
 import { useAppDetection } from "@/hooks/use-app-detection";
+import { Input } from "../ui/input";
+import { useDoctorStore } from "@/store/doctorStore";
+import { toLocalYMD } from "@/lib/dateUtils";
 
 const PatientDashboardContentInner = () => {
   const isApp = useAppDetection();
@@ -25,14 +28,22 @@ const PatientDashboardContentInner = () => {
   const {
     appointments,
     fetchAppointments,
-    loading,
+    loading: appointmentsLoading,
     error: appointmentError,
     clearError: clearAppointmentError,
     rateDoctor,
     subscribeToAppointments,
     unsubscribeFromAppointments,
   } = useAppointmentStore();
+  const {
+    doctors: suggestedDoctors,
+    loading: doctorsLoading,
+    fetchDoctors: fetchSuggestedDoctors,
+  } = useDoctorStore();
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [selectedDayYmd, setSelectedDayYmd] = useState<string>(() => toLocalYMD(new Date()));
+  const [searchQuery, setSearchQuery] = useState("");
+  const [taxonomyCategoryNames, setTaxonomyCategoryNames] = useState<string[] | null>(null);
 
   const isPatientOnboardingComplete = (): boolean => {
     if (!user || user.type !== "patient") return true;
@@ -73,6 +84,38 @@ const PatientDashboardContentInner = () => {
       };
     }
   }, [user, fetchAppointments, subscribeToAppointments, unsubscribeFromAppointments]);
+
+  useEffect(() => {
+    if (user?.type !== "patient") return;
+    fetchSuggestedDoctors({ limit: 12, page: 1, sortBy: "experience", sortOrder: "desc" });
+  }, [fetchSuggestedDoctors, user?.type]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTaxonomies = async () => {
+      try {
+        const response = await fetch("/api/taxonomies");
+        if (!response.ok) return;
+        const json = (await response.json()) as {
+          config?: {
+            categories?: string[];
+          } | null;
+        };
+        if (!isMounted || !json || !json.config) return;
+        if (Array.isArray(json.config.categories) && json.config.categories.length) {
+          setTaxonomyCategoryNames(json.config.categories);
+        }
+      } catch {
+      }
+    };
+
+    loadTaxonomies();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const formatDate = (dateString: string) =>
     formatDateTimeNG(dateString, {
@@ -141,8 +184,8 @@ const PatientDashboardContentInner = () => {
   }
 
   const now = new Date();
-  const showAppointmentsSkeleton = loading && appointments.length === 0;
-  const isRefreshing = loading && appointments.length > 0;
+  const showAppointmentsSkeleton = appointmentsLoading && appointments.length === 0;
+  const isRefreshing = appointmentsLoading && appointments.length > 0;
   const upcomingAppointments = appointments.filter((apt) => {
     const aptDate = new Date(apt.slotStartIso);
     return (
@@ -162,11 +205,60 @@ const PatientDashboardContentInner = () => {
     );
   });
 
+  const dateChips = React.useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const ymd = toLocalYMD(d);
+      const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
+      const day = String(d.getDate());
+      return { ymd, weekday, day, date: d };
+    });
+  }, []);
+
+  const selectedDayLabel = React.useMemo(() => {
+    const d = selectedDayYmd ? new Date(`${selectedDayYmd}T00:00:00`) : null;
+    if (!d || Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  }, [selectedDayYmd]);
+
+  const upcomingAppointmentsForDay = React.useMemo(() => {
+    if (!selectedDayYmd) return upcomingAppointments;
+    return upcomingAppointments.filter((apt) => {
+      const aptDate = new Date(apt.slotStartIso);
+      if (Number.isNaN(aptDate.getTime())) return false;
+      return toLocalYMD(aptDate) === selectedDayYmd;
+    });
+  }, [selectedDayYmd, upcomingAppointments]);
+
+  const firstName =
+    typeof user.name === "string" && user.name.trim().length > 0
+      ? user.name.trim().split(/\s+/)[0]
+      : "there";
+
+  const categoryChips =
+    taxonomyCategoryNames && taxonomyCategoryNames.length
+      ? healthcareCategories.filter((category) =>
+          taxonomyCategoryNames.includes(category.title),
+        )
+      : healthcareCategories;
+
+  const topDoctors = suggestedDoctors
+    .slice()
+    .sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
+    .slice(0, 6);
+
   const AppointmentCard = ({ appointment }: { appointment: Appointment }) => {
     const [savingRating, setSavingRating] = useState(false);
     const [comment, setComment] = useState(appointment.reviewComment ?? "");
     const [localRating, setLocalRating] = useState<number | undefined>(appointment.rating);
     const reviewLocked = typeof appointment.rating === "number" && !Number.isNaN(appointment.rating);
+    const appointmentDate = new Date(appointment.slotStartIso);
+    const appointmentDay = Number.isNaN(appointmentDate.getTime()) ? "" : String(appointmentDate.getDate());
+    const appointmentWeekday = Number.isNaN(appointmentDate.getTime())
+      ? ""
+      : appointmentDate.toLocaleDateString("en-US", { weekday: "short" });
 
     useEffect(() => {
       setComment(appointment.reviewComment ?? "");
@@ -199,16 +291,21 @@ const PatientDashboardContentInner = () => {
     };
 
     return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex flex-col items-center md:flex-row md:items-start md:space-x-6">
+    <Card className="rounded-3xl bg-white/70 ring-1 ring-black/5 shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="p-5">
+        <div className="flex items-start gap-4">
+          <div className="hidden sm:flex w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_10px_30px_rgba(37,99,235,0.30)]">
+            <div className="text-[11px] font-semibold opacity-90">{appointmentWeekday}</div>
+            <div className="text-xl font-extrabold leading-none">{appointmentDay}</div>
+          </div>
+
           <div className="flex-shrink-0 flex justify-center md:justify-start">
-            <Avatar className="w-20 h-20">
+            <Avatar className="w-16 h-16 rounded-2xl">
               <AvatarImage
                 src={appointment.doctorId?.profileImage}
                 alt={appointment.doctorId?.name}
               />
-              <AvatarFallback className="bg-blue-100 text-blue-600 text-lg font-semibold">
+              <AvatarFallback className="bg-blue-600 text-white text-lg font-semibold rounded-2xl">
                 {appointment.doctorId?.name?.charAt(0)}
               </AvatarFallback>
             </Avatar>
@@ -217,7 +314,7 @@ const PatientDashboardContentInner = () => {
           <div className="mt-4 md:mt-0 flex-1 w-full text-center md:text-left">
             <div className="flex flex-col md:flex-row md:justify-between md:items-start">
               <div>
-                <h3 className="text-lg font-semiboldtext-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900">
                   {appointment.doctorId?.name}
                 </h3>
                 <p className="text-gray-600">
@@ -452,36 +549,172 @@ const PatientDashboardContentInner = () => {
     <>
       <Header showDashboardNav={true} />
 
-      <div className={`min-h-screen bg-gray-50 ${isApp ? 'pt-4' : 'pt-16'}`}>
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-md md:text-3xl font-bold text-gray-900">
-                My Appointment
-              </h1>
-              <p className="text-xs md:text-lg text-gray-600">
-                Manage your healthcare appointments
-              </p>
+      <div className={`min-h-screen bg-gradient-to-b from-blue-50 via-white to-white ${isApp ? 'pt-4' : 'pt-16'}`}>
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm">
+                <AvatarImage src={(user as any).profileImage} alt={user.name} />
+                <AvatarFallback className="bg-blue-600 text-white font-semibold">
+                  {user.name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="text-sm text-gray-600">Hi, {firstName}</div>
+                <div className="text-lg font-bold text-gray-900">How is your health today?</div>
+              </div>
             </div>
 
-          <div className="flex items-center space-x-4 ">
-            <Link href="/doctor-list">
-              <Button>
-                <Calendar className="w-4 h-4 mr-2 " />
-                Book <span className="hidden md:block">New Appointment</span>
-              </Button>
-            </Link>
-            <Link href="/patient/payments" className="md:hidden">
-              <Button variant="outline">
-                <CreditCard className="w-4 h-4 mr-2" />
-                Payments
-              </Button>
-            </Link>
-          </div>
+            <div className="flex items-center gap-2">
+              <Link href="/patient/notifications">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-white/70 ring-1 ring-black/5 shadow-sm hover:bg-white"
+                >
+                  <Bell className="h-5 w-5 text-gray-700" />
+                </Button>
+              </Link>
+            </div>
           </div>
 
-          <div className="mb-8">
-            <WalletCard />
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search doctors, specialties, conditions..."
+                  className="h-12 rounded-full pl-11 bg-white/80 backdrop-blur ring-1 ring-black/5 shadow-sm"
+                />
+              </div>
+
+              <div className="mt-3 flex gap-2">
+                <Button
+                  className="rounded-full bg-blue-600 hover:bg-blue-700"
+                  onClick={() => {
+                    const q = searchQuery.trim();
+                    router.push(q ? `/doctor-list?search=${encodeURIComponent(q)}` : "/doctor-list");
+                  }}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Book Appointment
+                </Button>
+
+                <Link href="/patient/payments">
+                  <Button
+                    variant="outline"
+                    className="rounded-full bg-white/70 hover:bg-white ring-1 ring-black/5"
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Payments
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="mt-5">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold text-gray-900">Browse categories</div>
+                  <Link href="/doctor-list">
+                    <Button variant="ghost" className="h-8 px-3 rounded-full text-xs text-blue-700 hover:bg-blue-50">
+                      See all
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide">
+                  {categoryChips.slice(0, 8).map((cat) => (
+                    <Link key={cat.id} href={`/doctor-list?category=${encodeURIComponent(cat.title)}`}>
+                      <Button
+                        variant="outline"
+                        className="h-10 rounded-full bg-white/70 hover:bg-white ring-1 ring-black/5 border-0 px-3 gap-2 whitespace-nowrap"
+                      >
+                        <span className={`h-7 w-7 rounded-full ${cat.color} flex items-center justify-center`}>
+                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d={cat.icon} />
+                          </svg>
+                        </span>
+                        <span className="text-xs font-semibold text-gray-800">{cat.title}</span>
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold text-gray-900">Top doctors</div>
+                  <Link href="/doctor-list">
+                    <Button variant="ghost" className="h-8 px-3 rounded-full text-xs text-blue-700 hover:bg-blue-50">
+                      See all
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="flex overflow-x-auto gap-3 pb-1 scrollbar-hide">
+                  {(doctorsLoading ? Array.from({ length: 5 }) : topDoctors).map((doctor, idx) => {
+                    if (doctorsLoading) {
+                      return (
+                        <Card
+                          key={`doc-skel-${idx}`}
+                          className="min-w-[220px] rounded-3xl bg-white/70 ring-1 ring-black/5 shadow-sm"
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-12 w-12 rounded-2xl bg-gray-200" />
+                              <div className="flex-1 space-y-2">
+                                <div className="h-3 w-28 bg-gray-200 rounded" />
+                                <div className="h-3 w-20 bg-gray-200 rounded" />
+                              </div>
+                            </div>
+                            <div className="mt-3 h-9 bg-gray-200 rounded-xl" />
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+
+                    return (
+                      <Link key={(doctor as any)._id} href={`/patient/booking/${(doctor as any)._id}`}>
+                        <Card className="min-w-[240px] rounded-3xl bg-white/70 ring-1 ring-black/5 shadow-sm hover:shadow-md transition-shadow">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-12 w-12 rounded-2xl">
+                                <AvatarImage src={(doctor as any).profileImage} alt={(doctor as any).name} />
+                                <AvatarFallback className="bg-blue-600 text-white font-semibold rounded-2xl">
+                                  {(doctor as any).name?.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-sm font-bold text-gray-900 truncate">{(doctor as any).name}</div>
+                                <div className="text-xs text-gray-600 truncate">{(doctor as any).specialization}</div>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 flex items-center justify-between">
+                              <div className="flex items-center gap-1 text-xs font-semibold text-gray-700">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span>{(((doctor as any).averageRating || 0) as number).toFixed(1)}</span>
+                                <span className="text-gray-500">({(doctor as any).totalReviews || 0})</span>
+                              </div>
+                              <div className="text-xs font-bold text-blue-700">₦{(doctor as any).fees}</div>
+                            </div>
+
+                            <Button className="mt-3 w-full rounded-2xl bg-blue-600 hover:bg-blue-700">
+                              Book
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-1">
+              <WalletCard />
+            </div>
           </div>
 
           <Tabs
@@ -518,13 +751,51 @@ const PatientDashboardContentInner = () => {
               <div className="text-xs text-gray-500">Refreshing…</div>
             )}
 
+            <div className="rounded-3xl bg-white/60 ring-1 ring-black/5 shadow-sm p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">My appointments</div>
+                  <div className="text-xs text-gray-600">{selectedDayLabel}</div>
+                </div>
+                <Link href="/doctor-list">
+                  <Button className="rounded-full bg-blue-600 hover:bg-blue-700 h-9 px-4 text-xs">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Book
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {dateChips.map((c) => {
+                  const isActive = c.ymd === selectedDayYmd;
+                  return (
+                    <button
+                      key={c.ymd}
+                      type="button"
+                      onClick={() => setSelectedDayYmd(c.ymd)}
+                      className={`shrink-0 w-[64px] rounded-2xl px-3 py-2 text-left transition-colors ${
+                        isActive
+                          ? "bg-blue-600 text-white shadow-[0_12px_30px_rgba(37,99,235,0.35)]"
+                          : "bg-white/70 text-gray-700 ring-1 ring-black/5 hover:bg-white"
+                      }`}
+                    >
+                      <div className={`text-[10px] font-semibold ${isActive ? "opacity-90" : "text-gray-500"}`}>
+                        {c.weekday}
+                      </div>
+                      <div className="text-lg font-extrabold leading-none">{c.day}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <TabsList className="flex w-full space-x-2 bg-gray-100 p-1.5 rounded-full border border-gray-200 shadow-inner">
               <TabsTrigger
                 value="upcoming"
                 className="flex-1 rounded-full py-2.5 text-sm font-semibold transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:bg-gray-200"
               >
                 <Clock className="w-4 h-4 mr-2 hidden sm:inline-block" />
-                <span>Upcoming ({upcomingAppointments.length})</span>
+                <span>Upcoming ({upcomingAppointmentsForDay.length})</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="past" 
@@ -555,7 +826,7 @@ const PatientDashboardContentInner = () => {
                 </div>
               ) : upcomingAppointments.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {upcomingAppointments.map((appointment) => (
+                  {upcomingAppointmentsForDay.map((appointment) => (
                     <AppointmentCard
                       key={appointment._id}
                       appointment={appointment}

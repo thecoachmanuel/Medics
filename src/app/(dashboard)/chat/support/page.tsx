@@ -167,7 +167,7 @@ export default function SupportChatPage() {
       style={{ top: 0, height: '100dvh' }}
     >
       {/* Top Header */}
-      <div className="shrink-0 flex px-4 py-3 md:py-4 items-center bg-white border-b border-gray-100 z-10 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] space-x-3 transition-all relative">
+      <div className="shrink-0 flex px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] md:pt-[calc(env(safe-area-inset-top)+1rem)] md:pb-4 items-center bg-white border-b border-gray-100 z-10 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] space-x-3 transition-all relative">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full -ml-2 text-gray-700">
           <ArrowLeft className="w-5 h-5" />
         </Button>

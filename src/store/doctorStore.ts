@@ -71,7 +71,8 @@ export const useDoctorStore = create<DoctorState>((set, get) => ({
         query = query.lte('fees', filters.maxFees);
       }
       if (filters.sortBy) {
-        query = query.order(filters.sortBy, { ascending: filters.sortOrder !== 'desc' });
+        const sortKey = filters.sortBy === 'createdAt' ? 'created_at' : filters.sortBy;
+        query = query.order(sortKey, { ascending: filters.sortOrder !== 'desc' });
       }
       const page = filters.page || 1;
       const limit = filters.limit || 20;
