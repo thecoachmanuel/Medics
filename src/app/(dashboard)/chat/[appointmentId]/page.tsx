@@ -470,7 +470,7 @@ export default function ChatPage() {
       style={{ top: 0, height: '100dvh' }}
     >
       {/* Top Header */}
-      <div className="shrink-0 flex px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] md:pt-[calc(env(safe-area-inset-top)+1rem)] md:pb-4 items-center bg-white border-b border-gray-100 z-10 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] space-x-3 transition-all relative">
+      <div className="shrink-0 flex px-4 py-3 md:py-4 items-center bg-white border-b border-gray-100 z-10 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] space-x-3 transition-all relative">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full -ml-2 text-gray-700">
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -504,7 +504,7 @@ export default function ChatPage() {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 bg-[#F2F4F7]" ref={scrollRef}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#F2F4F7]" ref={scrollRef}>
          {messages.length === 0 && !isLoading && (
             <div className="text-center text-gray-500 text-sm mt-10">No messages yet. Say hello!</div>
          )}
@@ -512,20 +512,11 @@ export default function ChatPage() {
         {messages.map((msg, idx) => {
           const isMe = msg.sender_id === user.id;
           const showAvatar = !isMe && (idx === 0 || messages[idx - 1].sender_id !== msg.sender_id);
-          const prev = idx > 0 ? messages[idx - 1] : undefined;
-          const isGrouped =
-            !!prev &&
-            prev.sender_id === msg.sender_id &&
-            new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() < 2 * 60 * 1000;
           
           return (
             <React.Fragment key={msg.id}>
               {renderDateDivider(msg.created_at, idx > 0 ? messages[idx - 1].created_at : undefined)}
-              <div
-                className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} items-end space-x-2 ${
-                  isGrouped ? "mt-1" : "mt-3"
-                }`}
-              >
+              <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} items-end space-x-2`}>
                 {!isMe ? (
                  <div className="w-8 shrink-0 relative">
                    {showAvatar ? (
@@ -540,14 +531,14 @@ export default function ChatPage() {
                  </div>
               ) : null}
 
-              <div className={`max-w-[85%] sm:max-w-[75%] rounded-[1.2rem] px-3 pt-2 pb-1.5 text-[15px] shadow-sm leading-relaxed overflow-hidden flex flex-col
+              <div className={`max-w-[85%] sm:max-w-[75%] rounded-[1.2rem] px-3 pt-2 pb-1.5 text-[0.95rem] shadow-sm leading-relaxed overflow-hidden flex flex-col
                 ${isMe 
                   ? 'bg-blue-600 text-white rounded-br-sm pl-4' 
                   : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100 pr-4'}`}
               >
                 <div>
                   {msg.content.startsWith('[IMAGE]') ? (
-                     <img src={msg.content.replace('[IMAGE]', '')} alt="Attachment" className="max-w-[15rem] max-h-[15rem] sm:max-w-[20rem] sm:max-h-[20rem] rounded-2xl object-cover" />
+                     <img src={msg.content.replace('[IMAGE]', '')} alt="Attachment" className="max-w-[15rem] max-h-[15rem] sm:max-w-[20rem] sm:max-h-[20rem] rounded-md object-cover" />
                   ) : msg.content.startsWith('[AUDIO]') ? (
                      <audio controls src={msg.content.replace('[AUDIO]', '')} className="max-w-[12rem] sm:max-w-[16rem]" />
                   ) : (

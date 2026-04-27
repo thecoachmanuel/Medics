@@ -237,46 +237,43 @@ const PatientOnboardingForm = () => {
     }
   };
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white px-4 py-10">
-      <div className="w-full max-w-xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/70 ring-1 ring-black/5 px-4 py-2 shadow-sm">
-            <span className="h-2 w-2 rounded-full bg-blue-600" />
-            <span className="text-xs font-semibold text-gray-700">Profile setup</span>
-          </div>
-          <h1 className="mt-4 text-3xl font-bold text-gray-900">Welcome{user?.name ? `, ${user.name}` : ""}</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Complete your details so doctors can provide better care.
-          </p>
-        </div>
+    <div className="w-full max-w-2xl mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome {user?.name}</h1>
+        <p className="text-gray-600">
+          Complete your profile to start booking appointment
+        </p>
+      </div>
 
-        <div className="flex items-center justify-center mb-6">
-          <div className="flex items-center gap-2 rounded-full bg-white/70 ring-1 ring-black/5 px-3 py-2 shadow-sm">
-            {[1, 2, 3].map((step) => (
-              <React.Fragment key={step}>
+      {/* Progress step */}
+      <div className="flex items-center justify-center mb-8">
+        <div className="flex items-center">
+          {[1, 2, 3].map((step) => (
+            <React.Fragment key={step}>
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                  currentStep >= step
+                    ? "bg-blue-600 border-blue-600 text-white"
+                    : "border-gray-300 text-gray-400"
+                }`}
+              >
+                {step}
+              </div>
+
+              {step < 3 && (
                 <div
-                  className={`flex items-center justify-center w-9 h-9 rounded-full text-xs font-bold ${
-                    currentStep >= step
-                      ? "bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[0_10px_30px_rgba(37,99,235,0.35)]"
-                      : "bg-white text-gray-500 ring-1 ring-black/10"
+                  className={`w-20 h-1 ${
+                    currentStep > step ? "bg-blue-600" : "bg-gray-300"
                   }`}
-                >
-                  {step}
-                </div>
-                {step < 3 && (
-                  <div
-                    className={`w-10 h-1 rounded-full ${
-                      currentStep > step ? "bg-blue-600" : "bg-black/10"
-                    }`}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+                ></div>
+              )}
+            </React.Fragment>
+          ))}
         </div>
+      </div>
 
-        <Card className="rounded-3xl bg-white/70 ring-1 ring-black/5 shadow-[0_18px_60px_rgba(0,0,0,0.10)] border-0">
-          <CardContent className="p-6 md:p-8">
+      <Card className="shadow-lg">
+        <CardContent className="p-8">
           {submitError && (
             <Alert className="mb-6 border border-red-200 bg-red-50/70">
               <AlertDescription className="text-sm text-red-800">{submitError}</AlertDescription>
@@ -497,7 +494,6 @@ const PatientOnboardingForm = () => {
               variant="outline"
               onClick={handlePrevious}
               disabled={currentStep === 1}
-              className="rounded-full"
             >
               Previous
             </Button>
@@ -506,7 +502,6 @@ const PatientOnboardingForm = () => {
               <Button
                 type="button"
                 onClick={handleNext}
-                className="rounded-full bg-blue-600 hover:bg-blue-700"
                 disabled={
                   (currentStep === 1 &&
                     (!formData.phone || !formData.dob || !formData.gender)) ||
@@ -525,7 +520,7 @@ const PatientOnboardingForm = () => {
                type="button"
                onClick={handleSubmit}
                disabled={loading}
-               className="rounded-full bg-green-600 hover:bg-green-700"
+               className="bg-green-600 hover:bg-green-700"
               >
                 {loading ? "Completing Setup...": "Complete Profile"}
               </Button>
@@ -533,7 +528,6 @@ const PatientOnboardingForm = () => {
           </div>
         </CardContent>
       </Card>
-      </div>
     </div>
   );
 };
